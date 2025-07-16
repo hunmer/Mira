@@ -38,4 +38,9 @@ class Library {
       'createdAt': createdAt.toIso8601String(),
     };
   }
+
+  // 转换为JSON
+  Map<String, dynamic> toJson() => toMap();
+  // 从JSON转换
+  factory Library.fromJson(Map<String, dynamic> json) => Library.fromMap(json);
 }

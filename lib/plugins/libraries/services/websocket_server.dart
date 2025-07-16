@@ -9,6 +9,7 @@ import 'package:shelf_web_socket/shelf_web_socket.dart';
 class WebSocketServer {
   final int port;
   final LibraryServerDataInterface _dbService;
+  late final _basePath;
   HttpServer? _server;
 
   WebSocketServer(this.port, {Map<String, dynamic>? dbConfig})
@@ -18,9 +19,10 @@ class WebSocketServer {
     }
   }
 
-  Future<void> start() async {
+  Future<void> start(String basePath) async {
+    _basePath = basePath;
     _server = await HttpServer.bind(InternetAddress.anyIPv6, port);
-    await _dbService.initialize({'path': 'library_data.db'});
+    await _dbService.initialize({'path': '$basePath\\library_data.db'});
 
     print('WebSocket server running on ws://localhost:$port');
 
@@ -66,8 +68,8 @@ class WebSocketServer {
     (WebSocketChannel channel, String? protocol) {
       _handleConnection(channel);
     },
-    protocols: ['library-protocol-v1'],
-    allowedOrigins: ['http://localhost:8080'],
+    // protocols: ['library-protocol-v1'],
+    // allowedOrigins: ['http://localhost:8080'],
     pingInterval: Duration(seconds: 30),
   );
 

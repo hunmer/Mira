@@ -1,5 +1,4 @@
 import 'package:sqlite3/sqlite3.dart';
-import 'package:path/path.dart';
 import 'library_server_data_interface.dart';
 
 class LibraryServerDataSQLite5 implements LibraryServerDataInterface {

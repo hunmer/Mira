@@ -57,6 +57,13 @@ add_subdirectory("runner")
 # them to the application.
 include(flutter/generated_plugins.cmake)
 
+# Add sqlite3.dll to build directory
+configure_file(
+    ${CMAKE_CURRENT_SOURCE_DIR}/../sqlite3.dll
+    ${CMAKE_CURRENT_BINARY_DIR}/runner/sqlite3.dll
+    COPYONLY
+)
+
 
 # === Installation ===
 # Support files are copied into place next to the executable, so that it can

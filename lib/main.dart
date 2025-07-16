@@ -75,7 +75,7 @@ void main() async {
     };
 
     // 注册内置插件
-    final plugins = [LoginPlugin(), LibrariesPlugin()];
+    final plugins = [LibrariesPlugin()];
 
     // 遍历并注册插件
     for (final plugin in plugins) {

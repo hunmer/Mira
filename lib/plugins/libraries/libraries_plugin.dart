@@ -1,6 +1,7 @@
 import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
+import 'package:mira/plugins/libraries/controllers/library_local_data_controller.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'controllers/library_data_interface.dart';
 import 'controllers/library_data_websocket.dart';
@@ -21,7 +22,8 @@ class LibrariesPlugin extends PluginBase {
 
   @override
   String get id => 'libraries';
-  late final LibraryDataInterface dataController;
+  late final LibraryDataInterface libraryController;
+  late final LibraryLocalDataController dataController;
 
   @override
   Future<void> registerToApp(
@@ -33,25 +35,28 @@ class LibrariesPlugin extends PluginBase {
   }
 
   @override
-  Future<void> initialize() async {}
+  Future<void> initialize() async {
+    // 初始化本地数据控制器
+    dataController = LibraryLocalDataController(storage);
+  }
 
-  void setDataController(String connectionAddress) async {
-    if (connectionAddress.startsWith('local')) {
-      final server = WebSocketServer(8080);
-      await server.start();
-      dataController = LibraryDataWebSocket(
-        WebSocketChannel.connect(Uri.parse('ws://localhost:8080')),
+  void setlibraryController(String connectionAddress) async {
+    if (connectionAddress.startsWith('ws://')) {
+      libraryController = LibraryDataWebSocket(
+        WebSocketChannel.connect(Uri.parse(connectionAddress)),
       );
     } else {
-      dataController = LibraryDataWebSocket(
-        WebSocketChannel.connect(Uri.parse(connectionAddress)),
+      final server = WebSocketServer(8080);
+      await server.start(connectionAddress);
+      libraryController = LibraryDataWebSocket(
+        WebSocketChannel.connect(Uri.parse('ws://localhost:8080')),
       );
     }
   }
 
   @override
   void dispose() {
-    dataController?.close();
+    libraryController?.close();
     // 其他清理逻辑
   }
 }

@@ -16,21 +16,19 @@ class LibraryListView extends StatefulWidget {
 
 class _LibraryListViewState extends State<LibraryListView> {
   late Future<List<Library>> _librariesFuture;
-  late LibraryDataInterface _dataController;
   late LibrariesPlugin _plugin;
 
   @override
   void initState() {
     super.initState();
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
-    _dataController = _plugin.dataController;
-    _librariesFuture = _dataController.findLibraries().then(
+    _librariesFuture = _plugin.dataController.findLibraries().then(
       (list) => list.cast<Library>(),
     );
   }
 
   void _onLibrarySelected(Library library) {
-    _plugin.setDataController(library.customFields['path'] ?? 'local');
+    _plugin.setlibraryController(library.customFields['path'] ?? 'local');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -81,13 +79,7 @@ class _LibraryListViewState extends State<LibraryListView> {
 
               if (newLibrary != null) {
                 setState(() {
-                  _librariesFuture = _dataController
-                      .addLibrary(newLibrary.toMap())
-                      .then((_) {
-                        return _dataController.findLibraries().then(
-                          (list) => list.cast<Library>(),
-                        );
-                      });
+                  _plugin.dataController.addLibrary(newLibrary);
                 });
               }
             },
