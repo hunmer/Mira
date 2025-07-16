@@ -1,0 +1,33 @@
+name: Flutter Web Deploy
+
+on:
+  push:
+    branches: [ master ]
+    paths:
+      - 'lib/**'
+      - 'web/**'
+      - 'pubspec.yaml'
+      - '.github/workflows/web-deploy.yml'
+
+jobs:
+  build-and-deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          
+      - name: Install dependencies
+        run: flutter pub get
+      
+      - name: Build Flutter Web
+        run: flutter build web --release --no-tree-shake-icons --base-href /mira/
+        
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.SECERT }}
+          publish_dir: ./build/web

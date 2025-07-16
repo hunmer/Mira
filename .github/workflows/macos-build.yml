@@ -1,0 +1,51 @@
+name: macOS
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: macos-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        
+    - name: Install dependencies
+      run: flutter pub get
+      
+    - name: Build macOS
+      run: flutter build macos --release --no-tree-shake-icons
+      
+    - name: Create ZIP package
+      run: cd build/macos/Build/Products/Release && zip -r mira-macos.app.zip mira.app
+      
+    - name: Get current date
+      id: date
+      run: echo "date=$(date +'%Y-%m-%d')" >> $GITHUB_OUTPUT
+      
+    - name: Get commit SHA
+      id: commit_sha
+      run: echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+        
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.SECERT }}
+      with:
+        files: build/macos/Build/Products/Release/mira-macos.app.zip
+        tag_name: release-${{ steps.date.outputs.date }}-${{ steps.commit_sha.outputs.sha }}
+        generate_release_notes: false
+        
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: macos-release
+        path: build/macos/Build/Products/Release/

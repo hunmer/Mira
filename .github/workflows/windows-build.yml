@@ -1,0 +1,55 @@
+name: Windows
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        channel: 'stable'
+        
+    - name: Install dependencies
+      run: flutter pub get
+      
+    - name: Build Windows
+      run: flutter build windows --release --no-tree-shake-icons
+
+    - name: Create ZIP package
+      run: |
+        $releaseDir = "build/windows/x64/runner/Release"
+        Compress-Archive -Path "$releaseDir" -DestinationPath "$releaseDir/mira-windows.zip" -Force
+      
+    - name: Get current date
+      id: date
+      shell: pwsh
+      run: echo "date=$(Get-Date -Format 'yyyy-MM-dd')" >> $env:GITHUB_OUTPUT
+
+    - name: Get commit SHA
+      id: commit_sha
+      shell: pwsh
+      run: echo "sha=$((git rev-parse --short HEAD))" >> $env:GITHUB_OUTPUT
+
+    - name: Upload Release Asset
+      uses: softprops/action-gh-release@v2
+      env:
+        GITHUB_TOKEN: ${{ secrets.SECERT }}
+      with:
+        files: build/windows/x64/runner/Release/mira-windows.zip
+        tag_name: release-${{ steps.date.outputs.date }}-${{ steps.commit_sha.outputs.sha }}
+        generate_release_notes: false
+        
+    - name: Upload Artifact
+      uses: actions/upload-artifact@v4
+      with:
+        name: windows-release
+        path: build/windows/x64/runner/Release/
