@@ -83,28 +83,90 @@ class WebSocketServer {
 
       switch (action) {
         case 'create':
-          final id = await _dbService.createRecord(payload);
+          final recordType = payload['type'] as String;
+          final data = payload['data'] as Map<String, dynamic>;
+          int id;
+          switch (recordType) {
+            case 'file':
+              id = await _dbService.createFile(data);
+              break;
+            case 'folder':
+              id = await _dbService.createFolder(data);
+              break;
+            case 'tag':
+              id = await _dbService.createTag(data);
+              break;
+            default:
+              throw ArgumentError('Invalid record type: $recordType');
+          }
           channel.sink.add(jsonEncode({'status': 'success', 'id': id}));
           break;
         case 'read':
+          final recordType = payload['type'] as String;
           if (payload.containsKey('id')) {
-            final record = await _dbService.getRecord(payload['id'] as int);
+            final id = payload['id'] as int;
+            Map<String, dynamic>? record;
+            switch (recordType) {
+              case 'file':
+                record = await _dbService.getFile(id);
+                break;
+              case 'folder':
+                record = await _dbService.getFolder(id);
+                break;
+              case 'tag':
+                record = await _dbService.getTag(id);
+                break;
+              default:
+                throw ArgumentError('Invalid record type: $recordType');
+            }
             channel.sink.add(jsonEncode({'status': 'success', 'data': record}));
           } else {
-            final records = await _dbService.getRecords(
-              limit: payload['limit'] as int? ?? 100,
-              offset: payload['offset'] as int? ?? 0,
-            );
+            List<Map<String, dynamic>> records;
+            switch (recordType) {
+              case 'file':
+                records = await _dbService.getFiles(
+                  limit: payload['limit'] as int? ?? 100,
+                  offset: payload['offset'] as int? ?? 0,
+                );
+                break;
+              case 'folder':
+                records = await _dbService.getFolders(
+                  limit: payload['limit'] as int? ?? 100,
+                  offset: payload['offset'] as int? ?? 0,
+                );
+                break;
+              case 'tag':
+                records = await _dbService.getTags(
+                  limit: payload['limit'] as int? ?? 100,
+                  offset: payload['offset'] as int? ?? 0,
+                );
+                break;
+              default:
+                throw ArgumentError('Invalid record type: $recordType');
+            }
             channel.sink.add(
               jsonEncode({'status': 'success', 'data': records}),
             );
           }
           break;
         case 'update':
-          final success = await _dbService.updateRecord(
-            payload['id'] as int,
-            payload['data'] as Map<String, dynamic>,
-          );
+          final recordType = payload['type'] as String;
+          final id = payload['id'] as int;
+          final data = payload['data'] as Map<String, dynamic>;
+          bool success;
+          switch (recordType) {
+            case 'file':
+              success = await _dbService.updateFile(id, data);
+              break;
+            case 'folder':
+              success = await _dbService.updateFolder(id, data);
+              break;
+            case 'tag':
+              success = await _dbService.updateTag(id, data);
+              break;
+            default:
+              throw ArgumentError('Invalid record type: $recordType');
+          }
           channel.sink.add(
             jsonEncode({
               'status': success ? 'success' : 'failed',
@@ -113,7 +175,22 @@ class WebSocketServer {
           );
           break;
         case 'delete':
-          final success = await _dbService.deleteRecord(payload['id'] as int);
+          final recordType = payload['type'] as String;
+          final id = payload['id'] as int;
+          bool success;
+          switch (recordType) {
+            case 'file':
+              success = await _dbService.deleteFile(id);
+              break;
+            case 'folder':
+              success = await _dbService.deleteFolder(id);
+              break;
+            case 'tag':
+              success = await _dbService.deleteTag(id);
+              break;
+            default:
+              throw ArgumentError('Invalid record type: $recordType');
+          }
           channel.sink.add(
             jsonEncode({
               'status': success ? 'success' : 'failed',
