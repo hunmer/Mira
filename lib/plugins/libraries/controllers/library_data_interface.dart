@@ -7,6 +7,7 @@ abstract class LibraryDataInterface {
   Future<void> updateLibrary(String id, Map<String, dynamic> updates);
 
   Future<void> addFile(Map<String, dynamic> file);
+  Future<void> addFileFromPath(String filePath);
   Future<void> deleteFile(String id);
   Future<List<Map<String, dynamic>>> findFiles({Map<String, dynamic>? query});
 

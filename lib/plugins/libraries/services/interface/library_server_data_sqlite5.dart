@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+import 'package:xxh3/xxh3.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'library_server_data_interface.dart';
 
@@ -359,5 +362,40 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   @override
   Future<void> close() async {
     _db!.dispose();
+  }
+
+  @override
+  Future<int> createFileFromPath(
+    String filePath,
+    Map<String, dynamic> fileMeta,
+  ) async {
+    final file = File(filePath);
+    if (!await file.exists()) {
+      throw Exception('File does not exist: $filePath');
+    }
+
+    // 获取文件基础信息
+    final stat = await file.stat();
+    final hash = await _calculateFileHash(file);
+
+    // 构建文件数据
+    final fileData = {
+      'name': file.path.split(Platform.pathSeparator).last,
+      'created_at': stat.modified.millisecondsSinceEpoch,
+      'imported_at': DateTime.now().millisecondsSinceEpoch,
+      'size': stat.size,
+      'hash': hash,
+      ...fileMeta, // 合并传入的元数据
+    };
+
+    // 使用现有的createFile方法插入记录
+    return createFile(fileData);
+  }
+
+  // 计算文件哈希值 (使用XXH3算法)
+  Future<String> _calculateFileHash(File file) async {
+    final bytes = await file.readAsBytes();
+    final hash = xxh3(Uint8List.fromList(bytes));
+    return hash.toRadixString(16); // 返回16进制字符串
   }
 }

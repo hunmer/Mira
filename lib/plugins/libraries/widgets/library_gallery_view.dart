@@ -1,5 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
@@ -28,6 +30,8 @@ class _LibraryGalleryViewState extends State<LibraryGalleryView> {
     final result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
       type: FileType.any,
+      withData: true, // 尝试读取文件内容
+      allowCompression: false, // 不压缩大文件
     );
 
     if (result != null && result.files.isNotEmpty) {
@@ -68,19 +72,7 @@ class _LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   Future<void> _uploadSingleFile(PlatformFile file) async {
-    final fileBytes = file.bytes;
-    if (fileBytes == null) return;
-
-    final fileData = {
-      'name': file.name,
-      'size': file.size,
-      'libraryId': widget.library.id,
-      'data': base64Encode(fileBytes),
-    };
-
-    await widget.plugin.libraryController.addFile(
-      fileData.cast<String, dynamic>(),
-    );
+    await widget.plugin.libraryController.addFileFromPath(file.path!);
   }
 
   @override

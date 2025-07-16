@@ -48,9 +48,11 @@ class LibrariesPlugin extends PluginBase {
     } else {
       final server = WebSocketServer(8080);
       await server.start(connectionAddress);
-      libraryController = LibraryDataWebSocket(
-        WebSocketChannel.connect(Uri.parse('ws://localhost:8080')),
+      final channel = WebSocketChannel.connect(
+        Uri.parse('ws://localhost:8080'),
       );
+      await channel.ready;
+      libraryController = LibraryDataWebSocket(channel);
     }
   }
 

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'library_data_interface.dart';
 
@@ -9,12 +10,20 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   static int _requestCounter = 0;
 
   void _sendMessage(dynamic message) {
-    print('Sending WebSocket message: ${jsonEncode(message)}');
+    debugPrint('Sending WebSocket message: ${jsonEncode(message)}');
     _channel.sink.add(message);
   }
 
   LibraryDataWebSocket(this._channel) {
-    _channel.stream.listen(_handleResponse);
+    _channel.stream.listen(
+      _handleResponse,
+      onError: (error) {
+        print('连接出错: $error');
+      },
+      onDone: () {
+        print('连接已关闭');
+      },
+    );
   }
 
   String _generateRequestId() {
@@ -193,5 +202,17 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       'payload': {'type': 'library', 'id': int.parse(id), 'data': updates},
     });
     await _waitForResponse('update_library');
+  }
+
+  @override
+  Future<void> addFileFromPath(String filePath) async {
+    _sendMessage({
+      'action': 'create',
+      'payload': {
+        'type': 'file',
+        'data': {'path': filePath},
+      },
+    });
+    await _waitForResponse('add_file');
   }
 }

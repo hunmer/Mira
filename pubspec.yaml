@@ -59,6 +59,7 @@ dependencies:
   web_socket_channel: ^3.0.3
   queue: ^3.4.0
   crypto: ^3.0.6
+  xxh3: ^1.2.0
   tab_container: ^3.5.3
   flex_color_scheme: ^8.2.0
   shelf_web_socket: ^3.0.0

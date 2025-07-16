@@ -4,6 +4,10 @@ abstract class LibraryServerDataInterface {
 
   // 文件表操作
   Future<int> createFile(Map<String, dynamic> fileData);
+  Future<int> createFileFromPath(
+    String filePath,
+    Map<String, dynamic> fileMeta,
+  );
   Future<bool> updateFile(int id, Map<String, dynamic> fileData);
   Future<bool> deleteFile(int id);
   Future<Map<String, dynamic>?> getFile(int id);

@@ -4,7 +4,7 @@ import 'package:flutter/foundation.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_sqlite5.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-import 'package:shelf/shelf.dart';
+import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 
 class WebSocketServer {
@@ -22,27 +22,22 @@ class WebSocketServer {
 
   Future<void> start(String basePath) async {
     _basePath = basePath;
-    _server = await HttpServer.bind(InternetAddress.anyIPv6, port);
     await _dbService.initialize({'path': '$basePath\\library_data.db'});
 
-    print('WebSocket server running on ws://localhost:$port');
+    _server = await shelf_io.serve(
+      webSocketHandler(
+        (WebSocketChannel channel, String? protocol) {
+          _handleConnection(channel);
+        },
+        // protocols: ['library-protocol-v1'],
+        // allowedOrigins: ['http://localhost:8080'],
+        pingInterval: Duration(seconds: 30),
+      ),
+      InternetAddress.anyIPv6,
+      port,
+    );
 
-    await for (HttpRequest request in _server!) {
-      if (WebSocketTransformer.isUpgradeRequest(request)) {
-        final shelfRequest = Request(
-          request.method,
-          Uri.parse(request.uri.toString()),
-        );
-        await handler(
-          shelfRequest.change(
-            context: {'shelf.io.connection_info': request.connectionInfo},
-          ),
-        );
-      } else {
-        request.response.statusCode = HttpStatus.badRequest;
-        request.response.close();
-      }
-    }
+    print('Serving at ws://${_server?.address.host}:${_server?.port}');
   }
 
   void _handleConnection(WebSocketChannel channel) {
@@ -66,15 +61,6 @@ class WebSocketServer {
     );
   }
 
-  Handler get handler => webSocketHandler(
-    (WebSocketChannel channel, String? protocol) {
-      _handleConnection(channel);
-    },
-    // protocols: ['library-protocol-v1'],
-    // allowedOrigins: ['http://localhost:8080'],
-    pingInterval: Duration(seconds: 30),
-  );
-
   Future<void> _handleMessage(
     WebSocketChannel channel,
     Map<String, dynamic> data,
@@ -90,7 +76,15 @@ class WebSocketServer {
           int id;
           switch (recordType) {
             case 'file':
-              id = await _dbService.createFile(data);
+              if (data.containsKey('path')) {
+                // 处理从文件路径添加的情况
+                final filePath = data['path'] as String;
+                final fileMeta = {...data};
+                fileMeta.remove('path');
+                id = await _dbService.createFileFromPath(filePath, fileMeta);
+              } else {
+                id = await _dbService.createFile(data);
+              }
               break;
             case 'folder':
               id = await _dbService.createFolder(data);
