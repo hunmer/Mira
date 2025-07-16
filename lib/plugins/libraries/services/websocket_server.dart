@@ -23,19 +23,21 @@ class WebSocketServer {
   Future<void> start(String basePath) async {
     _basePath = basePath;
     await _dbService.initialize({'path': '$basePath\\library_data.db'});
-
-    _server = await shelf_io.serve(
-      webSocketHandler(
-        (WebSocketChannel channel, String? protocol) {
-          _handleConnection(channel);
-        },
-        // protocols: ['library-protocol-v1'],
-        // allowedOrigins: ['http://localhost:8080'],
-        pingInterval: Duration(seconds: 30),
-      ),
-      InternetAddress.anyIPv6,
-      port,
-    );
+    // TODO 保持ws服务后台运行
+    try {
+      _server = await shelf_io.serve(
+        webSocketHandler(
+          (WebSocketChannel channel, String? protocol) {
+            _handleConnection(channel);
+          },
+          // protocols: ['library-protocol-v1'],
+          // allowedOrigins: ['http://localhost:8080'],
+          pingInterval: Duration(seconds: 30),
+        ),
+        InternetAddress.anyIPv6,
+        port,
+      );
+    } catch (err) {}
 
     print('Serving at ws://${_server?.address.host}:${_server?.port}');
   }

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'library_data_interface.dart';
 
@@ -10,8 +11,9 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   static int _requestCounter = 0;
 
   void _sendMessage(dynamic message) {
-    debugPrint('Sending WebSocket message: ${jsonEncode(message)}');
-    _channel.sink.add(message);
+    final jsonMessage = jsonEncode(message);
+    debugPrint('Sending WebSocket message: $jsonMessage');
+    _channel.sink.add(jsonMessage);
   }
 
   LibraryDataWebSocket(this._channel) {
@@ -39,6 +41,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
   void _handleResponse(dynamic message) {
     try {
+      debugPrint('Received WebSocket message: $message');
       final response = jsonDecode(message);
       if (response.containsKey('requestId') &&
           _responseHandlers.containsKey(response['requestId'])) {
@@ -214,5 +217,27 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       },
     });
     await _waitForResponse('add_file');
+  }
+
+  @override
+  Future<List<LibraryFile>> getFiles() async {
+    final completer = Completer<List<Map<String, dynamic>>>();
+    final requestId = _generateRequestId();
+    _responseHandlers[requestId] = completer;
+
+    _sendMessage({
+      'action': 'read',
+      'payload': {'type': 'file', 'query': {}},
+    });
+
+    try {
+      // 临时解决方案：同步等待异步操作
+      // 注意：这不是最佳实践，但在WebSocket场景下是必要的
+      final files = await completer.future.timeout(Duration(seconds: 5));
+      return files.map((file) => LibraryFile.fromMap(file)).toList();
+    } catch (e) {
+      print('Error getting files: $e');
+      return [];
+    }
   }
 }

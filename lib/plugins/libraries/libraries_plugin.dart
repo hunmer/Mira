@@ -40,7 +40,7 @@ class LibrariesPlugin extends PluginBase {
     dataController = LibraryLocalDataController(storage);
   }
 
-  void setlibraryController(String connectionAddress) async {
+  Future<void> setlibraryController(String connectionAddress) async {
     if (connectionAddress.startsWith('ws://')) {
       libraryController = LibraryDataWebSocket(
         WebSocketChannel.connect(Uri.parse(connectionAddress)),

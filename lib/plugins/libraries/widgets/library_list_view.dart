@@ -27,8 +27,8 @@ class _LibraryListViewState extends State<LibraryListView> {
     );
   }
 
-  void _onLibrarySelected(Library library) {
-    _plugin.setlibraryController(library.customFields['path'] ?? 'local');
+  void _onLibrarySelected(Library library) async {
+    await _plugin.setlibraryController(library.customFields['path'] ?? 'local');
     Navigator.push(
       context,
       MaterialPageRoute(

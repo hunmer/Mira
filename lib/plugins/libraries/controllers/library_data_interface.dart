@@ -1,3 +1,5 @@
+import 'package:mira/plugins/libraries/models/file.dart';
+
 abstract class LibraryDataInterface {
   Future<void> addLibrary(Map<String, dynamic> library);
   Future<void> deleteLibrary(String id);
@@ -10,6 +12,7 @@ abstract class LibraryDataInterface {
   Future<void> addFileFromPath(String filePath);
   Future<void> deleteFile(String id);
   Future<List<Map<String, dynamic>>> findFiles({Map<String, dynamic>? query});
+  Future<List<LibraryFile>> getFiles();
 
   Future<void> addFolder(Map<String, dynamic> folder);
   Future<void> deleteFolder(String id);

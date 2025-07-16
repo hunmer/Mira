@@ -1,9 +1,9 @@
 class Library {
   final String id;
-  final String name;
-  final String icon;
-  final String type;
-  final Map<String, dynamic> customFields;
+  String name;
+  String icon;
+  String type;
+  Map<String, dynamic> customFields;
   final DateTime createdAt;
 
   Library({
@@ -43,4 +43,20 @@ class Library {
   Map<String, dynamic> toJson() => toMap();
   // 从JSON转换
   factory Library.fromJson(Map<String, dynamic> json) => Library.fromMap(json);
+
+  // 更新字段
+  void updateFromJson(Map<String, dynamic> updates) {
+    if (updates.containsKey('name')) {
+      name = updates['name'];
+    }
+    if (updates.containsKey('icon')) {
+      icon = updates['icon'];
+    }
+    if (updates.containsKey('type')) {
+      type = updates['type'];
+    }
+    if (updates.containsKey('customFields')) {
+      customFields.addAll(updates['customFields']);
+    }
+  }
 }
