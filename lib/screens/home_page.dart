@@ -1,7 +1,6 @@
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:cupertino_sidebar/cupertino_sidebar.dart';
-import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/widgets/app_draw.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 
@@ -14,39 +13,53 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  final List<Widget> _pages = [
-    const LibraryListView(),
-    // Container(), // Placeholder for recording button
-    // const RecordsMainView(),
-  ];
+  bool isExpanded = true;
+  final List<Widget> _pages = [const LibraryListView()];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       drawer: const AppDraw(),
-      body: Row(
+      body: Column(
         children: [
-          CupertinoSidebar(
-            selectedIndex: _selectedIndex,
-            onDestinationSelected: (index) {
-              setState(() => _selectedIndex = index);
-            },
-            children: [
-              SidebarDestination(
-                icon: const Icon(CupertinoIcons.doc_text),
-                label: const Text('Memos'),
-              ),
-              // SidebarDestination(
-              //   icon: const Icon(CupertinoIcons.mic),
-              //   label: const Text('Record'),
-              // ),
-              // SidebarDestination(
-              //   icon: const Icon(CupertinoIcons.music_note),
-              //   label: const Text('Records'),
-              // ),
-            ],
+          // 独立的侧边栏切换按钮区域
+          Container(
+            height: 56,
+            alignment: Alignment.centerLeft,
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: CupertinoButton(
+              padding: EdgeInsets.zero,
+              onPressed: () {
+                setState(() {
+                  isExpanded = !isExpanded;
+                });
+              },
+              child: const Icon(CupertinoIcons.sidebar_left),
+            ),
           ),
-          Expanded(child: _pages[_selectedIndex]),
+          // 侧边栏和内容区域
+          Expanded(
+            child: Row(
+              children: [
+                CupertinoSidebarCollapsible(
+                  isExpanded: isExpanded,
+                  child: CupertinoSidebar(
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: (index) {
+                      setState(() => _selectedIndex = index);
+                    },
+                    children: [
+                      SidebarDestination(
+                        icon: const Icon(CupertinoIcons.doc_text),
+                        label: const Text('Libraries List'),
+                      ),
+                    ],
+                  ),
+                ),
+                Expanded(child: _pages[_selectedIndex]),
+              ],
+            ),
+          ),
         ],
       ),
     );

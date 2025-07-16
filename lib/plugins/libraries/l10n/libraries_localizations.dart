@@ -19,15 +19,24 @@ class LibrariesLocalizations {
 
   // 资源库相关文本
   String get librariesTitle => 'Libraries';
+  String get newLibrary => 'New Library';
   String get createLibrary => 'Create Library';
   String get editLibrary => 'Edit Library';
+  String get libraryName => 'Library Name';
+  String get nameRequired => 'Name is required';
+  String get localDatabase => 'Local Database';
+  String get networkDatabase => 'Network Database';
+  String get databaseType => 'Database Type';
+  String get selectFolder => 'Select Folder';
+  String get serverAddress => 'Server Address';
+  String get serverRequired => 'Server is required';
+  String get username => 'Username';
+  String get password => 'Password';
 
   // 文件相关文本
   String get filesTitle => 'Files';
   String get fileName => 'File Name';
   String get fileSize => 'Size';
-
-  // 其他需要本地化的文本...
 }
 
 class _LibrariesLocalizationsDelegate

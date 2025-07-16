@@ -101,7 +101,7 @@ class _AvatarPickerState extends State<AvatarPicker> {
             final appDir =
                 await StorageManager.getApplicationDocumentsDirectory();
             final avatarDir = Directory(
-              path.join(appDir.path, 'app_data', widget.saveDirectory),
+              path.join(appDir.path, 'mira_data', widget.saveDirectory),
             );
             if (!await avatarDir.exists()) {
               await avatarDir.create(recursive: true);

@@ -52,5 +52,5 @@ class AppRoutes extends NavigatorObserver {
     settings: (context) => const SettingsScreen(),
   };
 
-  static String get initialRoute => settings;
+  static String get initialRoute => home;
 }

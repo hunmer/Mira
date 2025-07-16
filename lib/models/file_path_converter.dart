@@ -56,7 +56,7 @@ class FilePathConverter {
     if (relativePath.startsWith('./')) {
       final appDataPath =
           await StorageManager.getApplicationDocumentsDirectory();
-      return '$appDataPath/app_data/${relativePath.substring(2)}';
+      return '$appDataPath/mira_data/${relativePath.substring(2)}';
     }
     return relativePath;
   }

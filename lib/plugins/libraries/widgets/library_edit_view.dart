@@ -1,13 +1,10 @@
 import 'package:flutter/material.dart';
-import '../models/library.dart';
-import '../l10n/libraries_localizations.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
+import 'package:file_picker/file_picker.dart';
 
 class LibraryEditView extends StatefulWidget {
-  final Library? library;
-  final Function(Library) onSave;
-
-  const LibraryEditView({this.library, required this.onSave, Key? key})
-    : super(key: key);
+  const LibraryEditView({Key? key}) : super(key: key);
 
   @override
   _LibraryEditViewState createState() => _LibraryEditViewState();
@@ -15,14 +12,42 @@ class LibraryEditView extends StatefulWidget {
 
 class _LibraryEditViewState extends State<LibraryEditView> {
   final _formKey = GlobalKey<FormState>();
-  late TextEditingController _nameController;
-  late TextEditingController _typeController;
+  late LibraryType _selectedType = LibraryType.local;
+  final TextEditingController _nameController = TextEditingController();
+  final TextEditingController _serverController = TextEditingController();
+  final TextEditingController _usernameController = TextEditingController();
+  final TextEditingController _passwordController = TextEditingController();
+  String _localPath = '';
 
-  @override
-  void initState() {
-    super.initState();
-    _nameController = TextEditingController(text: widget.library?.name ?? '');
-    _typeController = TextEditingController(text: widget.library?.type ?? '');
+  Future<void> _pickFolder() async {
+    final result = await FilePicker.platform.getDirectoryPath();
+    if (result != null) {
+      setState(() {
+        _localPath = result;
+      });
+    }
+  }
+
+  void _saveLibrary() {
+    if (_formKey.currentState!.validate()) {
+      final library = Library(
+        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        name: _nameController.text,
+        icon: 'default',
+        type: _selectedType == LibraryType.local ? 'local' : 'network',
+        customFields: {
+          if (_selectedType == LibraryType.local) 'path': _localPath,
+          if (_selectedType == LibraryType.network)
+            'server': _serverController.text,
+          if (_selectedType == LibraryType.network)
+            'username': _usernameController.text,
+          if (_selectedType == LibraryType.network)
+            'password': _passwordController.text,
+        },
+        createdAt: DateTime.now(),
+      );
+      Navigator.pop(context, library);
+    }
   }
 
   @override
@@ -31,11 +56,8 @@ class _LibraryEditViewState extends State<LibraryEditView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(
-          widget.library == null
-              ? localizations.createLibrary
-              : localizations.editLibrary,
-        ),
+        title: Text(localizations.newLibrary),
+        actions: [IconButton(icon: Icon(Icons.save), onPressed: _saveLibrary)],
       ),
       body: Padding(
         padding: const EdgeInsets.all(16.0),
@@ -45,47 +67,84 @@ class _LibraryEditViewState extends State<LibraryEditView> {
             children: [
               TextFormField(
                 controller: _nameController,
-                decoration: InputDecoration(labelText: 'Name'),
+                decoration: InputDecoration(
+                  labelText: localizations.libraryName,
+                ),
                 validator: (value) {
                   if (value == null || value.isEmpty) {
-                    return 'Please enter a name';
+                    return localizations.nameRequired;
                   }
                   return null;
                 },
               ),
-              TextFormField(
-                controller: _typeController,
-                decoration: InputDecoration(labelText: 'Type'),
+              SizedBox(height: 16),
+              DropdownButtonFormField<LibraryType>(
+                value: _selectedType,
+                items:
+                    LibraryType.values.map((type) {
+                      return DropdownMenuItem<LibraryType>(
+                        value: type,
+                        child: Text(
+                          type == LibraryType.local
+                              ? localizations.localDatabase
+                              : localizations.networkDatabase,
+                        ),
+                      );
+                    }).toList(),
+                onChanged: (type) {
+                  setState(() {
+                    _selectedType = type!;
+                  });
+                },
+                decoration: InputDecoration(
+                  labelText: localizations.databaseType,
+                ),
               ),
-              // TODO: 添加自定义字段编辑器
-              Spacer(),
-              ElevatedButton(onPressed: _saveLibrary, child: Text('Save')),
+              SizedBox(height: 16),
+              if (_selectedType == LibraryType.local) ...[
+                OutlinedButton(
+                  onPressed: _pickFolder,
+                  child: Text(
+                    _localPath.isEmpty
+                        ? localizations.selectFolder
+                        : _localPath,
+                  ),
+                ),
+              ] else ...[
+                TextFormField(
+                  controller: _serverController,
+                  decoration: InputDecoration(
+                    labelText: localizations.serverAddress,
+                  ),
+                  validator: (value) {
+                    if (value == null || value.isEmpty) {
+                      return localizations.serverRequired;
+                    }
+                    return null;
+                  },
+                ),
+                SizedBox(height: 8),
+                TextFormField(
+                  controller: _usernameController,
+                  decoration: InputDecoration(
+                    labelText: localizations.username,
+                  ),
+                ),
+                SizedBox(height: 8),
+                TextFormField(
+                  controller: _passwordController,
+                  decoration: InputDecoration(
+                    labelText: localizations.password,
+                  ),
+                  obscureText: true,
+                ),
+              ],
             ],
           ),
         ),
       ),
     );
   }
-
-  void _saveLibrary() {
-    if (_formKey.currentState!.validate()) {
-      final library = Library(
-        id: widget.library?.id ?? DateTime.now().toIso8601String(),
-        name: _nameController.text,
-        type: _typeController.text,
-        icon: '', // TODO: 添加图标选择
-        customFields: {},
-        createdAt: widget.library?.createdAt ?? DateTime.now(),
-      );
-      widget.onSave(library);
-      Navigator.pop(context);
-    }
-  }
-
-  @override
-  void dispose() {
-    _nameController.dispose();
-    _typeController.dispose();
-    super.dispose();
-  }
 }
+
+enum LibraryType { local, network }

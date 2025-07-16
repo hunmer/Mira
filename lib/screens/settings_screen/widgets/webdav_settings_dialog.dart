@@ -47,7 +47,7 @@ class _WebDAVSettingsDialogState extends State<WebDAVSettingsDialog> {
       text: widget.initialConfig?['password'] ?? '123456',
     );
     _dataPathController = TextEditingController(
-      text: widget.initialConfig?['dataPath'] ?? '/app_data',
+      text: widget.initialConfig?['dataPath'] ?? '/mira_data',
     );
 
     _isConnected = widget.initialConfig?['enabled'] == true;

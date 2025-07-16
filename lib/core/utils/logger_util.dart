@@ -24,7 +24,7 @@ class LoggerUtil {
 
   Future<void> _init() async {
     final appDocDir = await StorageManager.getApplicationDocumentsDirectory();
-    _logDirectory = Directory(p.join(appDocDir.path, 'app_data', 'logs'));
+    _logDirectory = Directory(p.join(appDocDir.path, 'mira_data', 'logs'));
     if (!await _logDirectory.exists()) {
       await _logDirectory.create(recursive: true);
     }

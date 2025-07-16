@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/plugins/libraries/widgets/library_edit_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
 import '../controllers/library_data_interface.dart';
 import '../models/library.dart';
@@ -29,6 +30,7 @@ class _LibraryListViewState extends State<LibraryListView> {
   }
 
   void _onLibrarySelected(Library library) {
+    _plugin.setDataController(library.customFields['path'] ?? 'local');
     Navigator.push(
       context,
       MaterialPageRoute(
@@ -71,8 +73,23 @@ class _LibraryListViewState extends State<LibraryListView> {
           ),
           floatingActionButton: FloatingActionButton(
             child: Icon(Icons.add),
-            onPressed: () {
-              // TODO: 实现创建新资源库逻辑
+            onPressed: () async {
+              final newLibrary = await Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => LibraryEditView()),
+              );
+
+              if (newLibrary != null) {
+                setState(() {
+                  _librariesFuture = _dataController
+                      .addLibrary(newLibrary.toMap())
+                      .then((_) {
+                        return _dataController.findLibraries().then(
+                          (list) => list.cast<Library>(),
+                        );
+                      });
+                });
+              }
             },
           ),
         );

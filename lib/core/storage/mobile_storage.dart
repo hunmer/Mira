@@ -24,7 +24,7 @@ class MobileStorage implements StorageInterface {
   /// 初始化基础路径
   Future<void> _initBasePath() async {
     final directory = await path_provider.getApplicationDocumentsDirectory();
-    _basePath = path.join(directory.path, 'app_data');
+    _basePath = path.join(directory.path, 'mira_data');
 
     // 确保基础目录存在
     final baseDir = io.Directory(_basePath);

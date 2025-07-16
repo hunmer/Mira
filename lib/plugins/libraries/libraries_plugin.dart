@@ -4,6 +4,7 @@ import 'package:mira/core/plugin_manager.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'controllers/library_data_interface.dart';
 import 'controllers/library_data_websocket.dart';
+import 'services/websocket_server.dart';
 
 class LibrariesPlugin extends PluginBase {
   static LibrariesPlugin? _instance;
@@ -20,14 +21,7 @@ class LibrariesPlugin extends PluginBase {
 
   @override
   String get id => 'libraries';
-  final LibraryDataInterface dataController;
-  LibrariesPlugin()
-    : dataController = LibraryDataWebSocket(
-        WebSocketChannel.connect(Uri.parse('ws://localhost:8080')),
-      ) {
-    // 初始化WebSocket连接
-    // TODO: 实现实际的WebSocket连接
-  }
+  late final LibraryDataInterface dataController;
 
   @override
   Future<void> registerToApp(
@@ -41,9 +35,23 @@ class LibrariesPlugin extends PluginBase {
   @override
   Future<void> initialize() async {}
 
+  void setDataController(String connectionAddress) async {
+    if (connectionAddress.startsWith('local')) {
+      final server = WebSocketServer(8080);
+      await server.start();
+      dataController = LibraryDataWebSocket(
+        WebSocketChannel.connect(Uri.parse('ws://localhost:8080')),
+      );
+    } else {
+      dataController = LibraryDataWebSocket(
+        WebSocketChannel.connect(Uri.parse(connectionAddress)),
+      );
+    }
+  }
+
   @override
   void dispose() {
-    dataController.close();
+    dataController?.close();
     // 其他清理逻辑
   }
 }

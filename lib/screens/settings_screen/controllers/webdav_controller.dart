@@ -132,7 +132,7 @@ class WebDAVController {
 
       // 获取本地应用数据目录
       final directory = await StorageManager.getApplicationDocumentsDirectory();
-      final localPath = '${directory.path}/app_data';
+      final localPath = '${directory.path}/mira_data';
       final localDir = Directory(localPath);
 
       // 检查本地目录是否存在
@@ -310,7 +310,7 @@ class WebDAVController {
 
       // 获取本地应用数据目录
       final directory = await StorageManager.getApplicationDocumentsDirectory();
-      final localPath = '${directory.path}/app_data';
+      final localPath = '${directory.path}/mira_data';
 
       // 显示进度对话框
       if (context.mounted) {
@@ -494,7 +494,7 @@ class WebDAVController {
     try {
       // 获取本地应用数据目录
       final directory = await StorageManager.getApplicationDocumentsDirectory();
-      final localPath = '${directory.path}/app_data';
+      final localPath = '${directory.path}/mira_data';
       final localDir = Directory(localPath);
 
       // 确保目录存在
@@ -645,7 +645,7 @@ class WebDAVController {
         final remotePath = config['dataPath'];
         final directory =
             await StorageManager.getApplicationDocumentsDirectory();
-        final localBasePath = '${directory.path}/app_data';
+        final localBasePath = '${directory.path}/mira_data';
 
         // 计算相对路径
         final relativePath = localFilePath.substring(localBasePath.length + 1);
@@ -734,7 +734,7 @@ class WebDAVController {
         final remotePath = config['dataPath'];
         final directory =
             await StorageManager.getApplicationDocumentsDirectory();
-        final localBasePath = '${directory.path}/app_data';
+        final localBasePath = '${directory.path}/mira_data';
 
         // 计算相对路径
         final relativePath = localFilePath.substring(localBasePath.length + 1);

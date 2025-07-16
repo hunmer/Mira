@@ -3,6 +3,8 @@
 import 'dart:async';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:mira/core/event/event.dart';
+import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
+import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:provider/provider.dart';
 import 'package:mira/core/theme_controller.dart';
 import 'package:mira/core/utils/logger_util.dart';
@@ -73,7 +75,7 @@ void main() async {
     };
 
     // 注册内置插件
-    final plugins = [LoginPlugin()];
+    final plugins = [LoginPlugin(), LibrariesPlugin()];
 
     // 遍历并注册插件
     for (final plugin in plugins) {
@@ -162,6 +164,7 @@ class _MyAppState extends State<MyApp> {
             ImagePickerLocalizations.delegate,
             SettingsScreenLocalizations.delegate,
             DataManagementLocalizations.delegate,
+            LibrariesLocalizations.delegate,
             LogSettingsLocalizationsDelegate(),
             GroupSelectorLocalizations.delegate,
             LocationPickerLocalizations.delegate,

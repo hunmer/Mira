@@ -14,7 +14,7 @@ class ImageUtils {
       // 获取应用文档目录
       final appDir = await StorageManager.getApplicationDocumentsDirectory();
       final imagesDir = Directory(
-        path.join(appDir.path, 'app_data', saveDirectory),
+        path.join(appDir.path, 'mira_data', saveDirectory),
       );
 
       // 确保目录存在
@@ -50,7 +50,7 @@ class ImageUtils {
       // 获取应用文档目录
       final appDir = await StorageManager.getApplicationDocumentsDirectory();
       final imagesDir = Directory(
-        path.join(appDir.path, 'app_data', saveDirectory),
+        path.join(appDir.path, 'mira_data', saveDirectory),
       );
 
       // 确保目录存在
@@ -98,10 +98,10 @@ class ImageUtils {
         .substring(2)
         .replaceAll('/', path.separator);
 
-    // 检查路径是否已经包含 app_data（处理不同的路径分隔符）
-    // 如果路径中已经包含 app_data，则从该位置截取后面的部分
-    if (pathWithoutPrefix.contains('app_data')) {
-      final index = pathWithoutPrefix.indexOf('app_data') + 'app_data'.length;
+    // 检查路径是否已经包含 mira_data（处理不同的路径分隔符）
+    // 如果路径中已经包含 mira_data，则从该位置截取后面的部分
+    if (pathWithoutPrefix.contains('mira_data')) {
+      final index = pathWithoutPrefix.indexOf('mira_data') + 'mira_data'.length;
       final remainingPath = pathWithoutPrefix.substring(index);
       // 确保路径开头没有多余的分隔符
       final cleanPath =
@@ -109,10 +109,10 @@ class ImageUtils {
                   remainingPath.startsWith('/')
               ? remainingPath.substring(1)
               : remainingPath;
-      return path.join(appDir.path, 'app_data', cleanPath);
+      return path.join(appDir.path, 'mira_data', cleanPath);
     } else {
-      // 添加 app_data 前缀
-      return path.join(appDir.path, 'app_data', pathWithoutPrefix);
+      // 添加 mira_data 前缀
+      return path.join(appDir.path, 'mira_data', pathWithoutPrefix);
     }
   }
 
@@ -170,16 +170,16 @@ class ImageUtils {
 
   static Future<String> toRelativePath(String absolutePath) async {
     final appDir = await StorageManager.getApplicationDocumentsDirectory();
-    final appDataPath = path.join(appDir.path, 'app_data');
+    final appDataPath = path.join(appDir.path, 'mira_data');
 
     if (absolutePath.startsWith(appDataPath)) {
       String relativePath = absolutePath.substring(appDir.path.length);
       // 统一使用正斜杠
       relativePath = relativePath.replaceAll(r'\', '/');
 
-      if (relativePath.startsWith('/app_data/') ||
-          relativePath.startsWith('\\app_data\\')) {
-        return '.${relativePath.substring('/app_data'.length).replaceAll(r'\', '/')}';
+      if (relativePath.startsWith('/mira_data/') ||
+          relativePath.startsWith('\\mira_data\\')) {
+        return '.${relativePath.substring('/mira_data'.length).replaceAll(r'\', '/')}';
       } else if (relativePath.startsWith('/') ||
           relativePath.startsWith('\\')) {
         // 处理其他可能的情况，确保使用正斜杠
