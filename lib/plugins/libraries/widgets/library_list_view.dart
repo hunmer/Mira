@@ -33,12 +33,7 @@ class _LibraryListViewState extends State<LibraryListView> {
       context,
       MaterialPageRoute(
         builder:
-            (context) => LibraryGalleryView(
-              files: [], // TODO: 获取实际文件列表
-              onFileSelected: (file) {
-                // TODO: 处理文件选择
-              },
-            ),
+            (context) => LibraryGalleryView(plugin: _plugin, library: library),
       ),
     );
   }

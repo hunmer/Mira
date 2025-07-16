@@ -13,7 +13,7 @@ class HomePage extends StatefulWidget {
 
 class _HomePageState extends State<HomePage> {
   int _selectedIndex = 0;
-  bool isExpanded = true;
+  bool isExpanded = false;
   final List<Widget> _pages = [const LibraryListView()];
 
   @override

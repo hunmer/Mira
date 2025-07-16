@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:convert';
+import 'package:flutter/foundation.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_sqlite5.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
@@ -48,6 +49,7 @@ class WebSocketServer {
     channel.stream.listen(
       (message) async {
         try {
+          debugPrint('Incoming message: $message');
           final data = jsonDecode(message);
           await _handleMessage(channel, data);
         } catch (e) {

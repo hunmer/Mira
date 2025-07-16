@@ -1,31 +1,82 @@
+import 'dart:async';
+import 'dart:convert';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'library_data_interface.dart';
 
 class LibraryDataWebSocket implements LibraryDataInterface {
   final WebSocketChannel _channel;
+  final Map<String, Completer<dynamic>> _responseHandlers = {};
+  static int _requestCounter = 0;
 
-  LibraryDataWebSocket(this._channel);
+  void _sendMessage(dynamic message) {
+    print('Sending WebSocket message: ${jsonEncode(message)}');
+    _channel.sink.add(message);
+  }
+
+  LibraryDataWebSocket(this._channel) {
+    _channel.stream.listen(_handleResponse);
+  }
+
+  String _generateRequestId() {
+    return 'req_${_requestCounter++}_${DateTime.now().millisecondsSinceEpoch}';
+  }
+
+  Future<void> _waitForResponse(String operation) async {
+    final completer = Completer<void>();
+    final requestId = _generateRequestId();
+    _responseHandlers[requestId] = completer;
+    return completer.future;
+  }
+
+  void _handleResponse(dynamic message) {
+    try {
+      final response = jsonDecode(message);
+      if (response.containsKey('requestId') &&
+          _responseHandlers.containsKey(response['requestId'])) {
+        final completer = _responseHandlers.remove(response['requestId']);
+        if (response['status'] == 'success') {
+          completer?.complete(response['data']);
+        } else {
+          completer?.completeError(Exception(response['message']));
+        }
+      }
+    } catch (e) {
+      print('Error handling response: $e');
+    }
+  }
 
   @override
   Future<void> addLibrary(Map<String, dynamic> library) async {
-    _channel.sink.add({'type': 'add_library', 'data': library});
-    // 等待响应逻辑...
+    _sendMessage({
+      'action': 'create',
+      'payload': {'type': 'library', 'data': library},
+    });
+    await _waitForResponse('add_library');
   }
 
   @override
   Future<void> deleteLibrary(String id) async {
-    _channel.sink.add({'type': 'delete_library', 'id': id});
-    // 等待响应逻辑...
+    _sendMessage({
+      'action': 'delete',
+      'payload': {'type': 'library', 'id': int.parse(id)},
+    });
+    await _waitForResponse('delete_library');
   }
 
   @override
   Future<List<Map<String, dynamic>>> findLibraries({
     Map<String, dynamic>? query,
   }) async {
-    _channel.sink.add({'type': 'find_libraries', 'query': query ?? {}});
-    // 等待响应并返回数据...
-    // 这里应该返回Library对象列表而不是Map
-    return [];
+    final completer = Completer<List<Map<String, dynamic>>>();
+    final requestId = _generateRequestId();
+    _responseHandlers[requestId] = completer;
+
+    _sendMessage({
+      'action': 'read',
+      'payload': {'type': 'library', 'query': query ?? {}},
+    });
+
+    return await completer.future;
   }
 
   @override
@@ -34,67 +85,113 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
-  Future<void> addFile(Map<String, dynamic> file) {
-    // TODO: implement addFile
-    throw UnimplementedError();
+  Future<void> addFile(Map<String, dynamic> file) async {
+    _sendMessage({
+      'action': 'create',
+      'payload': {'type': 'file', 'data': file},
+    });
+    await _waitForResponse('add_file');
   }
 
   @override
-  Future<void> addFolder(Map<String, dynamic> folder) {
-    // TODO: implement addFolder
-    throw UnimplementedError();
+  Future<void> addFolder(Map<String, dynamic> folder) async {
+    _sendMessage({
+      'action': 'create',
+      'payload': {'type': 'folder', 'data': folder},
+    });
+    await _waitForResponse('add_folder');
   }
 
   @override
-  Future<void> addTag(Map<String, dynamic> tag) {
-    // TODO: implement addTag
-    throw UnimplementedError();
+  Future<void> addTag(Map<String, dynamic> tag) async {
+    _sendMessage({
+      'action': 'create',
+      'payload': {'type': 'tag', 'data': tag},
+    });
+    await _waitForResponse('add_tag');
   }
 
   @override
-  Future<void> deleteFile(String id) {
-    // TODO: implement deleteFile
-    throw UnimplementedError();
+  Future<void> deleteFile(String id) async {
+    _sendMessage({
+      'action': 'delete',
+      'payload': {'type': 'file', 'id': int.parse(id)},
+    });
+    await _waitForResponse('delete_file');
   }
 
   @override
-  Future<void> deleteFolder(String id) {
-    // TODO: implement deleteFolder
-    throw UnimplementedError();
+  Future<void> deleteFolder(String id) async {
+    _sendMessage({
+      'action': 'delete',
+      'payload': {'type': 'folder', 'id': int.parse(id)},
+    });
+    await _waitForResponse('delete_folder');
   }
 
   @override
-  Future<void> deleteTag(String id) {
-    // TODO: implement deleteTag
-    throw UnimplementedError();
+  Future<void> deleteTag(String id) async {
+    _sendMessage({
+      'action': 'delete',
+      'payload': {'type': 'tag', 'id': int.parse(id)},
+    });
+    await _waitForResponse('delete_tag');
   }
 
   @override
-  Future<List<Map<String, dynamic>>> findFiles({Map<String, dynamic>? query}) {
-    // TODO: implement findFiles
-    throw UnimplementedError();
+  Future<List<Map<String, dynamic>>> findFiles({
+    Map<String, dynamic>? query,
+  }) async {
+    final completer = Completer<List<Map<String, dynamic>>>();
+    final requestId = _generateRequestId();
+    _responseHandlers[requestId] = completer;
+
+    _sendMessage({
+      'action': 'read',
+      'payload': {'type': 'file', 'query': query ?? {}},
+    });
+
+    return await completer.future;
   }
 
   @override
   Future<List<Map<String, dynamic>>> findFolders({
     Map<String, dynamic>? query,
-  }) {
-    // TODO: implement findFolders
-    throw UnimplementedError();
+  }) async {
+    final completer = Completer<List<Map<String, dynamic>>>();
+    final requestId = _generateRequestId();
+    _responseHandlers[requestId] = completer;
+
+    _sendMessage({
+      'action': 'read',
+      'payload': {'type': 'folder', 'query': query ?? {}},
+    });
+
+    return await completer.future;
   }
 
   @override
-  Future<List<Map<String, dynamic>>> findTags({Map<String, dynamic>? query}) {
-    // TODO: implement findTags
-    throw UnimplementedError();
+  Future<List<Map<String, dynamic>>> findTags({
+    Map<String, dynamic>? query,
+  }) async {
+    final completer = Completer<List<Map<String, dynamic>>>();
+    final requestId = _generateRequestId();
+    _responseHandlers[requestId] = completer;
+
+    _sendMessage({
+      'action': 'read',
+      'payload': {'type': 'tag', 'query': query ?? {}},
+    });
+
+    return await completer.future;
   }
 
   @override
-  Future<void> updateLibrary(String id, Map<String, dynamic> updates) {
-    // TODO: implement updateLibrary
-    throw UnimplementedError();
+  Future<void> updateLibrary(String id, Map<String, dynamic> updates) async {
+    _sendMessage({
+      'action': 'update',
+      'payload': {'type': 'library', 'id': int.parse(id), 'data': updates},
+    });
+    await _waitForResponse('update_library');
   }
-
-  // 其他方法的WebSocket实现...
-  // 文件、文件夹、标签的CRUD操作...
 }

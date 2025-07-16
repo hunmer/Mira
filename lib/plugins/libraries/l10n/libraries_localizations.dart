@@ -37,6 +37,9 @@ class LibrariesLocalizations {
   String get filesTitle => 'Files';
   String get fileName => 'File Name';
   String get fileSize => 'Size';
+  String get selectLibrary => 'Select Library';
+  String get uploadComplete => 'Upload complete';
+  String get uploadFailed => 'Upload failed';
 }
 
 class _LibrariesLocalizationsDelegate
