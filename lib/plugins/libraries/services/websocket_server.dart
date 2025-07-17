@@ -97,7 +97,14 @@ class WebSocketServer {
             default:
               throw ArgumentError('Invalid record type: $recordType');
           }
-          channel.sink.add(jsonEncode({'status': 'success', 'id': id}));
+          channel.sink.add(
+            jsonEncode({
+              'status': 'success',
+              'id': id,
+              'requestId':
+                  data.containsKey('requestId') ? data['requestId'] : null,
+            }),
+          );
           break;
         case 'read':
           final recordType = payload['type'] as String;
@@ -117,7 +124,14 @@ class WebSocketServer {
               default:
                 throw ArgumentError('Invalid record type: $recordType');
             }
-            channel.sink.add(jsonEncode({'status': 'success', 'data': record}));
+            channel.sink.add(
+              jsonEncode({
+                'status': 'success',
+                'data': record,
+                'requestId':
+                    data.containsKey('requestId') ? data['requestId'] : null,
+              }),
+            );
           } else {
             List<Map<String, dynamic>> records;
             switch (recordType) {
@@ -125,6 +139,7 @@ class WebSocketServer {
                 records = await _dbService.getFiles(
                   limit: payload['limit'] as int? ?? 100,
                   offset: payload['offset'] as int? ?? 0,
+                  select: payload['select'] as String? ?? '*',
                 );
                 break;
               case 'folder':
@@ -143,7 +158,12 @@ class WebSocketServer {
                 throw ArgumentError('Invalid record type: $recordType');
             }
             channel.sink.add(
-              jsonEncode({'status': 'success', 'data': records}),
+              jsonEncode({
+                'status': 'success',
+                'data': records,
+                'requestId':
+                    data.containsKey('requestId') ? data['requestId'] : null,
+              }),
             );
           }
           break;
@@ -169,6 +189,8 @@ class WebSocketServer {
             jsonEncode({
               'status': success ? 'success' : 'failed',
               'message': success ? 'Record updated' : 'Update failed',
+              'requestId':
+                  data.containsKey('requestId') ? data['requestId'] : null,
             }),
           );
           break;
@@ -193,24 +215,49 @@ class WebSocketServer {
             jsonEncode({
               'status': success ? 'success' : 'failed',
               'message': success ? 'Record deleted' : 'Delete failed',
+              'requestId':
+                  data.containsKey('requestId') ? data['requestId'] : null,
             }),
           );
           break;
         case 'beginTransaction':
           await _dbService.beginTransaction();
-          channel.sink.add(jsonEncode({'status': 'success'}));
+          channel.sink.add(
+            jsonEncode({
+              'status': 'success',
+              'requestId':
+                  data.containsKey('requestId') ? data['requestId'] : null,
+            }),
+          );
           break;
         case 'commitTransaction':
           await _dbService.commitTransaction();
-          channel.sink.add(jsonEncode({'status': 'success'}));
+          channel.sink.add(
+            jsonEncode({
+              'status': 'success',
+              'requestId':
+                  data.containsKey('requestId') ? data['requestId'] : null,
+            }),
+          );
           break;
         case 'rollbackTransaction':
           await _dbService.rollbackTransaction();
-          channel.sink.add(jsonEncode({'status': 'success'}));
+          channel.sink.add(
+            jsonEncode({
+              'status': 'success',
+              'requestId':
+                  data.containsKey('requestId') ? data['requestId'] : null,
+            }),
+          );
           break;
         default:
           channel.sink.add(
-            jsonEncode({'status': 'error', 'message': 'Unknown action'}),
+            jsonEncode({
+              'status': 'error',
+              'message': 'Unknown action',
+              'requestId':
+                  data.containsKey('requestId') ? data['requestId'] : null,
+            }),
           );
       }
     } catch (e) {
@@ -219,6 +266,7 @@ class WebSocketServer {
           'status': 'error',
           'message': 'Operation failed',
           'details': e.toString(),
+          'requestId': data.containsKey('requestId') ? data['requestId'] : null,
         }),
       );
     }

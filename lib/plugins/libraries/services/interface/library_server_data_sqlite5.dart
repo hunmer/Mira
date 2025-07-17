@@ -138,6 +138,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     int? minStars,
     int limit = 100,
     int offset = 0,
+    String? select = '*',
   }) async {
     var whereClauses = <String>[];
     var params = <dynamic>[];
@@ -166,7 +167,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     final where =
         whereClauses.isNotEmpty ? 'WHERE ${whereClauses.join(' AND ')}' : '';
-    final query = 'SELECT * FROM files $where LIMIT ? OFFSET ?';
+    final query = 'SELECT $select FROM files $where LIMIT ? OFFSET ?';
     params.addAll([limit, offset]);
 
     final stmt = _db!.prepare(query);

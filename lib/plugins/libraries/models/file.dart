@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class LibraryFile {
   final String id;
   final String name;
@@ -26,18 +28,27 @@ class LibraryFile {
   });
 
   factory LibraryFile.fromMap(Map<String, dynamic> map) {
+    // 处理用户提供的JSON格式
+    final createdAt = map['created_at'] is int 
+      ? DateTime.fromMillisecondsSinceEpoch(map['created_at'])
+      : DateTime.parse(map['createdAt'] ?? '1970-01-01');
+      
+    final importedAt = map['imported_at'] is int 
+      ? DateTime.fromMillisecondsSinceEpoch(map['imported_at'])
+      : DateTime.parse(map['importedAt'] ?? '1970-01-01');
+
     return LibraryFile(
-      id: map['id'],
-      name: map['name'],
-      createdAt: DateTime.parse(map['createdAt']),
-      importedAt: DateTime.parse(map['importedAt']),
-      size: map['size'],
-      hash: map['hash'],
-      customFields: Map<String, dynamic>.from(map['customFields'] ?? {}),
+      id: map['id']?.toString() ?? '',
+      name: map['name'] ?? '',
+      createdAt: createdAt,
+      importedAt: importedAt,
+      size: map['size'] is int ? map['size'] : int.tryParse(map['size']?.toString() ?? '0') ?? 0,
+      hash: map['hash'] ?? '',
+      customFields: Map<String, dynamic>.from(map['customFields'] ?? map['custom_fields'] ?? {}),
       notes: map['notes'],
-      rating: map['rating'],
+      rating: map['rating'] ?? map['stars'] ?? 0,
       tags: List<String>.from(map['tags'] ?? []),
-      folderId: map['folderId'],
+      folderId: map['folderId'] ?? map['folder_id']?.toString() ?? '',
     );
   }
 
