@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'library_data_interface.dart';
 
@@ -39,7 +40,9 @@ class LibraryDataWebSocket implements LibraryDataInterface {
         timeout,
         onTimeout: () {
           _responseHandlers.remove(requestId);
-          throw TimeoutException('$action request timed out after ${timeout.inSeconds} seconds');
+          throw TimeoutException(
+            '$action request timed out after ${timeout.inSeconds} seconds',
+          );
         },
       );
     } catch (e) {
@@ -61,14 +64,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   String _generateRequestId() {
-    return 'req_${_requestCounter++}_${DateTime.now().millisecondsSinceEpoch}';
-  }
-
-  Future<void> _waitForResponse(String operation) async {
-    final completer = Completer<void>();
-    final requestId = _generateRequestId();
-    _responseHandlers[requestId] = completer;
-    return completer.future;
+    return Uuid().v4();
   }
 
   void _handleResponse(dynamic message) {
@@ -106,11 +102,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
   @override
   Future<void> addLibrary(Map<String, dynamic> library) async {
-    await _sendRequest(
-      action: 'create',
-      type: 'library',
-      data: library,
-    );
+    await _sendRequest(action: 'create', type: 'library', data: library);
   }
 
   @override
@@ -140,29 +132,17 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
   @override
   Future<void> addFile(Map<String, dynamic> file) async {
-    await _sendRequest(
-      action: 'create',
-      type: 'file',
-      data: file,
-    );
+    await _sendRequest(action: 'create', type: 'file', data: file);
   }
 
   @override
   Future<void> addFolder(Map<String, dynamic> folder) async {
-    await _sendRequest(
-      action: 'create',
-      type: 'folder',
-      data: folder,
-    );
+    await _sendRequest(action: 'create', type: 'folder', data: folder);
   }
 
   @override
   Future<void> addTag(Map<String, dynamic> tag) async {
-    await _sendRequest(
-      action: 'create',
-      type: 'tag',
-      data: tag,
-    );
+    await _sendRequest(action: 'create', type: 'tag', data: tag);
   }
 
   @override
@@ -194,10 +174,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
   @override
   Future<List<LibraryFile>> getFiles() async {
-    final result = await _sendRequest(
-      action: 'read',
-      type: 'file',
-    );
+    final result = await _sendRequest(action: 'read', type: 'file');
     return (result as List).map((json) => LibraryFile.fromMap(json)).toList();
   }
 
@@ -205,11 +182,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   Future<List<Map<String, dynamic>>> findFiles({
     Map<String, dynamic>? query,
   }) async {
-    return await _sendRequest(
-      action: 'read',
-      type: 'file',
-      query: query ?? {},
-    );
+    return await _sendRequest(action: 'read', type: 'file', query: query ?? {});
   }
 
   @override
@@ -227,11 +200,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   Future<List<Map<String, dynamic>>> findTags({
     Map<String, dynamic>? query,
   }) async {
-    return await _sendRequest(
-      action: 'read',
-      type: 'tag',
-      query: query ?? {},
-    );
+    return await _sendRequest(action: 'read', type: 'tag', query: query ?? {});
   }
 
   @override
