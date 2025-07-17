@@ -30,7 +30,7 @@ class ThumbGenerator {
       final fileType = _getFileType(path);
       if (fileType == null) return;
 
-      final thumbPath = '${_server.getItemPath(args)}preview.png';
+      final thumbPath = _server.getItemThumbPath(args.item);
       final thumbFile = File(thumbPath);
 
       if (!thumbFile.parent.existsSync()) {
@@ -47,6 +47,8 @@ class ThumbGenerator {
       }
 
       args.item['thumbPath'] = thumbPath;
+      // 更新数据库中的thumb字段
+      await _dbService.updateFile(args.item['id'], {'thumb': 1});
       // 通知客户端缩略图已生成
       _server.eventManager.broadcastToClients('thumbnail_generated', args);
     } catch (e) {
@@ -64,6 +66,8 @@ class ThumbGenerator {
       if (thumbFile.existsSync()) {
         thumbFile.deleteSync();
       }
+      // 更新数据库中的thumb字段
+      await _dbService.updateFile(args.item['id'], {'thumb': 0});
     } catch (e) {
       debugPrint('Failed to delete thumbnail: $e');
     }

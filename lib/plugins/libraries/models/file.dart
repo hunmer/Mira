@@ -13,6 +13,8 @@ class LibraryFile {
   final String? reference;
   final String? url;
   final String? path;
+  final String? thumb;
+  final String? type;
 
   LibraryFile({
     required this.id,
@@ -29,6 +31,8 @@ class LibraryFile {
     this.reference,
     this.url,
     this.path,
+    this.thumb,
+    this.type,
   });
 
   factory LibraryFile.fromMap(Map<String, dynamic> map) {
@@ -63,6 +67,8 @@ class LibraryFile {
       reference: map['reference'],
       url: map['url'],
       path: map['path'],
+      thumb: map['thumb'],
+      type: map['type'],
     );
   }
 
@@ -82,6 +88,8 @@ class LibraryFile {
       'reference': reference,
       'url': url,
       'path': path,
+      'thumb': thumb,
+      'type': type,
     };
   }
 }

@@ -48,13 +48,12 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     );
   }
 
-  void _onThumbnailGenerated(ItemEventArgs args) {
+  void _onThumbnailGenerated(EventArgs args) {
+    if (args is! ItemEventArgs) return;
     final id = args.item['id'];
     final thumb = args.item['thumbPath'];
     if (id != null && thumb != null) {
-      setState(() {
-        widget.plugin.libraryController.updateFileThumb(id, thumb);
-      });
+      setState(() {});
     }
   }
 

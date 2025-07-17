@@ -332,8 +332,12 @@ class WebSocketServer {
   }
 
   /// 获取项目路径
-  String getItemPath(ItemEventArgs event) {
-    return '$_basePath\\${event.item['hash']}\\';
+  String getItemPath(item) {
+    return '$_basePath\\${item['hash']}\\';
+  }
+
+  String getItemThumbPath(item) {
+    return '${getItemPath(item)}preview.png';
   }
 
   Future<void> stop() async {

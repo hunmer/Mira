@@ -7,11 +7,13 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 class LibraryItem extends StatelessWidget {
   final LibraryFile file;
   final bool isSelected;
+  final bool useThumbnail;
   final VoidCallback? onTap;
 
   const LibraryItem({
     required this.file,
     this.isSelected = false,
+    this.useThumbnail = false,
     this.onTap,
     this.onLongPress,
     super.key,
@@ -49,7 +51,28 @@ class LibraryItem extends StatelessWidget {
                     child: Column(
                       children: [
                         Expanded(
-                          child: Icon(Icons.insert_drive_file, size: 48),
+                          child:
+                              useThumbnail && file.thumb != null
+                                  ? Image.network(
+                                    file.thumb!,
+                                    fit: BoxFit.cover,
+                                    errorBuilder:
+                                        (context, error, stackTrace) => Icon(
+                                          Icons.insert_drive_file,
+                                          size: 48,
+                                        ),
+                                  )
+                                  : Icon(
+                                    Icons.insert_drive_file,
+                                    size: 48,
+                                    color:
+                                        [
+                                              'audio',
+                                              'video',
+                                            ].contains(file.type?.toLowerCase())
+                                            ? Colors.blue
+                                            : null,
+                                  ),
                         ),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
