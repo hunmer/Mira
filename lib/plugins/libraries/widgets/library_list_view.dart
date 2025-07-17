@@ -3,6 +3,7 @@ import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/library_edit_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_tabs_view.dart';
 import '../controllers/library_data_interface.dart';
 import '../models/library.dart';
 import '../l10n/libraries_localizations.dart';
@@ -33,7 +34,8 @@ class _LibraryListViewState extends State<LibraryListView> {
       context,
       MaterialPageRoute(
         builder:
-            (context) => LibraryGalleryView(plugin: _plugin, library: library),
+            (context) =>
+                LibraryTabsView(plugin: _plugin, initialLibraries: [library]),
       ),
     );
   }

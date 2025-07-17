@@ -5,7 +5,9 @@ import 'package:mira/core/event/event.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_drop_dialog.dart';
@@ -13,6 +15,7 @@ import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_detail_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_item.dart';
 import 'package:mira/plugins/libraries/widgets/upload_queue_dialog.dart';
+import 'package:mira/widgets/tree_view_dialog.dart';
 import '../l10n/libraries_localizations.dart';
 
 class LibraryGalleryView extends StatefulWidget {
@@ -36,6 +39,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   bool _isSelectionMode = false;
   Set<int> _selectedFileIds = {};
   Map<String, dynamic> _filterOptions = {};
+  List<LibraryFolder> _folders = [];
+  List<LibraryTag> _tags = [];
 
   @override
   void initState() {
@@ -50,6 +55,18 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       'thumbnail_generated',
       _onThumbnailGenerated,
     );
+
+    // 初始化文件夹和标签数据
+    widget.plugin.libraryController.getFolders().then((folders) {
+      setState(() {
+        _folders = folders.map((f) => LibraryFolder.fromMap(f)).toList();
+      });
+    });
+    widget.plugin.libraryController.getTags().then((tags) {
+      setState(() {
+        _tags = tags.map((t) => LibraryTag.fromMap(t)).toList();
+      });
+    });
   }
 
   // TODO 单个组件更新，而不是全部更新
@@ -121,6 +138,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               ? '已选择 ${_selectedFileIds.length} 项'
               : localizations.filesTitle,
         ),
+        automaticallyImplyLeading: false,
         actions:
             _isSelectionMode
                 ? [
@@ -235,6 +253,30 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                         builder:
                             (context) =>
                                 UploadQueueDialog(uploadQueue: _uploadQueue),
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.folder),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder:
+                            (context) => TreeViewDialog(
+                              items:
+                                  _folders
+                                      .map(
+                                        (f) => {
+                                          'id': f.id,
+                                          'parentId': f.parentId,
+                                          'title': f.title,
+                                          'comment': f.notes,
+                                          'color': f.color,
+                                          'icon': Icons.folder.codePoint,
+                                        },
+                                      )
+                                      .toList(),
+                            ),
                       );
                     },
                   ),

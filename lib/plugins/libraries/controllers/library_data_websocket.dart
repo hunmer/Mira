@@ -227,4 +227,54 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       data: {'path': filePath},
     );
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getFolders() async {
+    final response = await _sendRequest(action: 'read', type: 'folder');
+    return response.isNotEmpty
+        ? List<Map<String, dynamic>>.from(response['data'])
+        : [];
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getTags() async {
+    final response = await _sendRequest(action: 'read', type: 'tag');
+    return response.isNotEmpty
+        ? List<Map<String, dynamic>>.from(response['data'])
+        : [];
+  }
+
+  @override
+  Future<void> updateFolder({
+    required String id,
+    bool? deleted,
+    String? name,
+  }) async {
+    final updateData = <String, dynamic>{};
+    if (deleted != null) updateData['deleted'] = deleted;
+    if (name != null) updateData['name'] = name;
+
+    await _sendRequest(
+      action: 'update',
+      type: 'folder',
+      data: {'id': id, 'data': updateData},
+    );
+  }
+
+  @override
+  Future<void> updateTag({
+    required String id,
+    bool? deleted,
+    String? name,
+  }) async {
+    final updateData = <String, dynamic>{};
+    if (deleted != null) updateData['deleted'] = deleted;
+    if (name != null) updateData['name'] = name;
+
+    await _sendRequest(
+      action: 'update',
+      type: 'tag',
+      data: {'id': id, 'data': updateData},
+    );
+  }
 }
