@@ -1,12 +1,10 @@
 import 'dart:async';
-import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:file_picker/file_picker.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/plugins/libraries/widgets/file_drop_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_item.dart';
 import '../l10n/libraries_localizations.dart';
 
@@ -21,64 +19,48 @@ class LibraryGalleryView extends StatefulWidget {
   });
 
   @override
-  _LibraryGalleryViewState createState() => _LibraryGalleryViewState();
+  LibraryGalleryViewState createState() => LibraryGalleryViewState();
 }
 
-class _LibraryGalleryViewState extends State<LibraryGalleryView> {
-  final _uploadingFiles = <String, double>{};
+class LibraryGalleryViewState extends State<LibraryGalleryView> {
+  Future<void> _uploadFiles(List<File> filesToUpload) async {
+    final localizations = LibrariesLocalizations.of(context);
+    if (localizations == null) return;
 
-  Future<void> _uploadFiles() async {
-    final localizations = LibrariesLocalizations.of(context)!;
-    final result = await FilePicker.platform.pickFiles(
-      allowMultiple: true,
-      type: FileType.any,
-      withData: true, // 尝试读取文件内容
-    );
-
-    if (result != null && result.files.isNotEmpty) {
-      setState(() {
-        for (final file in result.files) {
-          _uploadingFiles[file.name] = 0.0;
-        }
-      });
-
-      try {
-        await _batchUploadFiles(result.files);
-        ScaffoldMessenger.of(
-          context,
-        ).showSnackBar(SnackBar(content: Text(localizations.uploadComplete)));
-      } catch (e) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('${localizations.uploadFailed}: $e')),
-        );
-      } finally {
-        setState(() {
-          _uploadingFiles.clear();
-        });
+    try {
+      for (final file in filesToUpload) {
+        await widget.plugin.libraryController.addFileFromPath(file.path);
       }
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(localizations.uploadComplete)));
+      setState(() {}); // 刷新文件列表
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${localizations.uploadFailed}: $e')),
+      );
     }
   }
 
-  Future<void> _batchUploadFiles(List<PlatformFile> files) async {
-    final completer = Completer<void>();
-    final futures = <Future>[];
-
-    for (final file in files) {
-      futures.add(_uploadSingleFile(file));
-    }
-
-    await Future.wait(futures);
-    completer.complete();
-    return completer.future;
-  }
-
-  Future<void> _uploadSingleFile(PlatformFile file) async {
-    await widget.plugin.libraryController.addFileFromPath(file.path!);
+  void _showUploadDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) => FileDropDialog(
+            plugin: widget.plugin,
+            onFilesSelected: (files) async {
+              if (files.isNotEmpty) {
+                await _uploadFiles(files);
+              }
+            },
+          ),
+    );
   }
 
   @override
   Widget build(BuildContext context) {
-    final localizations = LibrariesLocalizations.of(context)!;
+    final localizations = LibrariesLocalizations.of(context);
+    if (localizations == null) return Container();
 
     return Scaffold(
       appBar: AppBar(
@@ -96,17 +78,13 @@ class _LibraryGalleryViewState extends State<LibraryGalleryView> {
               // TODO: 实现过滤功能
             },
           ),
-          IconButton(icon: Icon(Icons.file_upload), onPressed: _uploadFiles),
+          IconButton(
+            icon: Icon(Icons.file_upload),
+            onPressed: _showUploadDialog,
+          ),
         ],
       ),
-      bottomSheet:
-          _uploadingFiles.isNotEmpty
-              ? LinearProgressIndicator(
-                value:
-                    _uploadingFiles.values.reduce((a, b) => a + b) /
-                    _uploadingFiles.length,
-              )
-              : null,
+      bottomSheet: null,
       body: FutureBuilder<List<LibraryFile>>(
         future: widget.plugin.libraryController.getFiles(),
         builder: (context, snapshot) {

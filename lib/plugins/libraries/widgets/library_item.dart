@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 // ignore: depend_on_referenced_packages
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
@@ -20,7 +21,8 @@ class LibraryItem extends StatelessWidget {
 
         // 添加文件路径或URL到payload
         if (file.path != null) {
-          item.add(Formats.fileUri(Uri.tryParse(file.path!)!));
+          final path = filePathToUri(file.path!);
+          item.add(Formats.fileUri(Uri.tryParse(path)!));
         }
         return item;
       },

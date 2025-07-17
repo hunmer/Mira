@@ -392,6 +392,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     // 构建文件数据
     final fileData = {
+      'path': file.path,
       'name': file.path.split(Platform.pathSeparator).last,
       'created_at': stat.modified.millisecondsSinceEpoch,
       'imported_at': DateTime.now().millisecondsSinceEpoch,

@@ -87,7 +87,6 @@ class WebSocketServer {
                   'path': data['path'],
                   ...data,
                 };
-                fileMeta.remove('path');
                 id = await _dbService.createFileFromPath(filePath, fileMeta);
               } else {
                 id = await _dbService.createFile({
