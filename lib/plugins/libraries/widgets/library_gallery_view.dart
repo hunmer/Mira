@@ -9,6 +9,8 @@ import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_drop_dialog.dart';
+import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
+import 'package:mira/plugins/libraries/widgets/library_file_detail_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_item.dart';
 import 'package:mira/plugins/libraries/widgets/upload_queue_dialog.dart';
 import '../l10n/libraries_localizations.dart';
@@ -33,6 +35,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   StreamSubscription<int>? _progressSubscription;
   bool _isSelectionMode = false;
   Set<int> _selectedFileIds = {};
+  Map<String, dynamic> _filterOptions = {};
 
   @override
   void initState() {
@@ -49,11 +52,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     );
   }
 
+  // TODO 单个组件更新，而不是全部更新
   void _onThumbnailGenerated(EventArgs args) {
     if (args is! ItemEventArgs) return;
-    final id = args.item['id'];
-    final thumb = args.item['thumbPath'];
-    if (id != null && thumb != null) {
+    if (mounted) {
       setState(() {});
     }
   }
@@ -159,11 +161,24 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                       // TODO: 实现搜索功能
                     },
                   ),
-                  IconButton(
-                    icon: Icon(Icons.filter_list),
-                    onPressed: () {
-                      // TODO: 实现过滤功能
-                    },
+                  Stack(
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.filter_list),
+                        onPressed: () async {
+                          final filterOptions =
+                              await showDialog<Map<String, dynamic>>(
+                                context: context,
+                                builder: (context) => FileFilterDialog(),
+                              );
+                          if (filterOptions != null) {
+                            setState(() {
+                              _filterOptions = filterOptions;
+                            });
+                          }
+                        },
+                      ),
+                    ],
                   ),
                   IconButton(
                     icon: Icon(Icons.check_box),
@@ -234,7 +249,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               )
               : null,
       body: FutureBuilder<List<LibraryFile>>(
-        future: widget.plugin.libraryController.getFiles(),
+        future: widget.plugin.libraryController.findFiles(
+          query: _filterOptions,
+        ),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
             return Center(child: CircularProgressIndicator());
@@ -272,7 +289,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                       _selectedFileIds = newSelectedIds;
                     });
                   } else {
-                    // 原来的点击逻辑
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (context) => LibraryFileDetailView(file: file),
+                      ),
+                    );
                   }
                 },
                 onLongPress: () {

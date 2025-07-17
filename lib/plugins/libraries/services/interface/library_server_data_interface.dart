@@ -18,6 +18,7 @@ abstract class LibraryServerDataInterface {
     int limit = 100,
     int offset = 0,
     String? select = '*',
+    Map<String, dynamic>? filters,
   });
 
   // 文件夹表操作

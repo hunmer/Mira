@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/material.dart';
 import 'package:xxh3/xxh3.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'library_server_data_interface.dart';
@@ -161,6 +162,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     int limit = 100,
     int offset = 0,
     String? select = '*',
+    Map<String, dynamic>? filters,
   }) async {
     var whereClauses = <String>[];
     var params = <dynamic>[];
@@ -185,6 +187,51 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     if (minStars != null) {
       whereClauses.add('stars >= ?');
       params.add(minStars);
+    }
+
+    // 处理文件过滤条件
+    if (filters != null) {
+      if (filters['name'] != null) {
+        whereClauses.add('name LIKE ?');
+        params.add('%${filters['name']}%');
+      }
+
+      if (filters['dateRange'] != null) {
+        final dateRange = filters['dateRange'] as DateTimeRange;
+        whereClauses.add('created_at BETWEEN ? AND ?');
+        params.addAll([
+          dateRange.start.millisecondsSinceEpoch,
+          dateRange.end.millisecondsSinceEpoch,
+        ]);
+      }
+
+      if (filters['minSize'] != null) {
+        whereClauses.add('size >= ?');
+        params.add(filters['minSize'] * 1024); // 转换为字节
+      }
+
+      if (filters['maxSize'] != null) {
+        whereClauses.add('size <= ?');
+        params.add(filters['maxSize'] * 1024); // 转换为字节
+      }
+
+      if (filters['minRating'] != null) {
+        whereClauses.add('stars >= ?');
+        params.add(filters['minRating']);
+      }
+
+      if (filters['tags'] != null) {
+        final tags = filters['tags'] as List<String>;
+        whereClauses.add('''
+          id IN (
+            SELECT file_id FROM file_tags 
+            WHERE tag_id IN (
+              SELECT id FROM tags WHERE title IN (${List.filled(tags.length, '?').join(',')})
+            )
+          )
+        ''');
+        params.addAll(tags);
+      }
     }
 
     final where =
@@ -350,7 +397,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   }
 
   // 辅助方法：将数据库行转换为Map
-  Map<String, dynamic> _rowToMap(ResultSet result, Row row) {
+  Map<String, dynamic> _rowToMap(ResultSet result, row) {
     final map = <String, dynamic>{};
     for (var i = 0; i < result.columnNames.length; i++) {
       map[result.columnNames[i]] = row[i];

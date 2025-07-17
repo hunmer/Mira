@@ -184,6 +184,7 @@ class WebSocketServer {
                   limit: payload['limit'] as int? ?? 100,
                   offset: payload['offset'] as int? ?? 0,
                   select: payload['select'] as String? ?? '*',
+                  filters: payload['query'] as Map<String, dynamic>?,
                 );
                 for (var record in records) {
                   if (record['thumb'] == 1) {

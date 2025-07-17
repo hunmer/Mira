@@ -183,10 +183,13 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> findFiles({
-    Map<String, dynamic>? query,
-  }) async {
-    return await _sendRequest(action: 'read', type: 'file', query: query ?? {});
+  Future<List<LibraryFile>> findFiles({Map<String, dynamic>? query}) async {
+    final result = await _sendRequest(
+      action: 'read',
+      type: 'file',
+      query: query ?? {},
+    );
+    return (result as List).map((json) => LibraryFile.fromMap(json)).toList();
   }
 
   @override
