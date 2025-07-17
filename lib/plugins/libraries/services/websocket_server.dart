@@ -1,8 +1,12 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:mira/core/event/event.dart';
+import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_sqlite5.dart';
+import 'package:mira/plugins/libraries/services/plugins/thumb_generator.dart';
+import 'package:mira/plugins/libraries/services/server_event_manager.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
@@ -12,12 +16,20 @@ class WebSocketServer {
   final LibraryServerDataInterface _dbService;
   late final _basePath;
   HttpServer? _server;
+  late final ServerEventManager _eventManager;
+
+  final Set<WebSocketChannel> _connectedClients = {};
+
+  ServerEventManager get eventManager => _eventManager;
+
+  late final ThumbGenerator _thumbGenerator;
 
   WebSocketServer(this.port, {Map<String, dynamic>? dbConfig})
     : _dbService = LibraryServerDataSQLite5() {
     if (dbConfig != null) {
       _dbService.initialize(dbConfig);
     }
+    _thumbGenerator = ThumbGenerator(this, _dbService);
   }
 
   Future<void> start(String basePath) async {
@@ -43,6 +55,7 @@ class WebSocketServer {
   }
 
   void _handleConnection(WebSocketChannel channel) {
+    _connectedClients.add(channel);
     channel.stream.listen(
       (message) async {
         try {
@@ -58,7 +71,10 @@ class WebSocketServer {
           );
         }
       },
-      onDone: () => print('Client disconnected'),
+      onDone: () {
+        print('Client disconnected');
+        _connectedClients.remove(channel);
+      },
       onError: (error) => print('Error: $error'),
     );
   }
@@ -281,9 +297,26 @@ class WebSocketServer {
     }
   }
 
+  /// 广播事件给所有客户端
+  void broadcastEvent(String eventName, EventArgs args) {
+    final message = jsonEncode({
+      'event': eventName,
+      'data': {'eventName': eventName, 'args': args},
+    });
+    for (final client in _connectedClients) {
+      client.sink.add(message);
+    }
+  }
+
+  /// 获取项目路径
+  String getItemPath(int id) {
+    return '$_basePath$id/';
+  }
+
   Future<void> stop() async {
     await _dbService.close();
     await _server?.close();
+    _connectedClients.clear();
     print('WebSocket server stopped');
   }
 }

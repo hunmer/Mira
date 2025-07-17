@@ -10,10 +10,15 @@ class UploadQueueService {
       StreamController<int>.broadcast();
   int _totalFiles = 0;
   int _completedFiles = 0;
+  int _failedFiles = 0;
+  final List<File> _completedFileList = [];
+  final List<File> _failedFileList = [];
 
   UploadQueueService(this.plugin);
 
   Stream<int> get progressStream => _progressController.stream;
+  List<File> get completedFiles => _completedFileList;
+  List<File> get failedFiles => _failedFileList;
 
   Future<void> addFiles(List<File> files) async {
     _totalFiles += files.length;
@@ -24,12 +29,14 @@ class UploadQueueService {
         try {
           await plugin.libraryController.addFileFromPath(file.path);
           _completedFiles++;
+          _completedFileList.add(file);
           _progressController.add(_completedFiles);
         } catch (e) {
           // 错误处理
           _completedFiles++;
+          _failedFiles++;
+          _failedFileList.add(file);
           _progressController.add(_completedFiles);
-          rethrow;
         }
       });
     }
@@ -46,5 +53,9 @@ class UploadQueueService {
 
   double get progress {
     return _totalFiles == 0 ? 0 : _completedFiles / _totalFiles;
+  }
+
+  List<File> get pendingFiles {
+    return [];
   }
 }

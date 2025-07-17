@@ -33,6 +33,13 @@ class LibrariesLocalizations {
   String get username => 'Username';
   String get password => 'Password';
 
+  // 上传队列相关文本
+  String get uploadQueue => 'Upload Queue';
+  String get pending => 'Pending';
+  String get completed => 'Completed';
+  String get failed => 'Failed';
+  String get close => 'Close';
+
   // 文件相关文本
   String get filesTitle => 'Files';
   String get fileName => 'File Name';
