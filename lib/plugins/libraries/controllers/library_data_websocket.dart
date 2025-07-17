@@ -1,7 +1,9 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'library_data_interface.dart';
@@ -40,9 +42,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
         timeout,
         onTimeout: () {
           _responseHandlers.remove(requestId);
-          throw TimeoutException(
-            '$action request timed out after ${timeout.inSeconds} seconds',
-          );
+          print('$action request timed out after ${timeout.inSeconds} seconds');
         },
       );
     } catch (e) {
@@ -93,6 +93,14 @@ class LibraryDataWebSocket implements LibraryDataInterface {
           debugPrint(
             'No matching completer found for request ID: ${response['requestId']}',
           );
+        }
+      } else {
+        final eventName = response['event'];
+        final data = response['data'];
+        switch (eventName) {
+          case 'thumbnail_generated':
+            EventManager.instance.broadcast(eventName, ItemEventArgs(data));
+            break;
         }
       }
     } catch (e) {
@@ -146,12 +154,8 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
-  Future<void> deleteFile(String id) async {
-    await _sendRequest(
-      action: 'delete',
-      type: 'file',
-      data: {'id': int.parse(id)},
-    );
+  Future<void> deleteFile(int id) async {
+    await _sendRequest(action: 'delete', type: 'file', data: {'id': id});
   }
 
   @override

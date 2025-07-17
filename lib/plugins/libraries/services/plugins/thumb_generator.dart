@@ -1,6 +1,7 @@
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:mira/core/event/event.dart';
+import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/websocket_server.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:image/image.dart' as img;
@@ -20,7 +21,7 @@ class ThumbGenerator {
     if (args is! ItemEventArgs) return;
 
     try {
-      final file = await _dbService.getFile(args.itemId);
+      final file = await _dbService.getFile(args.item['id']);
       if (file == null) return;
 
       final path = file['path'] as String?;
@@ -29,7 +30,7 @@ class ThumbGenerator {
       final fileType = _getFileType(path);
       if (fileType == null) return;
 
-      final thumbPath = '${_server.getItemPath(args.itemId)}preview.png';
+      final thumbPath = '${_server.getItemPath(args)}preview.png';
       final thumbFile = File(thumbPath);
 
       if (!thumbFile.parent.existsSync()) {
@@ -45,11 +46,9 @@ class ThumbGenerator {
           break;
       }
 
-      // 更新数据库中的缩略图路径
-      await _dbService.updateFile(args.itemId, {'thumbnail': thumbPath});
-
+      args.item['thumbPath'] = thumbPath;
       // 通知客户端缩略图已生成
-      _server.eventManager.broadcast('thumbnail_generated', args);
+      _server.eventManager.broadcastToClients('thumbnail_generated', args);
     } catch (e) {
       debugPrint('Failed to generate thumbnail: $e');
     }
@@ -59,7 +58,7 @@ class ThumbGenerator {
     if (args is! ItemEventArgs) return;
 
     try {
-      final thumbPath = '${_server.getItemPath(args.itemId)}preview.png';
+      final thumbPath = '${_server.getItemPath(args)}preview.png';
       final thumbFile = File(thumbPath);
 
       if (thumbFile.existsSync()) {
@@ -135,19 +134,3 @@ class ThumbGenerator {
 }
 
 enum FileType { image, video }
-
-/// 自定义事件参数
-class ItemEventArgs extends EventArgs {
-  final int itemId;
-
-  ItemEventArgs(this.itemId, [String eventName = '']) : super(eventName);
-
-  @override
-  Map<String, dynamic> toJson() {
-    return {
-      'eventName': eventName,
-      'whenOccurred': whenOccurred.toIso8601String(),
-      'itemId': itemId,
-    };
-  }
-}

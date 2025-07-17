@@ -73,7 +73,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   // 文件表操作实现
   @override
-  Future<int> createFile(Map<String, dynamic> fileData) async {
+  Future<Map<String, dynamic>> createFile(Map<String, dynamic> fileData) async {
     final stmt = _db!.prepare('''
       INSERT INTO files(
         name, created_at, imported_at, size, hash, 
@@ -95,7 +95,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       fileData['url'],
       fileData['path'],
     ]);
-    return _db!.lastInsertRowId;
+    return {'id': _db!.lastInsertRowId, ...fileData};
   }
 
   @override
@@ -377,7 +377,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   }
 
   @override
-  Future<int> createFileFromPath(
+  Future<Map<String, dynamic>> createFileFromPath(
     String filePath,
     Map<String, dynamic> fileMeta,
   ) async {

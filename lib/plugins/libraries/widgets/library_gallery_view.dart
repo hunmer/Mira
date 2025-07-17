@@ -1,9 +1,11 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_drop_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_item.dart';
@@ -28,6 +30,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late UploadQueueService _uploadQueue;
   double _uploadProgress = 0;
   StreamSubscription<int>? _progressSubscription;
+  bool _isSelectionMode = false;
+  Set<int> _selectedFileIds = {};
 
   @override
   void initState() {
@@ -38,6 +42,20 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         _uploadProgress = _uploadQueue.progress;
       });
     });
+    EventManager.instance.subscribe(
+      'thumbnail_generated',
+      _onThumbnailGenerated,
+    );
+  }
+
+  void _onThumbnailGenerated(ItemEventArgs args) {
+    final id = args.item['id'];
+    final thumb = args.item['thumbPath'];
+    if (id != null && thumb != null) {
+      setState(() {
+        widget.plugin.libraryController.updateFileThumb(id, thumb);
+      });
+    }
   }
 
   @override
@@ -69,6 +87,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     }
   }
 
+  void _deleteFile(LibraryFile file) {
+    widget.plugin.libraryController.deleteFile(file.id);
+    setState(() {});
+  }
+
   void _showUploadDialog() {
     showDialog(
       context: context,
@@ -91,64 +114,116 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(localizations.filesTitle),
-        actions: [
-          IconButton(
-            icon: Icon(Icons.search),
-            onPressed: () {
-              // TODO: 实现搜索功能
-            },
-          ),
-          IconButton(
-            icon: Icon(Icons.filter_list),
-            onPressed: () {
-              // TODO: 实现过滤功能
-            },
-          ),
-          Stack(
-            alignment: Alignment.center,
-            children: [
-              IconButton(
-                icon: Icon(Icons.file_upload),
-                onPressed: _showUploadDialog,
-              ),
-              StreamBuilder<int>(
-                stream: _uploadQueue.progressStream,
-                builder: (context, snapshot) {
-                  final pendingCount = _uploadQueue.pendingFiles.length;
-                  if (pendingCount == 0) return Container();
-                  return Positioned(
-                    top: 8,
-                    right: 8,
-                    child: Container(
-                      padding: EdgeInsets.all(2),
-                      decoration: BoxDecoration(
-                        color: Colors.red,
-                        borderRadius: BorderRadius.circular(10),
+        title: Text(
+          _isSelectionMode
+              ? '已选择 ${_selectedFileIds.length} 项'
+              : localizations.filesTitle,
+        ),
+        actions:
+            _isSelectionMode
+                ? [
+                  IconButton(
+                    icon: Icon(Icons.select_all),
+                    onPressed: () {
+                      final files = widget.plugin.libraryController.getFiles();
+                      files.then((fileList) {
+                        setState(() {
+                          final allFileIds = fileList.map((f) => f.id).toSet();
+                          if (_selectedFileIds.length == allFileIds.length) {
+                            _selectedFileIds.clear();
+                          } else {
+                            _selectedFileIds = allFileIds;
+                          }
+                        });
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.close),
+                    onPressed: () {
+                      if (_selectedFileIds.isNotEmpty) {
+                        setState(() {
+                          _selectedFileIds.clear();
+                        });
+                      }
+                      setState(() {
+                        _isSelectionMode = false;
+                      });
+                    },
+                  ),
+                ]
+                : [
+                  IconButton(
+                    icon: Icon(Icons.search),
+                    onPressed: () {
+                      // TODO: 实现搜索功能
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.filter_list),
+                    onPressed: () {
+                      // TODO: 实现过滤功能
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.check_box),
+                    onPressed: () {
+                      setState(() {
+                        _isSelectionMode = true;
+                      });
+                    },
+                  ),
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(
+                        icon: Icon(Icons.file_upload),
+                        onPressed: _showUploadDialog,
                       ),
-                      constraints: BoxConstraints(minWidth: 16, minHeight: 16),
-                      child: Text(
-                        '$pendingCount',
-                        style: TextStyle(color: Colors.white, fontSize: 10),
-                        textAlign: TextAlign.center,
+                      StreamBuilder<int>(
+                        stream: _uploadQueue.progressStream,
+                        builder: (context, snapshot) {
+                          final pendingCount = _uploadQueue.pendingFiles.length;
+                          if (pendingCount == 0) return Container();
+                          return Positioned(
+                            top: 8,
+                            right: 8,
+                            child: Container(
+                              padding: EdgeInsets.all(2),
+                              decoration: BoxDecoration(
+                                color: Colors.red,
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              constraints: BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child: Text(
+                                '$pendingCount',
+                                style: TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        },
                       ),
-                    ),
-                  );
-                },
-              ),
-            ],
-          ),
-          IconButton(
-            icon: Icon(Icons.cloud_upload),
-            onPressed: () {
-              showDialog(
-                context: context,
-                builder:
-                    (context) => UploadQueueDialog(uploadQueue: _uploadQueue),
-              );
-            },
-          ),
-        ],
+                    ],
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.cloud_upload),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder:
+                            (context) =>
+                                UploadQueueDialog(uploadQueue: _uploadQueue),
+                      );
+                    },
+                  ),
+                ],
       ),
       bottomSheet:
           _uploadProgress > 0
@@ -178,7 +253,48 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             itemCount: files.length,
             itemBuilder: (context, index) {
               final file = files[index];
-              return LibraryItem(file: file, onTap: () => {});
+              return LibraryItem(
+                file: file,
+                isSelected:
+                    _isSelectionMode && _selectedFileIds.contains(file.id),
+                useThumbnail:
+                    file.thumb != null ||
+                    ['audio', 'video'].contains(file.type?.toLowerCase()),
+                onTap: () {
+                  if (_isSelectionMode) {
+                    final newSelectedIds = Set<int>.from(_selectedFileIds);
+                    if (newSelectedIds.contains(file.id)) {
+                      newSelectedIds.remove(file.id);
+                    } else {
+                      newSelectedIds.add(file.id);
+                    }
+                    setState(() {
+                      _selectedFileIds = newSelectedIds;
+                    });
+                  } else {
+                    // 原来的点击逻辑
+                  }
+                },
+                onLongPress: () {
+                  showModalBottomSheet(
+                    context: context,
+                    builder:
+                        (context) => Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            ListTile(
+                              leading: Icon(Icons.delete),
+                              title: Text('删除'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                _deleteFile(file);
+                              },
+                            ),
+                          ],
+                        ),
+                  );
+                },
+              );
             },
           );
         },

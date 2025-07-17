@@ -3,8 +3,8 @@ abstract class LibraryServerDataInterface {
   Future<void> initialize(Map<String, dynamic> config);
 
   // 文件表操作
-  Future<int> createFile(Map<String, dynamic> fileData);
-  Future<int> createFileFromPath(
+  Future<Map<String, dynamic>> createFile(Map<String, dynamic> fileData);
+  Future<Map<String, dynamic>> createFileFromPath(
     String filePath,
     Map<String, dynamic> fileMeta,
   );

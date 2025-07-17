@@ -1,14 +1,23 @@
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
-// ignore: depend_on_referenced_packages
+import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class LibraryItem extends StatelessWidget {
   final LibraryFile file;
+  final bool isSelected;
   final VoidCallback? onTap;
 
-  const LibraryItem({required this.file, this.onTap, super.key});
+  const LibraryItem({
+    required this.file,
+    this.isSelected = false,
+    this.onTap,
+    this.onLongPress,
+    super.key,
+  });
+
+  final VoidCallback? onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -28,20 +37,44 @@ class LibraryItem extends StatelessWidget {
       },
       allowedOperations: () => [DropOperation.copy],
       child: DraggableWidget(
-        child: Card(
-          child: InkWell(
-            onTap: onTap,
-            child: Column(
+        child: GestureDetector(
+          onLongPress: onLongPress,
+          child: Card(
+            child: Stack(
               children: [
-                Expanded(child: Icon(Icons.insert_drive_file, size: 48)),
-                Padding(
-                  padding: const EdgeInsets.all(8.0),
-                  child: Text(
-                    file.name,
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
+                InkWell(
+                  onTap: onTap,
+                  child: SizedBox(
+                    width: double.infinity,
+                    child: Column(
+                      children: [
+                        Expanded(
+                          child: Icon(Icons.insert_drive_file, size: 48),
+                        ),
+                        Padding(
+                          padding: const EdgeInsets.all(8.0),
+                          child: Text(
+                            file.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 ),
+                if (isSelected)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      decoration: BoxDecoration(
+                        color: Colors.blue,
+                        shape: BoxShape.circle,
+                      ),
+                      child: Icon(Icons.check, color: Colors.white, size: 20),
+                    ),
+                  ),
               ],
             ),
           ),

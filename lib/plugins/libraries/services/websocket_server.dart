@@ -1,12 +1,12 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:mira/core/event/event.dart';
 import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_sqlite5.dart';
 import 'package:mira/plugins/libraries/services/plugins/thumb_generator.dart';
 import 'package:mira/plugins/libraries/services/server_event_manager.dart';
+import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
@@ -29,6 +29,7 @@ class WebSocketServer {
     if (dbConfig != null) {
       _dbService.initialize(dbConfig);
     }
+    _eventManager = ServerEventManager(this);
     _thumbGenerator = ThumbGenerator(this, _dbService);
   }
 
@@ -94,6 +95,7 @@ class WebSocketServer {
           int id;
           switch (recordType) {
             case 'file':
+              var item;
               if (data.containsKey('path')) {
                 // 处理从文件路径添加的情况
                 final filePath = data['path'] as String;
@@ -103,21 +105,35 @@ class WebSocketServer {
                   'path': data['path'],
                   ...data,
                 };
-                id = await _dbService.createFileFromPath(filePath, fileMeta);
+                item = await _dbService.createFileFromPath(filePath, fileMeta);
               } else {
-                id = await _dbService.createFile({
+                item = await _dbService.createFile({
                   'reference': data['reference'],
                   'url': data['url'],
                   'path': data['path'],
                   ...data,
                 });
               }
+              id = item['id'];
+              _eventManager.broadcastToClients(
+                'file_created',
+                ItemEventArgs({'id': id}),
+              );
+              _eventManager.broadcast('file_created', ItemEventArgs(item));
               break;
             case 'folder':
               id = await _dbService.createFolder(data);
+              _eventManager.broadcastToClients(
+                'folder_created',
+                ItemEventArgs({'id': id}),
+              );
               break;
             case 'tag':
               id = await _dbService.createTag(data);
+              _eventManager.broadcastToClients(
+                'tag_created',
+                ItemEventArgs({'id': id}),
+              );
               break;
             default:
               throw ArgumentError('Invalid record type: $recordType');
@@ -200,12 +216,30 @@ class WebSocketServer {
           switch (recordType) {
             case 'file':
               success = await _dbService.updateFile(id, data);
+              if (success) {
+                _eventManager.broadcastToClients(
+                  'file_updated',
+                  ItemEventArgs({'id': id}),
+                );
+              }
               break;
             case 'folder':
               success = await _dbService.updateFolder(id, data);
+              if (success) {
+                _eventManager.broadcastToClients(
+                  'folder_updated',
+                  ItemEventArgs({'id': id}),
+                );
+              }
               break;
             case 'tag':
               success = await _dbService.updateTag(id, data);
+              if (success) {
+                _eventManager.broadcastToClients(
+                  'tag_updated',
+                  ItemEventArgs({'id': id}),
+                );
+              }
               break;
             default:
               throw ArgumentError('Invalid record type: $recordType');
@@ -221,17 +255,39 @@ class WebSocketServer {
           break;
         case 'delete':
           final recordType = payload['type'] as String;
-          final id = payload['id'] as int;
+          final id = data['payload']['data']['id'];
           bool success;
           switch (recordType) {
             case 'file':
               success = await _dbService.deleteFile(id);
+              if (success) {
+                _eventManager.broadcastToClients(
+                  'file_deleted',
+                  ItemEventArgs({'id': id}),
+                );
+                _eventManager.broadcast(
+                  'file_deleted',
+                  ItemEventArgs({'id': id}),
+                );
+              }
               break;
             case 'folder':
               success = await _dbService.deleteFolder(id);
+              if (success) {
+                _eventManager.broadcastToClients(
+                  'folder_deleted',
+                  ItemEventArgs({'id': id}),
+                );
+              }
               break;
             case 'tag':
               success = await _dbService.deleteTag(id);
+              if (success) {
+                _eventManager.broadcastToClients(
+                  'tag_deleted',
+                  ItemEventArgs({'id': id}),
+                );
+              }
               break;
             default:
               throw ArgumentError('Invalid record type: $recordType');
@@ -240,36 +296,6 @@ class WebSocketServer {
             jsonEncode({
               'status': success ? 'success' : 'failed',
               'message': success ? 'Record deleted' : 'Delete failed',
-              'requestId':
-                  data.containsKey('requestId') ? data['requestId'] : null,
-            }),
-          );
-          break;
-        case 'beginTransaction':
-          await _dbService.beginTransaction();
-          channel.sink.add(
-            jsonEncode({
-              'status': 'success',
-              'requestId':
-                  data.containsKey('requestId') ? data['requestId'] : null,
-            }),
-          );
-          break;
-        case 'commitTransaction':
-          await _dbService.commitTransaction();
-          channel.sink.add(
-            jsonEncode({
-              'status': 'success',
-              'requestId':
-                  data.containsKey('requestId') ? data['requestId'] : null,
-            }),
-          );
-          break;
-        case 'rollbackTransaction':
-          await _dbService.rollbackTransaction();
-          channel.sink.add(
-            jsonEncode({
-              'status': 'success',
               'requestId':
                   data.containsKey('requestId') ? data['requestId'] : null,
             }),
@@ -299,18 +325,15 @@ class WebSocketServer {
 
   /// 广播事件给所有客户端
   void broadcastEvent(String eventName, EventArgs args) {
-    final message = jsonEncode({
-      'event': eventName,
-      'data': {'eventName': eventName, 'args': args},
-    });
+    final message = jsonEncode({'event': eventName, 'data': args});
     for (final client in _connectedClients) {
       client.sink.add(message);
     }
   }
 
   /// 获取项目路径
-  String getItemPath(int id) {
-    return '$_basePath$id/';
+  String getItemPath(ItemEventArgs event) {
+    return '$_basePath\\${event.item['hash']}\\';
   }
 
   Future<void> stop() async {

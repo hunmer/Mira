@@ -1,5 +1,5 @@
 class LibraryFile {
-  final String id;
+  final int id;
   final String name;
   final DateTime createdAt;
   final DateTime importedAt;
@@ -44,7 +44,7 @@ class LibraryFile {
             : DateTime.parse(map['importedAt'] ?? '1970-01-01');
 
     return LibraryFile(
-      id: map['id']?.toString() ?? '',
+      id: map['id'],
       name: map['name'] ?? '',
       createdAt: createdAt,
       importedAt: importedAt,
