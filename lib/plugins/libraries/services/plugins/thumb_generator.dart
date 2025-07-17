@@ -60,7 +60,7 @@ class ThumbGenerator {
     if (args is! ItemEventArgs) return;
 
     try {
-      final thumbPath = '${_server.getItemPath(args)}preview.png';
+      final thumbPath = '${_server.getItemPath(args.item)}preview.png';
       final thumbFile = File(thumbPath);
 
       if (thumbFile.existsSync()) {

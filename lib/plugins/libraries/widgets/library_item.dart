@@ -1,3 +1,5 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
@@ -53,15 +55,27 @@ class LibraryItem extends StatelessWidget {
                         Expanded(
                           child:
                               useThumbnail && file.thumb != null
-                                  ? Image.network(
-                                    file.thumb!,
-                                    fit: BoxFit.cover,
-                                    errorBuilder:
-                                        (context, error, stackTrace) => Icon(
-                                          Icons.insert_drive_file,
-                                          size: 48,
-                                        ),
-                                  )
+                                  ? file.thumb!.startsWith('http')
+                                      ? Image.network(
+                                        file.thumb!,
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Icon(
+                                                  Icons.insert_drive_file,
+                                                  size: 48,
+                                                ),
+                                      )
+                                      : Image.file(
+                                        File(file.thumb!),
+                                        fit: BoxFit.cover,
+                                        errorBuilder:
+                                            (context, error, stackTrace) =>
+                                                Icon(
+                                                  Icons.insert_drive_file,
+                                                  size: 48,
+                                                ),
+                                      )
                                   : Icon(
                                     Icons.insert_drive_file,
                                     size: 48,

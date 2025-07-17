@@ -102,29 +102,37 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   @override
   Future<bool> updateFile(int id, Map<String, dynamic> fileData) async {
-    final stmt = _db!.prepare('''
-      UPDATE files SET
-        name = ?, created_at = ?, imported_at = ?, size = ?, hash = ?,
-        custom_fields = ?, notes = ?, stars = ?, folder_id = ?,
-        reference = ?, url = ?, path = ?, thumb = ?
-      WHERE id = ?
-    ''');
-    stmt.execute([
-      fileData['name'],
-      fileData['created_at'],
-      fileData['imported_at'],
-      fileData['size'],
-      fileData['hash'],
-      fileData['custom_fields'],
-      fileData['notes'],
-      fileData['stars'] ?? 0,
-      fileData['folder_id'],
-      fileData['reference'],
-      fileData['url'],
-      fileData['path'],
-      fileData['thumb'] ?? 0,
-      id,
-    ]);
+    final fields = <String>[];
+    final params = <dynamic>[];
+
+    void addField(String key, dynamic value) {
+      if (fileData.containsKey(key)) {
+        fields.add('$key = ?');
+        params.add(value ?? null);
+      }
+    }
+
+    addField('name', fileData['name']);
+    addField('created_at', fileData['created_at']);
+    addField('imported_at', fileData['imported_at']);
+    addField('size', fileData['size']);
+    addField('hash', fileData['hash']);
+    addField('custom_fields', fileData['custom_fields']);
+    addField('notes', fileData['notes']);
+    addField('stars', fileData['stars'] ?? 0);
+    addField('folder_id', fileData['folder_id']);
+    addField('reference', fileData['reference']);
+    addField('url', fileData['url']);
+    addField('path', fileData['path']);
+    addField('thumb', fileData['thumb'] ?? 0);
+
+    if (fields.isEmpty) return false;
+
+    final query = 'UPDATE files SET ${fields.join(', ')} WHERE id = ?';
+    params.add(id);
+
+    final stmt = _db!.prepare(query);
+    stmt.execute(params);
     return _db!.updatedRows > 0;
   }
 
@@ -378,6 +386,8 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Future<void> close() async {
     _db!.dispose();
   }
+
+  String? _basePath;
 
   @override
   Future<Map<String, dynamic>> createFileFromPath(

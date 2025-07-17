@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mira/core/event/event.dart';
+import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
@@ -258,7 +259,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                     _isSelectionMode && _selectedFileIds.contains(file.id),
                 useThumbnail:
                     file.thumb != null ||
-                    ['audio', 'video'].contains(file.type?.toLowerCase()),
+                    ['audio', 'video'].contains(getFileType(file.name)),
                 onTap: () {
                   if (_isSelectionMode) {
                     final newSelectedIds = Set<int>.from(_selectedFileIds);

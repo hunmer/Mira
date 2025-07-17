@@ -155,6 +155,9 @@ class WebSocketServer {
             switch (recordType) {
               case 'file':
                 record = await _dbService.getFile(id);
+                if (record != null && record['thumb'] == 1) {
+                  record['thumb'] = getItemThumbPath(record);
+                }
                 break;
               case 'folder':
                 record = await _dbService.getFolder(id);
@@ -182,6 +185,11 @@ class WebSocketServer {
                   offset: payload['offset'] as int? ?? 0,
                   select: payload['select'] as String? ?? '*',
                 );
+                for (var record in records) {
+                  if (record['thumb'] == 1) {
+                    record['thumb'] = getItemThumbPath(record);
+                  }
+                }
                 break;
               case 'folder':
                 records = await _dbService.getFolders(
