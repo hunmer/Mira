@@ -26,6 +26,9 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
         notes TEXT,
         stars INTEGER DEFAULT 0,
         folder_id INTEGER,
+        reference TEXT,
+        url TEXT,
+        path TEXT,
         FOREIGN KEY(folder_id) REFERENCES folders(id)
       )
     ''');
@@ -74,8 +77,9 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     final stmt = _db!.prepare('''
       INSERT INTO files(
         name, created_at, imported_at, size, hash, 
-        custom_fields, notes, stars, folder_id
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        custom_fields, notes, stars, folder_id,
+        reference, url, path
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''');
     stmt.execute([
       fileData['name'],
@@ -87,6 +91,9 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       fileData['notes'],
       fileData['stars'] ?? 0,
       fileData['folder_id'],
+      fileData['reference'],
+      fileData['url'],
+      fileData['path'],
     ]);
     return _db!.lastInsertRowId;
   }
@@ -96,7 +103,8 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     final stmt = _db!.prepare('''
       UPDATE files SET
         name = ?, created_at = ?, imported_at = ?, size = ?, hash = ?,
-        custom_fields = ?, notes = ?, stars = ?, folder_id = ?
+        custom_fields = ?, notes = ?, stars = ?, folder_id = ?,
+        reference = ?, url = ?, path = ?
       WHERE id = ?
     ''');
     stmt.execute([
@@ -109,6 +117,9 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       fileData['notes'],
       fileData['stars'] ?? 0,
       fileData['folder_id'],
+      fileData['reference'],
+      fileData['url'],
+      fileData['path'],
       id,
     ]);
     return _db!.updatedRows > 0;

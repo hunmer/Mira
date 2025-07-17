@@ -66,6 +66,7 @@ dependencies:
   cupertino_sidebar: ^1.0.1
   http_multi_server: ^3.2.2
   sqlite3: ^2.7.7
+  super_drag_and_drop: ^0.9.1
 
 dev_dependencies:
   flutter_test:

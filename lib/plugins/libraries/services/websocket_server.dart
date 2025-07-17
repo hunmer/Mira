@@ -81,11 +81,21 @@ class WebSocketServer {
               if (data.containsKey('path')) {
                 // 处理从文件路径添加的情况
                 final filePath = data['path'] as String;
-                final fileMeta = {...data};
+                final fileMeta = {
+                  'reference': data['reference'],
+                  'url': data['url'],
+                  'path': data['path'],
+                  ...data,
+                };
                 fileMeta.remove('path');
                 id = await _dbService.createFileFromPath(filePath, fileMeta);
               } else {
-                id = await _dbService.createFile(data);
+                id = await _dbService.createFile({
+                  'reference': data['reference'],
+                  'url': data['url'],
+                  'path': data['path'],
+                  ...data,
+                });
               }
               break;
             case 'folder':

@@ -7,6 +7,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/plugins/libraries/widgets/library_item.dart';
 import '../l10n/libraries_localizations.dart';
 
 class LibraryGalleryView extends StatefulWidget {
@@ -32,7 +33,6 @@ class _LibraryGalleryViewState extends State<LibraryGalleryView> {
       allowMultiple: true,
       type: FileType.any,
       withData: true, // 尝试读取文件内容
-      allowCompression: false, // 不压缩大文件
     );
 
     if (result != null && result.files.isNotEmpty) {
@@ -127,24 +127,7 @@ class _LibraryGalleryViewState extends State<LibraryGalleryView> {
             itemCount: files.length,
             itemBuilder: (context, index) {
               final file = files[index];
-              return Card(
-                child: InkWell(
-                  onTap: () => {},
-                  child: Column(
-                    children: [
-                      Expanded(child: Icon(Icons.insert_drive_file, size: 48)),
-                      Padding(
-                        padding: const EdgeInsets.all(8.0),
-                        child: Text(
-                          file.name,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              );
+              return LibraryItem(file: file, onTap: () => {});
             },
           );
         },
