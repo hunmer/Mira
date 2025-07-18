@@ -5,16 +5,16 @@ import 'package:fvp/fvp.dart' as fvp;
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:video_player/video_player.dart';
 
-class LibraryFileDetailView extends StatefulWidget {
+class LibraryFilePreviewView extends StatefulWidget {
   final LibraryFile file;
 
-  const LibraryFileDetailView({required this.file, super.key});
+  const LibraryFilePreviewView({required this.file, super.key});
 
   @override
-  State<LibraryFileDetailView> createState() => _LibraryFileDetailViewState();
+  State<LibraryFilePreviewView> createState() => _LibraryFilePreviewViewState();
 }
 
-class _LibraryFileDetailViewState extends State<LibraryFileDetailView> {
+class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
   late VideoPlayerController _controller;
   bool _isPlaying = false;
   bool _isInitialized = false;

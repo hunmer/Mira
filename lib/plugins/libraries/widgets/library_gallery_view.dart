@@ -10,11 +10,10 @@ import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_drop_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
-import 'package:mira/plugins/libraries/widgets/library_file_detail_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_file_preview_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_item.dart';
 import 'package:mira/plugins/libraries/widgets/upload_queue_dialog.dart';
-import 'package:mira/plugins/libraries/widgets/async_tree_view_dialog.dart';
-import 'package:mira/widgets/tree_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import '../l10n/libraries_localizations.dart';
 
 class LibraryGalleryView extends StatefulWidget {
@@ -312,7 +311,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                   } else {
                     Navigator.of(context).push(
                       MaterialPageRoute(
-                        builder: (context) => LibraryFileDetailView(file: file),
+                        builder:
+                            (context) => LibraryFilePreviewView(file: file),
                       ),
                     );
                   }
@@ -358,6 +358,21 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                                         result.map((item) => item.id).toList(),
                                       );
                                 }
+                              },
+                            ),
+                            ListTile(
+                              leading: Icon(Icons.info),
+                              title: Text('详细信息'),
+                              onTap: () {
+                                Navigator.pop(context);
+                                Navigator.of(context).push(
+                                  MaterialPageRoute(
+                                    builder:
+                                        (context) => LibraryFileInformationView(
+                                          file: file,
+                                        ),
+                                  ),
+                                );
                               },
                             ),
                             ListTile(
