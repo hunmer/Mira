@@ -165,6 +165,26 @@ class WebSocketServer {
               case 'tag':
                 record = await _dbService.getTag(id);
                 break;
+              case 'file_folder':
+                final folders = await _dbService.getFileFolders(id);
+                channel.sink.add(
+                  jsonEncode({
+                    'status': 'success',
+                    'data': folders,
+                    'requestId': data['requestId'],
+                  }),
+                );
+                break;
+              case 'file_tag':
+                final tags = await _dbService.getFileTags(id);
+                channel.sink.add(
+                  jsonEncode({
+                    'status': 'success',
+                    'data': tags,
+                    'requestId': data['requestId'],
+                  }),
+                );
+                break;
               default:
                 throw ArgumentError('Invalid record type: $recordType');
             }
@@ -219,12 +239,13 @@ class WebSocketServer {
           break;
         case 'update':
           final recordType = payload['type'] as String;
-          final id = payload['id'] as int;
           final data = payload['data'] as Map<String, dynamic>;
+          final id = data['id'];
+          final values = data['data'];
           bool success;
           switch (recordType) {
             case 'file':
-              success = await _dbService.updateFile(id, data);
+              success = await _dbService.updateFile(id, values);
               if (success) {
                 _eventManager.broadcastToClients(
                   'file_updated',
@@ -233,7 +254,7 @@ class WebSocketServer {
               }
               break;
             case 'folder':
-              success = await _dbService.updateFolder(id, data);
+              success = await _dbService.updateFolder(id, values);
               if (success) {
                 _eventManager.broadcastToClients(
                   'folder_updated',
@@ -242,13 +263,36 @@ class WebSocketServer {
               }
               break;
             case 'tag':
-              success = await _dbService.updateTag(id, data);
+              success = await _dbService.updateTag(id, values);
               if (success) {
                 _eventManager.broadcastToClients(
                   'tag_updated',
                   ItemEventArgs({'id': id}),
                 );
               }
+              break;
+            case 'file_folder':
+              success = await _dbService.setFileFolders(
+                id,
+                values.cast<String>(),
+              );
+              channel.sink.add(
+                jsonEncode({
+                  'status': success ? 'success' : 'failed',
+                  'message': success ? 'File folders updated' : 'Update failed',
+                  'requestId': data['requestId'],
+                }),
+              );
+              break;
+            case 'file_tag':
+              success = await _dbService.setFileTags(id, values.cast<String>());
+              channel.sink.add(
+                jsonEncode({
+                  'status': success ? 'success' : 'failed',
+                  'message': success ? 'File tags updated' : 'Update failed',
+                  'requestId': data['requestId'],
+                }),
+              );
               break;
             default:
               throw ArgumentError('Invalid record type: $recordType');
@@ -310,6 +354,7 @@ class WebSocketServer {
             }),
           );
           break;
+
         default:
           channel.sink.add(
             jsonEncode({

@@ -25,5 +25,12 @@ abstract class LibraryDataInterface {
   Future<List<Map<String, dynamic>>> findTags({Map<String, dynamic>? query});
   Future<List<Map<String, dynamic>>> getTags();
 
+  Future<LibraryFile> getFile(int id);
+  Future<void> updateFile(int id, Map<String, dynamic> updates);
+  Future<List<Map<String, dynamic>>> getFileFolders(int fileId);
+  Future<List<Map<String, dynamic>>> getFileTags(int fileId);
+  Future<void> setFileFolders(int fileId, List<String> folderIds);
+  Future<void> setFileTags(int fileId, List<String> tagIds);
+
   void close();
 }

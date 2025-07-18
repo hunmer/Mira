@@ -465,4 +465,76 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     final hash = xxh3(Uint8List.fromList(bytes));
     return hash.toRadixString(16); // 返回16进制字符串
   }
+
+  @override
+  Future<List<Map<String, dynamic>>> getFileFolders(int fileId) async {
+    final stmt = _db!.prepare('''
+      SELECT f.* FROM folders f
+      JOIN files fi ON fi.folder_id = f.id
+      WHERE fi.id = ?
+    ''');
+    final result = stmt.select([fileId]);
+    return result.map((row) => _rowToMap(result, row)).toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getFileTags(int fileId) async {
+    final stmt = _db!.prepare('''
+      SELECT t.* FROM tags t
+      JOIN file_tags ft ON ft.tag_id = t.id
+      WHERE ft.file_id = ?
+    ''');
+    final result = stmt.select([fileId]);
+    return result.map((row) => _rowToMap(result, row)).toList();
+  }
+
+  @override
+  Future<bool> setFileFolders(int fileId, List<String> folderIds) async {
+    if (folderIds.isEmpty) return false;
+    if (folderIds.length > 1) {
+      throw ArgumentError('A file can only belong to one folder');
+    }
+
+    try {
+      await beginTransaction();
+
+      // 更新文件的folder_id
+      final stmt = _db!.prepare('UPDATE files SET folder_id = ? WHERE id = ?');
+      stmt.execute([folderIds.first, fileId]);
+
+      await commitTransaction();
+      return _db!.updatedRows > 0;
+    } catch (e) {
+      await rollbackTransaction();
+      rethrow;
+    }
+  }
+
+  @override
+  Future<bool> setFileTags(int fileId, List<String> tagIds) async {
+    try {
+      await beginTransaction();
+
+      // 先删除现有的文件标签关系
+      _db!.execute('DELETE FROM file_tags WHERE file_id = ?', [fileId]);
+
+      // 如果tagIds不为空，则插入新的关系
+      if (tagIds.isNotEmpty) {
+        final stmt = _db!.prepare('''
+          INSERT INTO file_tags(file_id, tag_id) 
+          VALUES ${List.filled(tagIds.length, '(?, ?)').join(',')}
+        ''');
+
+        // 构建参数列表 [fileId, tagId1, fileId, tagId2, ...]
+        final params = tagIds.expand((tagId) => [fileId, tagId]).toList();
+        stmt.execute(params);
+      }
+
+      await commitTransaction();
+      return true;
+    } catch (e) {
+      await rollbackTransaction();
+      rethrow;
+    }
+  }
 }

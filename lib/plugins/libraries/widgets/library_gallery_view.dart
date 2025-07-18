@@ -333,7 +333,31 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                                     .plugin
                                     .libraryUIController
                                     .showFolderSelector(context);
-                                print(result);
+                                if (result != null && result.isNotEmpty) {
+                                  await widget.plugin.libraryController
+                                      .setFileFolders(
+                                        file.id,
+                                        result.map((item) => item.id).toList(),
+                                      );
+                                }
+                              },
+                            ),
+                            ListTile(
+                              leading: Icon(Icons.tag),
+                              title: Text('设置标签'),
+                              onTap: () async {
+                                Navigator.pop(context);
+                                final result = await widget
+                                    .plugin
+                                    .libraryUIController
+                                    .showTagSelector(context);
+                                if (result != null && result.isNotEmpty) {
+                                  await widget.plugin.libraryController
+                                      .setFileTags(
+                                        file.id,
+                                        result.map((item) => item.id).toList(),
+                                      );
+                                }
                               },
                             ),
                             ListTile(

@@ -1,7 +1,7 @@
 import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
-import 'package:mira/plugins/libraries/controllers/library_local_data_controller.dart';
+import 'package:mira/plugins/libraries/controllers/localdata_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'controllers/library_data_interface.dart';

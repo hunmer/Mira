@@ -43,6 +43,14 @@ abstract class LibraryServerDataInterface {
     int offset = 0,
   });
 
+  // 文件-文件夹关系操作
+  Future<List<Map<String, dynamic>>> getFileFolders(int fileId);
+  Future<bool> setFileFolders(int fileId, List<String> folderIds);
+
+  // 文件-标签关系操作
+  Future<List<Map<String, dynamic>>> getFileTags(int fileId);
+  Future<bool> setFileTags(int fileId, List<String> tagIds);
+
   /// 开始事务
   Future<void> beginTransaction();
 
