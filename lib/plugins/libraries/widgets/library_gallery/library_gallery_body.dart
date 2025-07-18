@@ -49,6 +49,16 @@ class LibraryGalleryBody extends StatelessWidget {
               useThumbnail:
                   file.thumb != null ||
                   ['audio', 'video'].contains(getFileType(file.name)),
+              displayFields: const {
+                'title',
+                'cover',
+                'rating',
+                'notes',
+                'createdAt',
+                'tags',
+                'folder',
+                'size',
+              },
               onTap: () => onFileSelected(file),
               onLongPress: () {
                 showModalBottomSheet(

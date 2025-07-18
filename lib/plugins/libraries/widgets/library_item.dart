@@ -3,7 +3,6 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
-import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class LibraryItem extends StatelessWidget {
@@ -11,6 +10,7 @@ class LibraryItem extends StatelessWidget {
   final bool isSelected;
   final bool useThumbnail;
   final VoidCallback? onTap;
+  final Set<String> displayFields;
 
   const LibraryItem({
     required this.file,
@@ -18,6 +18,16 @@ class LibraryItem extends StatelessWidget {
     this.useThumbnail = false,
     this.onTap,
     this.onLongPress,
+    this.displayFields = const {
+      'title',
+      'cover',
+      'rating',
+      'notes',
+      'createdAt',
+      'tags',
+      'folder',
+      'size',
+    },
     super.key,
   });
 
@@ -90,10 +100,63 @@ class LibraryItem extends StatelessWidget {
                         ),
                         Padding(
                           padding: const EdgeInsets.all(8.0),
-                          child: Text(
-                            file.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              if (displayFields.contains('title'))
+                                Text(
+                                  file.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              if (displayFields.contains('rating') &&
+                                  file.rating != null)
+                                Row(
+                                  children: List.generate(
+                                    5,
+                                    (index) => Icon(
+                                      index < file.rating!
+                                          ? Icons.star
+                                          : Icons.star_border,
+                                      size: 16,
+                                      color: Colors.amber,
+                                    ),
+                                  ),
+                                ),
+                              if (displayFields.contains('notes') &&
+                                  file.notes != null)
+                                Text(
+                                  file.notes!,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              if (displayFields.contains('createdAt'))
+                                Text(
+                                  '创建: ${file.createdAt.toString().split(' ')[0]}',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              if (displayFields.contains('size'))
+                                Text(
+                                  '大小: ${(file.size / 1024).toStringAsFixed(1)}KB',
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              if (displayFields.contains('tags') &&
+                                  file.tags.isNotEmpty)
+                                Text(
+                                  '标签: ${file.tags.join(', ')}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                              if (displayFields.contains('folder'))
+                                Text(
+                                  '文件夹: ${file.folderId}',
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: Theme.of(context).textTheme.bodySmall,
+                                ),
+                            ],
                           ),
                         ),
                       ],

@@ -75,7 +75,12 @@ class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
           ],
         );
       case 'image':
-        return InteractiveViewer(child: Image.network(widget.file.path!));
+        return InteractiveViewer(
+          child:
+              widget.file.path!.startsWith('http')
+                  ? Image.network(widget.file.path!)
+                  : Image.file(File(widget.file.path!)),
+        );
       case 'pdf':
         return const Center(child: Text('PDF预览将在未来版本支持'));
       default:

@@ -125,4 +125,11 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
       ),
     );
   }
+
+  // 销毁
+  @override
+  void dispose() {
+    super.dispose();
+    widget.plugin.server.stop();
+  }
 }

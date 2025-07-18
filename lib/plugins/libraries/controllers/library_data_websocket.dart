@@ -237,9 +237,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   @override
   Future<List<Map<String, dynamic>>> getTags() async {
     final response = await _sendRequest(action: 'read', type: 'tag');
-    return response.isNotEmpty
-        ? List<Map<String, dynamic>>.from(response['data'])
-        : [];
+    return response is List ? List<Map<String, dynamic>>.from(response) : [];
   }
 
   @override
@@ -316,11 +314,11 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
-  Future<void> setFileFolders(int id, List<String> folderIds) async {
+  Future<void> setFileFolders(int id, String folderId) async {
     await _sendRequest(
       action: 'update',
       type: 'file_folder',
-      data: {'id': id, 'data': folderIds},
+      data: {'id': id, 'data': folderId},
     );
   }
 

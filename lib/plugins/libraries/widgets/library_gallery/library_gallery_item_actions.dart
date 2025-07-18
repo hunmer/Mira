@@ -31,7 +31,7 @@ class LibraryGalleryItemActions extends StatelessWidget {
             if (result != null && result.isNotEmpty) {
               await plugin.libraryController.setFileFolders(
                 file.id,
-                result.map((item) => item.id).toList(),
+                result.first.id,
               );
             }
           },

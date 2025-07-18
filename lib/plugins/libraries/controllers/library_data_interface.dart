@@ -29,7 +29,7 @@ abstract class LibraryDataInterface {
   Future<void> updateFile(int id, Map<String, dynamic> updates);
   Future<List<Map<String, dynamic>>> getFileFolders(int fileId);
   Future<List<Map<String, dynamic>>> getFileTags(int fileId);
-  Future<void> setFileFolders(int fileId, List<String> folderIds);
+  Future<void> setFileFolders(int fileId, String folderId);
   Future<void> setFileTags(int fileId, List<String> tagIds);
 
   void close();

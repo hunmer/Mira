@@ -155,8 +155,9 @@ class WebSocketServer {
             switch (recordType) {
               case 'file':
                 record = await _dbService.getFile(id);
-                if (record != null && record['thumb'] == 1) {
-                  record['thumb'] = getItemThumbPath(record);
+                if (record != null) {
+                  record['thumb'] =
+                      record['thumb'] == 1 ? getItemThumbPath(record) : '';
                 }
                 break;
               case 'folder':
@@ -272,10 +273,7 @@ class WebSocketServer {
               }
               break;
             case 'file_folder':
-              success = await _dbService.setFileFolders(
-                id,
-                values.cast<String>(),
-              );
+              success = await _dbService.setFileFolders(id, values as String);
               channel.sink.add(
                 jsonEncode({
                   'status': success ? 'success' : 'failed',

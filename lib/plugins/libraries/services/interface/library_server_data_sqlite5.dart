@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -31,18 +32,8 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
         url TEXT,
         path TEXT,
         thumb INTEGER DEFAULT 0,
+        tags TEXT,
         FOREIGN KEY(folder_id) REFERENCES folders(id)
-      )
-    ''');
-
-    // 创建文件标签关联表
-    _db?.execute('''
-      CREATE TABLE IF NOT EXISTS file_tags(
-        file_id INTEGER NOT NULL,
-        tag_id INTEGER NOT NULL,
-        PRIMARY KEY(file_id, tag_id),
-        FOREIGN KEY(file_id) REFERENCES files(id),
-        FOREIGN KEY(tag_id) REFERENCES tags(id)
       )
     ''');
 
@@ -65,7 +56,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
         title TEXT NOT NULL,
         parent_id INTEGER,
         color INTEGER,
-        icon TEXT,
+        icon INTEGER,
         FOREIGN KEY(parent_id) REFERENCES tags(id)
       )
     ''');
@@ -137,9 +128,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   @override
   Future<bool> deleteFile(int id) async {
-    // 先删除关联的标签关系
-    _db!.execute('DELETE FROM file_tags WHERE file_id = ?', [id]);
-    // 再删除文件记录
+    // 直接删除文件记录
     final stmt = _db!.prepare('DELETE FROM files WHERE id = ?');
     stmt.execute([id]);
     return _db!.updatedRows > 0;
@@ -174,9 +163,11 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     if (tagIds != null && tagIds.isNotEmpty) {
       whereClauses.add('''
-        id IN (
-          SELECT file_id FROM file_tags 
-          WHERE tag_id IN (${List.filled(tagIds.length, '?').join(',')})
+        (
+          SELECT COUNT(*) FROM (
+            SELECT value FROM json_each(replace(replace(tags, ',', '","'), '"', '["') || '"]')
+            WHERE value IN (${List.filled(tagIds.length, '?').join(',')})
+          ) > 0
         )
       ''');
       params.addAll(tagIds);
@@ -217,17 +208,18 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
         whereClauses.add('stars >= ?');
         params.add(filters['minRating']);
       }
-
       if (filters['tags'] != null) {
         final tags = filters['tags'] as List<String>;
         whereClauses.add('''
-          id IN (
-            SELECT file_id FROM file_tags 
-            WHERE tag_id IN (
+        (
+          SELECT COUNT(*) FROM (
+            SELECT value FROM json_each(replace(replace(tags, ',', '","'), '"', '["') || '"]')
+            WHERE value IN (
               SELECT id FROM tags WHERE title IN (${List.filled(tags.length, '?').join(',')})
             )
-          )
-        ''');
+          ) > 0
+        )
+      ''');
         params.addAll(tags);
       }
     }
@@ -359,9 +351,6 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       await deleteTag(child['id']);
     }
 
-    // 删除文件标签关联
-    _db!.execute('DELETE FROM file_tags WHERE tag_id = ?', [id]);
-
     // 删除标签
     final stmt = _db!.prepare('DELETE FROM tags WHERE id = ?');
     stmt.execute([id]);
@@ -479,28 +468,42 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   @override
   Future<List<Map<String, dynamic>>> getFileTags(int fileId) async {
-    final stmt = _db!.prepare('''
-      SELECT t.* FROM tags t
-      JOIN file_tags ft ON ft.tag_id = t.id
-      WHERE ft.file_id = ?
-    ''');
+    final stmt = _db!.prepare('SELECT tags FROM files WHERE id = ?');
     final result = stmt.select([fileId]);
-    return result.map((row) => _rowToMap(result, row)).toList();
+    if (result.isEmpty) return [];
+
+    final tagsStr = result.first[0] as String?;
+    if (tagsStr == null || tagsStr.isEmpty) return [];
+
+    try {
+      final tagIds =
+          tagsStr
+              .split(',')
+              .where((id) => id.isNotEmpty)
+              .map(int.parse)
+              .toList();
+      if (tagIds.isEmpty) return [];
+
+      final tagStmt = _db!.prepare('''
+        SELECT * FROM tags WHERE id IN (${List.filled(tagIds.length, '?').join(',')})
+      ''');
+      final tagResult = tagStmt.select(tagIds);
+      return tagResult.map((row) => _rowToMap(tagResult, row)).toList();
+    } catch (e) {
+      return [];
+    }
   }
 
   @override
-  Future<bool> setFileFolders(int fileId, List<String> folderIds) async {
-    if (folderIds.isEmpty) return false;
-    if (folderIds.length > 1) {
-      throw ArgumentError('A file can only belong to one folder');
-    }
+  Future<bool> setFileFolders(int fileId, String folderId) async {
+    if (folderId.isEmpty) return false;
 
     try {
       await beginTransaction();
 
       // 更新文件的folder_id
       final stmt = _db!.prepare('UPDATE files SET folder_id = ? WHERE id = ?');
-      stmt.execute([folderIds.first, fileId]);
+      stmt.execute([folderId, fileId]);
 
       await commitTransaction();
       return _db!.updatedRows > 0;
@@ -515,23 +518,12 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     try {
       await beginTransaction();
 
-      // 先删除现有的文件标签关系
-      _db!.execute('DELETE FROM file_tags WHERE file_id = ?', [fileId]);
-
-      // 如果tagIds不为空，则插入新的关系
-      if (tagIds.isNotEmpty) {
-        final stmt = _db!.prepare('''
-          INSERT INTO file_tags(file_id, tag_id) 
-          VALUES ${List.filled(tagIds.length, '(?, ?)').join(',')}
-        ''');
-
-        // 构建参数列表 [fileId, tagId1, fileId, tagId2, ...]
-        final params = tagIds.expand((tagId) => [fileId, tagId]).toList();
-        stmt.execute(params);
-      }
+      // 直接更新files表中的tags字段，使用逗号拼接
+      final stmt = _db!.prepare('UPDATE files SET tags = ? WHERE id = ?');
+      stmt.execute([tagIds.join(','), fileId]);
 
       await commitTransaction();
-      return true;
+      return _db!.updatedRows > 0;
     } catch (e) {
       await rollbackTransaction();
       rethrow;

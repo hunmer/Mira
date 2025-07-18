@@ -21,6 +21,36 @@ class TreeItem {
   final String? parentId;
   bool isSelected;
 
+  // copyWith
+  TreeItem copyWith({
+    Color? color,
+    IconData? icon,
+    String? id,
+    String? title,
+    String? parentId,
+    bool? isSelected,
+  }) => TreeItem(
+    id: id ?? this.id,
+    title: title ?? this.title,
+    parentId: parentId ?? this.parentId,
+    color: color ?? this.color,
+    icon: icon ?? this.icon,
+    isSelected: isSelected ?? this.isSelected,
+  );
+
+  // fromMap
+  factory TreeItem.fromMap(Map<String, dynamic> map) => TreeItem(
+    id: map['id']?.toString() ?? '',
+    title: map['title'] as String? ?? '',
+    parentId: map['parentId'] as String?,
+    color: map['color'] != null ? Color(map['color'] as int) : null,
+    icon:
+        map['icon'] != null
+            ? IconData(map['icon'] as int, fontFamily: 'MaterialIcons')
+            : null,
+    isSelected: map['isSelected'] as bool? ?? false,
+  );
+
   Map<String, dynamic> toMap() => {
     'id': id,
     'title': title,
@@ -36,7 +66,7 @@ class TreeViewDialog extends StatefulWidget {
     super.key,
     required this.items,
     this.title = 'Tree View',
-    this.defaultIcon = Icons.insert_drive_file,
+    required this.defaultIcon,
     this.selected = const [],
     this.onAddNode,
     this.onDeleteNode,
@@ -315,6 +345,7 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
   void _addRootNode() async {
     final newItem = TreeItem(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
+      icon: widget.defaultIcon,
       title: 'New Node',
     );
 
@@ -334,6 +365,7 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
     final newItem = TreeItem(
       id: DateTime.now().millisecondsSinceEpoch.toString(),
       title: 'New Child',
+      icon: widget.defaultIcon,
       parentId: parent.id,
     );
 

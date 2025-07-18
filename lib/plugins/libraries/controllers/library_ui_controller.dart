@@ -19,16 +19,7 @@ class LibraryUIController {
             title: '选择文件夹',
             selected: null,
             type: 'folders',
-            items:
-                folders
-                    .map(
-                      (f) => TreeItem(
-                        id: f['id'].toString(),
-                        parentId: f['parentId'],
-                        title: f['title'],
-                      ),
-                    )
-                    .toList(),
+            items: folders.map((f) => TreeItem.fromMap(f)).toList(),
           ),
     );
     if (result == null) return [];
@@ -41,19 +32,10 @@ class LibraryUIController {
       context: context,
       builder:
           (context) => AsyncTreeViewDialog(
-            title: '选择文件夹',
+            title: '选择标签',
             selected: null,
-            type: 'folders',
-            items:
-                tags
-                    .map(
-                      (f) => TreeItem(
-                        id: f['id'].toString(),
-                        parentId: f['parentId'],
-                        title: f['title'],
-                      ),
-                    )
-                    .toList(),
+            type: 'tags',
+            items: tags.map((f) => TreeItem.fromMap(f)).toList(),
           ),
     );
     if (result == null) return [];

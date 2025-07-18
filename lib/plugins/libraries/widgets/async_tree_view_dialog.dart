@@ -29,19 +29,18 @@ class AsyncTreeViewDialog extends StatefulWidget {
 class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
   late List<TreeItem> _items;
   late Set<String> _selectedItems;
+  late IconData _currentIcon;
 
   @override
   void initState() {
     super.initState();
+    _currentIcon =
+        widget.defaultIcon ??
+        (widget.type == 'folders' ? Icons.folder : Icons.tag);
     _items =
         widget.items.map((item) {
           final isSelected = widget.selected?.contains(item.id) ?? false;
-          return TreeItem(
-            id: item.id,
-            parentId: item.parentId,
-            title: item.title,
-            isSelected: isSelected,
-          );
+          return item.copyWith(isSelected: isSelected);
         }).toList();
     _selectedItems = widget.selected ?? {};
   }
@@ -104,9 +103,7 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
         height: maxHeight,
         child: TreeViewDialog(
           items: _items,
-          defaultIcon:
-              widget.defaultIcon ??
-              (widget.type == 'folders' ? Icons.folder : Icons.tag),
+          defaultIcon: _currentIcon,
           title: '',
           selected: _selectedItems.toList(),
           onAddNode: onAddNode,

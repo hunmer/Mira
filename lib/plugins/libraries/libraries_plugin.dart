@@ -26,6 +26,7 @@ class LibrariesPlugin extends PluginBase {
   late final LibraryUIController libraryUIController;
   late final LibraryDataInterface libraryController;
   late final LibraryLocalDataController dataController;
+  late final WebSocketServer server;
 
   @override
   Future<void> registerToApp(
@@ -48,7 +49,7 @@ class LibrariesPlugin extends PluginBase {
         WebSocketChannel.connect(Uri.parse(connectionAddress)),
       );
     } else {
-      final server = WebSocketServer(8080);
+      server = WebSocketServer(8080);
       await server.start(connectionAddress);
       final channel = WebSocketChannel.connect(
         Uri.parse('ws://localhost:8080'),
@@ -61,6 +62,7 @@ class LibrariesPlugin extends PluginBase {
   @override
   void dispose() {
     libraryController?.close();
+    server?.stop();
     // 其他清理逻辑
   }
 }
