@@ -263,17 +263,22 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                         context: context,
                         builder:
                             (context) => TreeViewDialog(
+                              isMultiSelect: false,
+                              // selected: _selectedFileIds,
+                              onAddNode: (node) {
+                                print('添加文件夹：${node.id}');
+                              },
+                              onDeleteNode: (node) {
+                                print('删除文件夹：${node.id}');
+                              },
                               items:
                                   _folders
                                       .map(
-                                        (f) => {
-                                          'id': f.id,
-                                          'parentId': f.parentId,
-                                          'title': f.title,
-                                          'comment': f.notes,
-                                          'color': f.color,
-                                          'icon': Icons.folder.codePoint,
-                                        },
+                                        (f) => TreeItem(
+                                          id: f.id,
+                                          parentId: f.parentId,
+                                          title: f.title,
+                                        ),
                                       )
                                       .toList(),
                             ),
