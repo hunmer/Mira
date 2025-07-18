@@ -10,10 +10,12 @@ class AsyncTreeViewDialog extends StatefulWidget {
   final Set<String>? selected;
   final List<TreeItem> items;
   final String title;
+  final IconData? defaultIcon;
   final String? type;
 
   const AsyncTreeViewDialog({
     this.selected,
+    this.defaultIcon,
     this.type,
     required this.items,
     required this.title,
@@ -82,8 +84,11 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
     }
   }
 
-  List<String> _getSelectedIds() {
-    return _items.where((item) => item.isSelected).map((e) => e.id).toList();
+  List<Map<String, dynamic>> _getSelected() {
+    return _items
+        .where((item) => item.isSelected)
+        .map((item) => item.toMap())
+        .toList();
   }
 
   @override
@@ -99,7 +104,10 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
         height: maxHeight,
         child: TreeViewDialog(
           items: _items,
-          title: widget.title,
+          defaultIcon:
+              widget.defaultIcon ??
+              (widget.type == 'folders' ? Icons.folder : Icons.tag),
+          title: '',
           selected: _selectedItems.toList(),
           onAddNode: onAddNode,
           onDeleteNode: onDeleteNode,
@@ -111,7 +119,7 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
           child: const Text('Cancel'),
         ),
         TextButton(
-          onPressed: () => Navigator.pop(context, _getSelectedIds()),
+          onPressed: () => Navigator.pop(context, _getSelected()),
           child: const Text('OK'),
         ),
       ],

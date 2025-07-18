@@ -52,7 +52,6 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
         id INTEGER PRIMARY KEY,
         title TEXT NOT NULL,
         parent_id INTEGER,
-        notes TEXT,
         color INTEGER,
         icon TEXT,
         FOREIGN KEY(parent_id) REFERENCES folders(id)
@@ -65,7 +64,6 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
         id INTEGER PRIMARY KEY,
         title TEXT NOT NULL,
         parent_id INTEGER,
-        notes TEXT,
         color INTEGER,
         icon TEXT,
         FOREIGN KEY(parent_id) REFERENCES tags(id)
@@ -248,14 +246,13 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   @override
   Future<int> createFolder(Map<String, dynamic> folderData) async {
     final stmt = _db!.prepare('''
-      INSERT INTO folders(id, title, parent_id, notes, color, icon)
+      INSERT INTO folders(id, title, parent_id, color, icon)
       VALUES (?, ?, ?, ?, ?)
     ''');
     stmt.execute([
       folderData['id'],
       folderData['title'],
       folderData['parent_id'],
-      folderData['notes'],
       folderData['color'],
       folderData['icon'],
     ]);
@@ -266,13 +263,12 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Future<bool> updateFolder(int id, Map<String, dynamic> folderData) async {
     final stmt = _db!.prepare('''
       UPDATE folders SET
-        title = ?, parent_id = ?, notes = ?, color = ?, icon = ?
+        title = ?, parent_id = ?, color = ?, icon = ?
       WHERE id = ?
     ''');
     stmt.execute([
       folderData['title'],
       folderData['parent_id'],
-      folderData['notes'],
       folderData['color'],
       folderData['icon'],
       id,
@@ -325,14 +321,13 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   @override
   Future<int> createTag(Map<String, dynamic> tagData) async {
     final stmt = _db!.prepare('''
-      INSERT INTO tags(id, title, parent_id, notes, color, icon)
+      INSERT INTO tags(id, title, parent_id, color, icon)
       VALUES (?, ?, ?, ?, ?)
     ''');
     stmt.execute([
       tagData['id'],
       tagData['title'],
       tagData['parent_id'],
-      tagData['notes'],
       tagData['color'],
       tagData['icon'],
     ]);
@@ -343,13 +338,12 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Future<bool> updateTag(int id, Map<String, dynamic> tagData) async {
     final stmt = _db!.prepare('''
       UPDATE tags SET
-        title = ?, parent_id = ?, notes = ?, color = ?, icon = ?
+        title = ?, parent_id = ?, color = ?, icon = ?
       WHERE id = ?
     ''');
     stmt.execute([
       tagData['title'],
       tagData['parent_id'],
-      tagData['notes'],
       tagData['color'],
       tagData['icon'],
       id,
@@ -435,8 +429,6 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Future<void> close() async {
     _db!.dispose();
   }
-
-  String? _basePath;
 
   @override
   Future<Map<String, dynamic>> createFileFromPath(

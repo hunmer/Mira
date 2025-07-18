@@ -5,9 +5,7 @@ import 'package:mira/core/event/event.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
-import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
-import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_drop_dialog.dart';
@@ -40,8 +38,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   bool _isSelectionMode = false;
   Set<int> _selectedFileIds = {};
   Map<String, dynamic> _filterOptions = {};
-  List<LibraryFolder> _folders = [];
-  List<LibraryTag> _tags = [];
 
   @override
   void initState() {
@@ -56,18 +52,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       'thumbnail_generated',
       _onThumbnailGenerated,
     );
-
-    // 初始化文件夹和标签数据
-    widget.plugin.libraryController.getFolders().then((folders) {
-      setState(() {
-        _folders = folders.map((f) => LibraryFolder.fromMap(f)).toList();
-      });
-    });
-    widget.plugin.libraryController.getTags().then((tags) {
-      setState(() {
-        _tags = tags.map((t) => LibraryTag.fromMap(t)).toList();
-      });
-    });
   }
 
   // TODO 单个组件更新，而不是全部更新
@@ -259,27 +243,20 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                   ),
                   IconButton(
                     icon: Icon(Icons.folder),
+                    onPressed: () {
+                      widget.plugin.libraryController.getFolders().then((
+                        folders,
+                      ) async {
+                        final result = await widget.plugin.libraryUIController
+                            .showFolderSelector(context);
+                      });
+                    },
+                  ),
+                  IconButton(
+                    icon: Icon(Icons.tag),
                     onPressed: () async {
-                      final result = await showDialog(
-                        context: context,
-                        builder:
-                            (context) => AsyncTreeViewDialog(
-                              title: '选择文件夹',
-                              selected: null,
-                              type: 'folders',
-                              items:
-                                  _folders
-                                      .map(
-                                        (f) => TreeItem(
-                                          id: f.id,
-                                          parentId: f.parentId,
-                                          title: f.title,
-                                        ),
-                                      )
-                                      .toList(),
-                            ),
-                      );
-                      print(result);
+                      final result = await widget.plugin.libraryUIController
+                          .showTagSelector(context);
                     },
                   ),
                 ],
@@ -347,6 +324,18 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                         (context) => Column(
                           mainAxisSize: MainAxisSize.min,
                           children: [
+                            ListTile(
+                              leading: Icon(Icons.folder),
+                              title: Text('设置文件夹'),
+                              onTap: () async {
+                                Navigator.pop(context);
+                                final result = await widget
+                                    .plugin
+                                    .libraryUIController
+                                    .showFolderSelector(context);
+                                print(result);
+                              },
+                            ),
                             ListTile(
                               leading: Icon(Icons.delete),
                               title: Text('删除'),

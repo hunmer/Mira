@@ -1,25 +1,27 @@
+import 'package:flutter/widgets.dart';
+
 class LibraryFolder {
   final String id;
   final String title;
   final String? parentId;
-  final String? notes;
-  final int color;
+  final Color? color;
+  final IconData? icon;
 
   LibraryFolder({
     required this.id,
     required this.title,
     this.parentId,
-    this.notes,
+    this.icon,
     required this.color,
   });
 
   factory LibraryFolder.fromMap(Map<String, dynamic> map) {
     return LibraryFolder(
-      id: map['id'],
+      id: map['id'].toString(),
       title: map['title'],
       parentId: map['parentId'],
-      notes: map['notes'],
-      color: map['color'],
+      color: map['color'] != null ? Color(map['color']) : null,
+      icon: map['icon'] != null ? IconData(map['icon']) : null,
     );
   }
 
@@ -28,8 +30,8 @@ class LibraryFolder {
       'id': id,
       'title': title,
       'parentId': parentId,
-      'notes': notes,
       'color': color,
+      'icon': icon,
     };
   }
 }

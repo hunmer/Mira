@@ -20,6 +20,15 @@ class TreeItem {
   final String title;
   final String? parentId;
   bool isSelected;
+
+  Map<String, dynamic> toMap() => {
+    'id': id,
+    'title': title,
+    'parentId': parentId,
+    'color': color?.value,
+    'icon': icon?.codePoint,
+    'isSelected': isSelected,
+  };
 }
 
 class TreeViewDialog extends StatefulWidget {
@@ -27,6 +36,7 @@ class TreeViewDialog extends StatefulWidget {
     super.key,
     required this.items,
     this.title = 'Tree View',
+    this.defaultIcon = Icons.insert_drive_file,
     this.selected = const [],
     this.onAddNode,
     this.onDeleteNode,
@@ -34,6 +44,7 @@ class TreeViewDialog extends StatefulWidget {
 
   final List<TreeItem> items;
   final String title;
+  final IconData defaultIcon;
   final List<String> selected;
   final void Function(TreeItem item)? onAddNode;
   final void Function(TreeItem item)? onDeleteNode;
@@ -66,19 +77,12 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
   void _buildTree() {
     final rootItems =
         widget.items.where((item) => item.parentId == null).toList();
-    debugPrint('Building tree with ${rootItems.length} root items');
-    debugPrint('Total items count: ${widget.items.length}');
-
     final newTreeNodes = rootItems.map(_createTreeNode).toList();
-    debugPrint('Tree nodes: ${newTreeNodes.length}');
 
     if (!listEquals(_treeNodes, newTreeNodes)) {
       setState(() {
         _treeNodes = newTreeNodes;
-        debugPrint('Tree nodes updated');
       });
-    } else {
-      debugPrint('Tree nodes unchanged');
     }
   }
 
@@ -107,7 +111,7 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
       icon: Icon(
         item.icon ??
             (children.isEmpty ? Icons.insert_drive_file : Icons.folder),
-        color: item.color ?? Theme.of(context).colorScheme.secondary,
+        color: item.color ?? Colors.black,
       ),
       children: children,
       isSelected: item.isSelected,
@@ -166,7 +170,6 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
                   ? const Center(child: Text('No items to display'))
                   : LayoutBuilder(
                     builder: (context, constraints) {
-                      debugPrint('TreeView constraints: $constraints');
                       return TreeView<String>(
                         key: ValueKey(
                           _treeNodes,
@@ -176,6 +179,14 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
                             99, // Ensure all nodes are expanded
                         showExpandCollapseButton: true,
                         showSelectAll: true,
+                        onSelectionChanged: (ids) {
+                          for (final id in ids) {
+                            widget
+                                .items
+                                .firstWhere((item) => item.id == id)
+                                .isSelected = true;
+                          }
+                        },
                       );
                     },
                   ),
@@ -256,7 +267,7 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
                     Padding(
                       padding: const EdgeInsets.symmetric(vertical: 16),
                       child: CircleIconPicker(
-                        currentIcon: selectedIcon ?? Icons.insert_drive_file,
+                        currentIcon: selectedIcon ?? widget.defaultIcon,
                         backgroundColor: selectedColor ?? Colors.blue,
                         onIconSelected: (icon) {
                           setStateDialog(() {
@@ -434,10 +445,7 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
     if (!listEquals(_treeNodes, newTreeNodes)) {
       setState(() {
         _treeNodes = newTreeNodes;
-        debugPrint('Filtered tree nodes updated');
       });
-    } else {
-      debugPrint('Filtered tree nodes unchanged');
     }
   }
 

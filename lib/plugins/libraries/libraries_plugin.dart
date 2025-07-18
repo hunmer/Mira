@@ -2,6 +2,7 @@ import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/controllers/library_local_data_controller.dart';
+import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'controllers/library_data_interface.dart';
 import 'controllers/library_data_websocket.dart';
@@ -22,6 +23,7 @@ class LibrariesPlugin extends PluginBase {
 
   @override
   String get id => 'libraries';
+  late final LibraryUIController libraryUIController;
   late final LibraryDataInterface libraryController;
   late final LibraryLocalDataController dataController;
 
@@ -36,7 +38,7 @@ class LibrariesPlugin extends PluginBase {
 
   @override
   Future<void> initialize() async {
-    // 初始化本地数据控制器
+    libraryUIController = LibraryUIController(this);
     dataController = LibraryLocalDataController(storage);
   }
 
