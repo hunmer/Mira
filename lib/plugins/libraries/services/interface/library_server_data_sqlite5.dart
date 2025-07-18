@@ -49,7 +49,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     // 创建文件夹表
     _db?.execute('''
       CREATE TABLE IF NOT EXISTS folders(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY,
         title TEXT NOT NULL,
         parent_id INTEGER,
         notes TEXT,
@@ -62,7 +62,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     // 创建标签表
     _db?.execute('''
       CREATE TABLE IF NOT EXISTS tags(
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        id INTEGER PRIMARY KEY,
         title TEXT NOT NULL,
         parent_id INTEGER,
         notes TEXT,
@@ -248,10 +248,11 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   @override
   Future<int> createFolder(Map<String, dynamic> folderData) async {
     final stmt = _db!.prepare('''
-      INSERT INTO folders(title, parent_id, notes, color, icon)
+      INSERT INTO folders(id, title, parent_id, notes, color, icon)
       VALUES (?, ?, ?, ?, ?)
     ''');
     stmt.execute([
+      folderData['id'],
       folderData['title'],
       folderData['parent_id'],
       folderData['notes'],
@@ -324,10 +325,11 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   @override
   Future<int> createTag(Map<String, dynamic> tagData) async {
     final stmt = _db!.prepare('''
-      INSERT INTO tags(title, parent_id, notes, color, icon)
+      INSERT INTO tags(id, title, parent_id, notes, color, icon)
       VALUES (?, ?, ?, ?, ?)
     ''');
     stmt.execute([
+      tagData['id'],
       tagData['title'],
       tagData['parent_id'],
       tagData['notes'],

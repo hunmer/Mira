@@ -1,15 +1,21 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:checkable_treeview/checkable_treeview.dart';
+import 'circle_icon_picker.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class TreeItem {
   TreeItem({
     required this.id,
     required this.title,
     this.parentId,
+    this.color,
+    this.icon,
     this.isSelected = false,
   });
 
+  final Color? color;
+  final IconData? icon;
   final String id;
   final String title;
   final String? parentId;
@@ -21,7 +27,6 @@ class TreeViewDialog extends StatefulWidget {
     super.key,
     required this.items,
     this.title = 'Tree View',
-    this.isMultiSelect = true,
     this.selected = const [],
     this.onAddNode,
     this.onDeleteNode,
@@ -29,7 +34,6 @@ class TreeViewDialog extends StatefulWidget {
 
   final List<TreeItem> items;
   final String title;
-  final bool isMultiSelect;
   final List<String> selected;
   final void Function(TreeItem item)? onAddNode;
   final void Function(TreeItem item)? onDeleteNode;
@@ -86,7 +90,11 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
             .toList();
 
     return TreeNode(
-      label: Text(item.title),
+      label: Row(
+        mainAxisSize: MainAxisSize.min,
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        children: [Text(item.title)],
+      ),
       trailing: (context, node) {
         return IconButton(
           icon: const Icon(Icons.more_vert, size: 16),
@@ -96,10 +104,11 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
         );
       },
       value: item.id,
-      icon:
-          children.isEmpty
-              ? const Icon(Icons.insert_drive_file)
-              : const Icon(Icons.folder),
+      icon: Icon(
+        item.icon ??
+            (children.isEmpty ? Icons.insert_drive_file : Icons.folder),
+        color: item.color ?? Theme.of(context).colorScheme.secondary,
+      ),
       children: children,
       isSelected: item.isSelected,
     );
@@ -107,112 +116,69 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return AlertDialog(
-      title: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Text(widget.title),
-              const Spacer(),
-              if (_showSearch) ...[
-                Expanded(
-                  child: Container(
-                    constraints: const BoxConstraints(
-                      maxWidth: double.infinity,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          children: [
+            Text(widget.title),
+            const Spacer(),
+            if (_showSearch) ...[
+              Expanded(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: double.infinity),
+                  child: TextField(
+                    controller: _searchController,
+                    decoration: const InputDecoration(
+                      hintText: 'Search...',
+                      border: InputBorder.none,
+                      isDense: true,
+                      contentPadding: EdgeInsets.symmetric(vertical: 8),
                     ),
-                    child: TextField(
-                      controller: _searchController,
-                      decoration: const InputDecoration(
-                        hintText: 'Search...',
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 8),
-                      ),
-                      onChanged: (value) => setState(() => _filterTree(value)),
-                    ),
+                    onChanged: (value) => setState(() => _filterTree(value)),
                   ),
                 ),
-                IconButton(
-                  icon: const Icon(Icons.close),
-                  onPressed: () {
-                    setState(() {
-                      _showSearch = false;
-                      _searchController.clear();
-                      _buildTree();
-                    });
-                  },
-                ),
-              ],
-              if (!_showSearch) ...[
-                const Spacer(),
-
-                IconButton(
-                  icon: const Icon(Icons.search),
-                  onPressed: () => setState(() => _showSearch = true),
-                ),
-                IconButton(
-                  icon: const Icon(Icons.add),
-                  onPressed: _addRootNode,
-                ),
-              ],
+              ),
+              IconButton(
+                icon: const Icon(Icons.close),
+                onPressed: () {
+                  setState(() {
+                    _showSearch = false;
+                    _searchController.clear();
+                    _buildTree();
+                  });
+                },
+              ),
             ],
-          ),
-        ],
-      ),
-      content: SizedBox(
-        width: double.maxFinite,
-        height: 400,
-        child:
-            _treeNodes.isEmpty
-                ? const Center(child: Text('No items to display'))
-                : LayoutBuilder(
-                  builder: (context, constraints) {
-                    debugPrint('TreeView constraints: $constraints');
-                    return TreeView<String>(
-                      key: ValueKey(
-                        _treeNodes,
-                      ), // Force rebuild when nodes change
-                      nodes: _treeNodes,
-                      initialExpandedLevels:
-                          99, // Ensure all nodes are expanded
-                      showExpandCollapseButton: true,
-                      showSelectAll: widget.isMultiSelect,
-                      onSelectionChanged: (selectedValues) {
-                        // 单选模式：只保留最后一个选中项
-                        if (!widget.isMultiSelect) {
-                          for (final item in widget.items) {
-                            item.isSelected = false;
-                          }
-                          if (selectedValues.isNotEmpty) {
-                            final lastSelectedId = selectedValues.last;
-                            final item = widget.items.firstWhere(
-                              (item) => item.id == lastSelectedId,
-                              orElse: () => TreeItem(id: '', title: ''),
-                            );
-                            if (item.id.isNotEmpty) {
-                              item.isSelected = true;
-                              _buildTree();
-                            }
-                          }
-                        }
-                      },
-                    );
-                  },
-                ),
-      ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+            if (!_showSearch) ...[
+              const Spacer(),
+              IconButton(
+                icon: const Icon(Icons.search),
+                onPressed: () => setState(() => _showSearch = true),
+              ),
+              IconButton(icon: const Icon(Icons.add), onPressed: _addRootNode),
+            ],
+          ],
         ),
-        TextButton(
-          onPressed: () {
-            final selectedItems =
-                widget.items.where((item) => item.isSelected).toList();
-            Navigator.pop(context, selectedItems);
-          },
-          child: const Text('OK'),
+        Expanded(
+          child:
+              _treeNodes.isEmpty
+                  ? const Center(child: Text('No items to display'))
+                  : LayoutBuilder(
+                    builder: (context, constraints) {
+                      debugPrint('TreeView constraints: $constraints');
+                      return TreeView<String>(
+                        key: ValueKey(
+                          _treeNodes,
+                        ), // Force rebuild when nodes change
+                        nodes: _treeNodes,
+                        initialExpandedLevels:
+                            99, // Ensure all nodes are expanded
+                        showExpandCollapseButton: true,
+                        showSelectAll: true,
+                      );
+                    },
+                  ),
         ),
       ],
     );
@@ -229,6 +195,11 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
                 leading: const Icon(Icons.add),
                 title: const Text('Add Child Node'),
                 onTap: () => Navigator.pop(context, 'add'),
+              ),
+              ListTile(
+                leading: const Icon(Icons.edit),
+                title: const Text('Edit Node'),
+                onTap: () => Navigator.pop(context, 'edit'),
               ),
               ListTile(
                 leading: const Icon(Icons.delete),
@@ -250,6 +221,8 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
       if (widget.onAddNode != null) {
         widget.onAddNode!(item);
       }
+    } else if (selected == 'edit') {
+      await _editNode(item);
     } else if (selected == 'delete') {
       _deleteNode(item);
     }
@@ -261,41 +234,69 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
   }) async {
     final titleController = TextEditingController(text: item.title);
     String? selectedParentId = parent?.id;
+    IconData? selectedIcon = item.icon;
+    Color? selectedColor = item.color;
 
     return await showDialog<TreeItem>(
       context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Edit Node'),
-            content: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: titleController,
-                  decoration: const InputDecoration(labelText: 'Title'),
+      builder: (context) {
+        // 使用StatefulBuilder来管理对话框内部的状态
+        return StatefulBuilder(
+          builder: (context, setStateDialog) {
+            return AlertDialog(
+              title: const Text('Edit Node'),
+              content: SingleChildScrollView(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TextField(
+                      controller: titleController,
+                      decoration: const InputDecoration(labelText: 'Title'),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      child: CircleIconPicker(
+                        currentIcon: selectedIcon ?? Icons.insert_drive_file,
+                        backgroundColor: selectedColor ?? Colors.blue,
+                        onIconSelected: (icon) {
+                          setStateDialog(() {
+                            selectedIcon = icon;
+                          });
+                        },
+                        onColorSelected: (color) {
+                          setStateDialog(() {
+                            selectedColor = color;
+                          });
+                        },
+                      ),
+                    ),
+                  ],
                 ),
-                // This part can be improved, but not critical for bug fix
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: const Text('Cancel'),
+                ),
+                TextButton(
+                  onPressed: () {
+                    final newItem = TreeItem(
+                      id: item.id,
+                      title: titleController.text,
+                      parentId: selectedParentId,
+                      icon: selectedIcon,
+                      color: selectedColor,
+                      isSelected: item.isSelected,
+                    );
+                    Navigator.pop(context, newItem);
+                  },
+                  child: const Text('Save'),
+                ),
               ],
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context),
-                child: const Text('Cancel'),
-              ),
-              TextButton(
-                onPressed: () {
-                  final newItem = TreeItem(
-                    id: item.id,
-                    title: titleController.text,
-                    parentId: selectedParentId,
-                    isSelected: item.isSelected,
-                  );
-                  Navigator.pop(context, newItem);
-                },
-                child: const Text('Save'),
-              ),
-            ],
-          ),
+            );
+          },
+        );
+      },
     );
   }
 
@@ -330,6 +331,19 @@ class _TreeViewDialogState extends State<TreeViewDialog> {
       setState(() {
         widget.items.add(result);
         _buildTree();
+      });
+    }
+  }
+
+  Future<void> _editNode(TreeItem item) async {
+    final result = await _showEditDialog(item: item);
+    if (result != null) {
+      setState(() {
+        final index = widget.items.indexWhere((i) => i.id == item.id);
+        if (index != -1) {
+          widget.items[index] = result;
+          _buildTree();
+        }
       });
     }
   }

@@ -15,7 +15,8 @@ import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_detail_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_item.dart';
 import 'package:mira/plugins/libraries/widgets/upload_queue_dialog.dart';
-import 'package:mira/widgets/tree_view_dialog.dart';
+import 'package:mira/plugins/libraries/widgets/async_tree_view_dialog.dart';
+import 'package:mira/widgets/tree_view.dart';
 import '../l10n/libraries_localizations.dart';
 
 class LibraryGalleryView extends StatefulWidget {
@@ -258,19 +259,14 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                   ),
                   IconButton(
                     icon: Icon(Icons.folder),
-                    onPressed: () {
-                      showDialog(
+                    onPressed: () async {
+                      final result = await showDialog(
                         context: context,
                         builder:
-                            (context) => TreeViewDialog(
-                              isMultiSelect: false,
-                              // selected: _selectedFileIds,
-                              onAddNode: (node) {
-                                print('添加文件夹：${node.id}');
-                              },
-                              onDeleteNode: (node) {
-                                print('删除文件夹：${node.id}');
-                              },
+                            (context) => AsyncTreeViewDialog(
+                              title: '选择文件夹',
+                              selected: null,
+                              type: 'folders',
                               items:
                                   _folders
                                       .map(
@@ -283,6 +279,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                                       .toList(),
                             ),
                       );
+                      print(result);
                     },
                   ),
                 ],
