@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:http/http.dart';
+import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 
 class LibraryFileInformationView extends StatefulWidget {
@@ -20,12 +22,13 @@ class _LibraryFileInformationViewState
   late TextEditingController _folderIdController;
   late TextEditingController _referenceController;
   late TextEditingController _urlController;
-  late TextEditingController _pathController;
 
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(text: widget.file.name);
+    _nameController = TextEditingController(
+      text: getFileName(widget.file.path!, true),
+    );
     _notesController = TextEditingController(text: widget.file.notes);
     _ratingController = TextEditingController(
       text: widget.file.rating?.toString() ?? '0',
@@ -34,7 +37,6 @@ class _LibraryFileInformationViewState
     _folderIdController = TextEditingController(text: widget.file.folderId);
     _referenceController = TextEditingController(text: widget.file.reference);
     _urlController = TextEditingController(text: widget.file.url);
-    _pathController = TextEditingController(text: widget.file.path);
   }
 
   @override
@@ -46,7 +48,6 @@ class _LibraryFileInformationViewState
     _folderIdController.dispose();
     _referenceController.dispose();
     _urlController.dispose();
-    _pathController.dispose();
     super.dispose();
   }
 
@@ -54,9 +55,11 @@ class _LibraryFileInformationViewState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('文件信息'),
+        title: Text(getFileName(widget.file.name)),
+        automaticallyImplyLeading: false,
         actions: [
-          IconButton(icon: const Icon(Icons.save), onPressed: _saveChanges),
+          // IconButton(icon: const Icon(Icons.save), onPressed: _saveChanges),
+          IconButton(icon: const Icon(Icons.share), onPressed: () => {}),
         ],
       ),
       body: SingleChildScrollView(
@@ -100,11 +103,6 @@ class _LibraryFileInformationViewState
               controller: _urlController,
               decoration: const InputDecoration(labelText: 'URL'),
             ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _pathController,
-              decoration: const InputDecoration(labelText: '路径'),
-            ),
           ],
         ),
       ),
@@ -127,7 +125,7 @@ class _LibraryFileInformationViewState
       reference:
           _referenceController.text.isEmpty ? null : _referenceController.text,
       url: _urlController.text.isEmpty ? null : _urlController.text,
-      path: _pathController.text.isEmpty ? null : _pathController.text,
+      path: widget.file.path,
       thumb: widget.file.thumb,
       type: widget.file.type,
     );

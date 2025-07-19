@@ -70,6 +70,7 @@ dependencies:
   stash: ^5.2.0
   stash_memory: ^5.2.0
   flutter_context_menu: ^0.2.4
+  number_pagination: ^1.1.6
 
 dev_dependencies:
   flutter_test:

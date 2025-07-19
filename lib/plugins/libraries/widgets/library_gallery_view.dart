@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
+import 'package:number_pagination/number_pagination.dart';
 import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
@@ -37,6 +39,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   bool _isSelectionMode = false;
   Set<int> _selectedFileIds = {};
   Map<String, dynamic> _filterOptions = {};
+  Map<String, dynamic> _paginationOptions = {'page': 1, 'perPage': 20};
+  LibraryFile? _selectedFile;
 
   @override
   void initState() {
@@ -131,7 +135,42 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     });
   }
 
+  Widget _buildPaginationControls() {
+    // 临时计算总页数，实际应从API获取
+    // final totalItems =
+    //     widget.plugin.libraryController
+    //         .getLibraryInst(widget.library)!
+    //         .getFilesCount();
+    final totalItems = 3000;
+    final totalPages = (totalItems / _paginationOptions['perPage']).ceil();
+
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 8.0),
+      child: NumberPagination(
+        currentPage: _paginationOptions['page'],
+        totalPages: totalPages,
+        onPageChanged: (page) {
+          setState(() {
+            _paginationOptions['page'] = page;
+          });
+        },
+        visiblePagesCount: 6,
+        buttonRadius: 10.0,
+        buttonElevation: 1.0,
+        controlButtonSize: Size(34, 34),
+        numberButtonSize: Size(34, 34),
+        selectedButtonColor: Theme.of(context).primaryColor,
+      ),
+    );
+  }
+
   void _onFileSelected(LibraryFile file) {
+    setState(() {
+      _selectedFile = file;
+    });
+  }
+
+  void _onFileOpen(LibraryFile file) {
     final fileId = file.id;
     if (_isSelectionMode) {
       setState(() {
@@ -202,13 +241,36 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         pendingUploadCount: _uploadQueue.pendingFiles.length,
       ),
       bottomSheet: LibraryGalleryBottomSheet(uploadProgress: _uploadProgress),
-      body: LibraryGalleryBody(
-        plugin: widget.plugin,
-        library: widget.library,
-        filterOptions: _filterOptions,
-        isSelectionMode: _isSelectionMode,
-        selectedFileIds: _selectedFileIds,
-        onFileSelected: _onFileSelected,
+      body: Row(
+        children: [
+          Expanded(
+            flex: 4,
+            child: Column(
+              children: [
+                Expanded(
+                  child: LibraryGalleryBody(
+                    plugin: widget.plugin,
+                    library: widget.library,
+                    filterOptions: {..._filterOptions, ..._paginationOptions},
+                    isSelectionMode: _isSelectionMode,
+                    selectedFileIds: _selectedFileIds,
+                    onFileSelected: _onFileSelected,
+                    onFileOpen: _onFileOpen,
+                  ),
+                ),
+                _buildPaginationControls(),
+              ],
+            ),
+          ),
+          VerticalDivider(width: 1),
+          Expanded(
+            flex: 1,
+            child:
+                _selectedFile != null
+                    ? LibraryFileInformationView(file: _selectedFile!)
+                    : const Center(child: Text('请选择一个文件查看详情')),
+          ),
+        ],
       ),
     );
   }

@@ -2,6 +2,7 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
+import 'package:mira/widgets/icon_chip.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
@@ -10,6 +11,8 @@ class LibraryItem extends StatelessWidget {
   final bool isSelected;
   final bool useThumbnail;
   final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
+
   final Future<String> Function(String) getFolderTitle;
   final Future<String> Function(String) getTagTilte;
   final Set<String> displayFields;
@@ -21,6 +24,7 @@ class LibraryItem extends StatelessWidget {
     required this.getFolderTitle,
     required this.getTagTilte,
     this.onTap,
+    this.onDoubleTap,
     this.onLongPress,
     this.displayFields = const {
       'title',
@@ -56,8 +60,6 @@ class LibraryItem extends StatelessWidget {
               localData: {'fileId': file.id},
               suggestedName: file.name,
             );
-
-            // 添加文件路径或URL到payload
             if (file.path != null) {
               final path = filePathToUri(file.path!);
               item.add(Formats.fileUri(Uri.tryParse(path)!));
@@ -73,6 +75,7 @@ class LibraryItem extends StatelessWidget {
                   children: [
                     InkWell(
                       onTap: onTap,
+                      onDoubleTap: onDoubleTap,
                       child: SizedBox(
                         width: double.infinity,
                         child: Column(
@@ -119,24 +122,16 @@ class LibraryItem extends StatelessWidget {
                                 children: [
                                   if (displayFields.contains('title'))
                                     Text(
-                                      file.name,
+                                      file.path!
+                                          .replaceAll('\\', '/')
+                                          .split('/')
+                                          .last
+                                          .split('.')
+                                          .first,
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                     ),
-                                  if (displayFields.contains('rating') &&
-                                      file.rating != null)
-                                    Row(
-                                      children: List.generate(
-                                        5,
-                                        (index) => Icon(
-                                          index < file.rating!
-                                              ? Icons.star
-                                              : Icons.star_border,
-                                          size: 16,
-                                          color: Colors.amber,
-                                        ),
-                                      ),
-                                    ),
+
                                   if (displayFields.contains('notes') &&
                                       file.notes != null)
                                     Text(
@@ -158,25 +153,74 @@ class LibraryItem extends StatelessWidget {
                                       style:
                                           Theme.of(context).textTheme.bodySmall,
                                     ),
-                                  if (displayFields.contains('tags') &&
-                                      file.tags.isNotEmpty)
-                                    Text(
-                                      '标签: ${tagTitles.join(', ')}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style:
-                                          Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                  if (displayFields.contains('folder'))
-                                    Text(
-                                      '文件夹: ${folderTitle}',
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style:
-                                          Theme.of(context).textTheme.bodySmall,
+                                  if (displayFields.any(
+                                    (field) => [
+                                      'rating',
+                                      'folder',
+                                      'tags',
+                                    ].contains(field),
+                                  ))
+                                    Wrap(
+                                      spacing: 4,
+                                      children: [
+                                        if (displayFields.contains('rating') &&
+                                            file.rating != null &&
+                                            file.rating! > 0)
+                                          IconChip(
+                                            icon: Icons.star,
+                                            label: '${file.rating}/5',
+                                            iconColor: Colors.amber,
+                                          ),
+                                        if (displayFields.contains('folder') &&
+                                            folderTitle.isNotEmpty)
+                                          IconChip(
+                                            icon: Icons.folder,
+                                            label: folderTitle,
+                                          ),
+                                        if (displayFields.contains('tags') &&
+                                            file.tags.isNotEmpty)
+                                          ...tagTitles
+                                              .where((t) => t.isNotEmpty)
+                                              .map(
+                                                (tag) => IconChip(
+                                                  icon: Icons.label,
+                                                  label: tag,
+                                                ),
+                                              )
+                                              .toList(),
+                                      ],
                                     ),
                                 ],
                               ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                    Positioned(
+                      top: 8,
+                      right: 8,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          color: Colors.grey[200],
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 2,
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(
+                              Icons.insert_drive_file,
+                              size: 14,
+                              color: Colors.grey[700],
+                            ),
+                            SizedBox(width: 4),
+                            Text(
+                              file.path!.split('.').last.toUpperCase(),
+                              style: TextStyle(fontSize: 10),
                             ),
                           ],
                         ),

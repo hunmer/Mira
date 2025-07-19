@@ -15,6 +15,7 @@ class LibraryGalleryBody extends StatefulWidget {
   final bool isSelectionMode;
   final Set<int> selectedFileIds;
   final Function(LibraryFile) onFileSelected;
+  final Function(LibraryFile) onFileOpen;
 
   const LibraryGalleryBody({
     required this.plugin,
@@ -23,6 +24,7 @@ class LibraryGalleryBody extends StatefulWidget {
     required this.isSelectionMode,
     required this.selectedFileIds,
     required this.onFileSelected,
+    required this.onFileOpen,
     super.key,
   });
 
@@ -106,6 +108,7 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                     'size',
                   },
                   onTap: () => widget.onFileSelected(file),
+                  onDoubleTap: () => widget.onFileOpen(file),
                   onLongPress: () {
                     showModalBottomSheet(
                       context: context,
