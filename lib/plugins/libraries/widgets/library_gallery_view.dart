@@ -38,6 +38,16 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   StreamSubscription<int>? _progressSubscription;
   bool _isSelectionMode = false;
   Set<int> _selectedFileIds = {};
+  late Set<String> _displayFields = {
+    'title',
+    'cover',
+    'rating',
+    'notes',
+    'createdAt',
+    'tags',
+    'folder',
+    'size',
+  };
   Map<String, dynamic> _filterOptions = {};
   Map<String, dynamic> _paginationOptions = {'page': 1, 'perPage': 20};
   LibraryFile? _selectedFile;
@@ -154,7 +164,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             _paginationOptions['page'] = page;
           });
         },
-        visiblePagesCount: 6,
+        visiblePagesCount: MediaQuery.of(context).size.width ~/ 200 + 2,
         buttonRadius: 10.0,
         buttonElevation: 1.0,
         controlButtonSize: Size(34, 34),
@@ -168,6 +178,12 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     setState(() {
       _selectedFile = file;
     });
+    if (Platform.isAndroid || Platform.isIOS) {
+      showModalBottomSheet(
+        context: context,
+        builder: (context) => LibraryFileInformationView(file: file),
+      );
+    }
   }
 
   void _onFileOpen(LibraryFile file) {
@@ -197,7 +213,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         selectedCount: _selectedFileIds.length,
         onSelectAll: _toggleSelectAll,
         onExitSelection: _exitSelectionMode,
-        onSearch: () {}, // TODO: 实现搜索功能
         onFilter: () async {
           final filterOptions = await showDialog<Map<String, dynamic>>(
             context: context,
@@ -239,6 +254,12 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           );
         },
         pendingUploadCount: _uploadQueue.pendingFiles.length,
+        displayFields: _displayFields,
+        onDisplayFieldsChanged: (newFields) {
+          setState(() {
+            _displayFields = newFields;
+          });
+        },
       ),
       bottomSheet: LibraryGalleryBottomSheet(uploadProgress: _uploadProgress),
       body: Row(
@@ -251,6 +272,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                   child: LibraryGalleryBody(
                     plugin: widget.plugin,
                     library: widget.library,
+                    displayFields: _displayFields,
                     filterOptions: {..._filterOptions, ..._paginationOptions},
                     isSelectionMode: _isSelectionMode,
                     selectedFileIds: _selectedFileIds,
@@ -262,14 +284,16 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               ],
             ),
           ),
-          if (!Platform.isAndroid && !Platform.isIOS) VerticalDivider(width: 1),
-          Expanded(
-            flex: 1,
-            child:
-                _selectedFile != null
-                    ? LibraryFileInformationView(file: _selectedFile!)
-                    : const Center(child: Text('请选择一个文件查看详情')),
-          ),
+          if (!Platform.isAndroid && !Platform.isIOS) ...[
+            VerticalDivider(width: 1),
+            Expanded(
+              flex: 1,
+              child:
+                  _selectedFile != null
+                      ? LibraryFileInformationView(file: _selectedFile!)
+                      : const Center(child: Text('请选择一个文件查看详情')),
+            ),
+          ],
         ],
       ),
     );

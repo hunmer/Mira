@@ -32,6 +32,10 @@ android {
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         multiDexEnabled = true
+        
+        // ndk {
+        //     abiFilters.addAll(listOf("armeabi-v7a", "arm64-v8a", "x86"))
+        // }
     }
 
     buildTypes {
@@ -45,8 +49,7 @@ android {
 
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
-    // implementation("com.github.simolus3:sqlite3-android:3.41.2")
-    implementation ("com.github.requery:sqlite-android:3.49.0")
+    // implementation("com.github.requery:sqlite-android:3.49.0")
 }
 
 flutter {

@@ -8,7 +8,7 @@ class LibraryTabManager {
   final ValueNotifier<int> currentIndex;
 
   LibraryTabManager({required this.libraries, required this.initialLibraries})
-    : pageController = PageController(),
+    : pageController = PageController(initialPage: 0),
       currentIndex = ValueNotifier(0) {
     pageController.addListener(_handlePageChange);
   }
@@ -20,7 +20,9 @@ class LibraryTabManager {
   void addTab(Library library) {
     libraries.add(library);
     currentIndex.value = libraries.length - 1;
-    pageController.jumpToPage(currentIndex.value);
+    if (pageController.hasClients) {
+      pageController.jumpToPage(currentIndex.value);
+    }
   }
 
   void closeTab(int index) {

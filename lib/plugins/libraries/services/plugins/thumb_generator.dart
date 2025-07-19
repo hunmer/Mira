@@ -30,7 +30,7 @@ class ThumbGenerator {
       final fileType = _getFileType(path);
       if (fileType == null) return;
 
-      final thumbPath = _dbService.getItemThumbPath(args.item);
+      final thumbPath = await _dbService.getItemThumbPath(args.item);
       final thumbFile = File(thumbPath);
 
       if (!thumbFile.parent.existsSync()) {

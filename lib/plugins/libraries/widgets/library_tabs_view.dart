@@ -117,6 +117,12 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
               IconButton(
                 icon: const Icon(Icons.add),
                 onPressed: () async {
+                  final itemCount = widget.initialLibraries.length;
+                  if (itemCount == 1) {
+                    _tabManager.addTab(widget.initialLibraries[0]);
+                    setState(() {});
+                    return;
+                  }
                   final selectedLibrary = await showDialog<Library>(
                     context: context,
                     builder:
@@ -142,7 +148,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                             width: double.minPositive,
                             child: ListView.builder(
                               shrinkWrap: true,
-                              itemCount: widget.initialLibraries.length,
+                              itemCount: itemCount,
                               itemBuilder:
                                   (context, index) => ListTile(
                                     title: Text(

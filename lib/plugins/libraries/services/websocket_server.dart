@@ -210,7 +210,7 @@ class WebSocketServer {
                 if (record != null) {
                   record['thumb'] =
                       record['thumb'] == 1
-                          ? dbService.getItemThumbPath(record)
+                          ? await dbService.getItemThumbPath(record)
                           : '';
                 }
                 break;
@@ -262,7 +262,7 @@ class WebSocketServer {
                 );
                 for (var record in records) {
                   if (record['thumb'] == 1) {
-                    record['thumb'] = dbService.getItemThumbPath(record);
+                    record['thumb'] = await dbService.getItemThumbPath(record);
                   }
                 }
                 break;

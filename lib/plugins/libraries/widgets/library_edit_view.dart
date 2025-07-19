@@ -20,6 +20,23 @@ class _LibraryEditViewState extends State<LibraryEditView> {
   String _localPath = '';
 
   Future<void> _pickFolder() async {
+    if (Theme.of(context).platform == TargetPlatform.android) {
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: Text('Warning'),
+              content: Text('Location cannot be changed in android'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('OK'),
+                ),
+              ],
+            ),
+      );
+      return;
+    }
     final result = await FilePicker.platform.getDirectoryPath();
     if (result != null) {
       setState(() {

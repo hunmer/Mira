@@ -8,7 +8,6 @@ class LibraryGalleryAppBar extends StatelessWidget
   final int selectedCount;
   final VoidCallback onSelectAll;
   final VoidCallback onExitSelection;
-  final VoidCallback onSearch;
   final VoidCallback onFilter;
   final VoidCallback onEnterSelection;
   final VoidCallback onUpload;
@@ -16,13 +15,14 @@ class LibraryGalleryAppBar extends StatelessWidget
   final VoidCallback onFolder;
   final VoidCallback onTag;
   final int pendingUploadCount;
+  final Set<String> displayFields;
+  final ValueChanged<Set<String>> onDisplayFieldsChanged;
 
   const LibraryGalleryAppBar({
     required this.isSelectionMode,
     required this.selectedCount,
     required this.onSelectAll,
     required this.onExitSelection,
-    required this.onSearch,
     required this.onFilter,
     required this.onEnterSelection,
     required this.onUpload,
@@ -30,6 +30,8 @@ class LibraryGalleryAppBar extends StatelessWidget
     required this.onFolder,
     required this.onTag,
     required this.pendingUploadCount,
+    required this.displayFields,
+    required this.onDisplayFieldsChanged,
     super.key,
   });
 
@@ -42,9 +44,7 @@ class LibraryGalleryAppBar extends StatelessWidget
     if (localizations == null) return Container();
 
     return AppBar(
-      title: Text(
-        isSelectionMode ? '已选择 $selectedCount 项' : localizations.filesTitle,
-      ),
+      title: Text(isSelectionMode ? '已选择 $selectedCount 项' : ''),
       automaticallyImplyLeading: false,
       actions:
           isSelectionMode
@@ -59,7 +59,6 @@ class LibraryGalleryAppBar extends StatelessWidget
                 ),
               ]
               : [
-                IconButton(icon: const Icon(Icons.search), onPressed: onSearch),
                 Stack(
                   children: [
                     IconButton(
@@ -72,14 +71,15 @@ class LibraryGalleryAppBar extends StatelessWidget
                   icon: const Icon(Icons.check_box),
                   onPressed: onEnterSelection,
                 ),
-                Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    IconButton(
-                      icon: const Icon(Icons.file_upload),
-                      onPressed: onUpload,
-                    ),
-                    if (pendingUploadCount > 0)
+                if (pendingUploadCount > 0)
+                  Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.file_upload),
+                        onPressed: onUpload,
+                      ),
+
                       Positioned(
                         top: 8,
                         right: 8,
@@ -103,14 +103,45 @@ class LibraryGalleryAppBar extends StatelessWidget
                           ),
                         ),
                       ),
-                  ],
-                ),
+                    ],
+                  ),
+
                 IconButton(
                   icon: const Icon(Icons.cloud_upload),
                   onPressed: onShowUploadQueue,
                 ),
                 IconButton(icon: const Icon(Icons.folder), onPressed: onFolder),
                 IconButton(icon: const Icon(Icons.tag), onPressed: onTag),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.view_column),
+                  itemBuilder:
+                      (context) =>
+                          [
+                            'title',
+                            'cover',
+                            'rating',
+                            'notes',
+                            'createdAt',
+                            'tags',
+                            'folder',
+                            'size',
+                          ].map((field) {
+                            return CheckedPopupMenuItem<String>(
+                              value: field,
+                              checked: displayFields.contains(field),
+                              child: Text(field),
+                            );
+                          }).toList(),
+                  onSelected: (field) {
+                    final newFields = Set<String>.from(displayFields);
+                    if (newFields.contains(field)) {
+                      newFields.remove(field);
+                    } else {
+                      newFields.add(field);
+                    }
+                    onDisplayFieldsChanged(newFields);
+                  },
+                ),
               ],
     );
   }

@@ -9,10 +9,10 @@ abstract class LibraryServerDataInterface {
   String getLibraryId();
 
   /// 获取项目路径
-  String getItemPath(item);
+  Future<String> getItemPath(item);
 
   /// 获取项目缩略图路径
-  String getItemThumbPath(item);
+  Future<String> getItemThumbPath(item);
 
   /// 初始化数据库连接
   Future<void> initialize();

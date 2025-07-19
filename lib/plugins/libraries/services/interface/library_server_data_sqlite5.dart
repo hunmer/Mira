@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/services/plugins/thumb_generator.dart';
 import 'package:mira/plugins/libraries/services/server_event_manager.dart';
 import 'package:mira/plugins/libraries/services/websocket_server.dart';
+import 'package:path_provider/path_provider.dart';
 import 'package:xxh3/xxh3.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'library_server_data_interface.dart';
@@ -18,7 +19,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   @override
   Future<void> initialize() async {
-    final path = getLibraryPath();
+    final path = await getLibraryPath();
     eventManager = ServerEventManager(server, this);
     ThumbGenerator(server, this);
 
@@ -573,7 +574,10 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     return result.map((row) => _rowToMap(result, row)).toList();
   }
 
-  String getLibraryPath() {
+  Future<String> getLibraryPath() async {
+    if (Platform.isAndroid) {
+      return (await getApplicationDocumentsDirectory()).path;
+    }
     return config['customFields']['path'];
   }
 
@@ -583,13 +587,13 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   }
 
   @override
-  String getItemPath(item) {
-    return '${getLibraryPath()}\\${item['hash']}\\';
+  Future<String> getItemPath(item) async {
+    return '${await getLibraryPath()}\\${item['hash']}\\';
   }
 
   @override
-  String getItemThumbPath(item) {
-    return '${getItemPath(item)}preview.png';
+  Future<String> getItemThumbPath(item) async {
+    return '${await getItemPath(item)}preview.png';
   }
 
   @override

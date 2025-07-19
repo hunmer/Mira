@@ -26,16 +26,7 @@ class LibraryItem extends StatelessWidget {
     this.onTap,
     this.onDoubleTap,
     this.onLongPress,
-    this.displayFields = const {
-      'title',
-      'cover',
-      'rating',
-      'notes',
-      'createdAt',
-      'tags',
-      'folder',
-      'size',
-    },
+    required this.displayFields,
     super.key,
   });
 
@@ -80,21 +71,22 @@ class LibraryItem extends StatelessWidget {
                         width: double.infinity,
                         child: Column(
                           children: [
-                            Expanded(
-                              child:
-                                  useThumbnail && file.thumb != null
-                                      ? buildImageFromUrl(file.thumb!)
-                                      : Icon(
-                                        Icons.insert_drive_file,
-                                        size: 48,
-                                        color:
-                                            ['audio', 'video'].contains(
-                                                  file.type?.toLowerCase(),
-                                                )
-                                                ? Colors.blue
-                                                : null,
-                                      ),
-                            ),
+                            if (displayFields.contains('cover'))
+                              Expanded(
+                                child:
+                                    useThumbnail && file.thumb != null
+                                        ? buildImageFromUrl(file.thumb!)
+                                        : Icon(
+                                          Icons.insert_drive_file,
+                                          size: 48,
+                                          color:
+                                              ['audio', 'video'].contains(
+                                                    file.type?.toLowerCase(),
+                                                  )
+                                                  ? Colors.blue
+                                                  : null,
+                                        ),
+                              ),
                             Padding(
                               padding: const EdgeInsets.all(8.0),
                               child: Column(

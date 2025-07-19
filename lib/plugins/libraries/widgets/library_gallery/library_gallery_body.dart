@@ -1,6 +1,7 @@
+import 'dart:io';
+
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
-import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
@@ -14,11 +15,13 @@ class LibraryGalleryBody extends StatefulWidget {
   final Map<String, dynamic> filterOptions;
   final bool isSelectionMode;
   final Set<int> selectedFileIds;
+  final Set<String> displayFields;
   final Function(LibraryFile) onFileSelected;
   final Function(LibraryFile) onFileOpen;
 
   const LibraryGalleryBody({
     required this.plugin,
+    required this.displayFields,
     required this.library,
     required this.filterOptions,
     required this.isSelectionMode,
@@ -62,6 +65,7 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
 
   @override
   Widget build(BuildContext context) {
+    final isMobile = Platform.isAndroid || Platform.isIOS;
     return ValueListenableBuilder<List<LibraryFile>>(
       valueListenable: _filesNotifier,
       builder: (context, files, _) {
@@ -97,18 +101,17 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                   useThumbnail:
                       file.thumb != null ||
                       ['audio', 'video'].contains(getFileType(file.name)),
-                  displayFields: const {
-                    'title',
-                    'cover',
-                    'rating',
-                    'notes',
-                    'createdAt',
-                    'tags',
-                    'folder',
-                    'size',
-                  },
-                  onTap: () => widget.onFileSelected(file),
-                  onDoubleTap: () => widget.onFileOpen(file),
+                  displayFields: widget.displayFields,
+                  onTap:
+                      () =>
+                          isMobile
+                              ? widget.onFileOpen(file)
+                              : widget.onFileSelected(file),
+                  onDoubleTap:
+                      () =>
+                          isMobile
+                              ? widget.onFileSelected(file)
+                              : widget.onFileOpen(file),
                   onLongPress: () {
                     showModalBottomSheet(
                       context: context,

@@ -39,7 +39,7 @@ class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
     final ext = fileName.split('.').last.toLowerCase();
     if (['mp4', 'mov', 'avi', 'mkv'].contains(ext)) return 'video';
     if (['mp3', 'wav', 'aac', 'flac'].contains(ext)) return 'audio';
-    if (['jpg', 'jpeg', 'png', 'gif'].contains(ext)) return 'image';
+    if (['jpg', 'jpeg', 'png', 'gif', 'webp'].contains(ext)) return 'image';
     if (['pdf'].contains(ext)) return 'pdf';
     return 'other';
   }
@@ -76,6 +76,9 @@ class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
         );
       case 'image':
         return InteractiveViewer(
+          maxScale: 5.0,
+          minScale: 0.5,
+          boundaryMargin: EdgeInsets.all(20),
           child:
               widget.file.path!.startsWith('http')
                   ? Image.network(widget.file.path!)
@@ -108,7 +111,23 @@ class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(title: Text(widget.file.name)),
+      appBar: AppBar(
+        title: Text(widget.file.name),
+        actions: [
+          IconButton(
+            icon: Icon(Icons.info),
+            onPressed: () {
+              // TODO: 实现信息展示功能
+            },
+          ),
+          IconButton(
+            icon: Icon(Icons.share),
+            onPressed: () {
+              // TODO: 实现分享功能
+            },
+          ),
+        ],
+      ),
       body: Center(child: _buildPlayer()),
       floatingActionButton:
           _getFileType(widget.file.name) == 'video'
