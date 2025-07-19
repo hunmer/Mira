@@ -62,4 +62,8 @@ abstract class LibraryServerDataInterface {
 
   /// 关闭数据库连接
   Future<void> close();
+
+  Future<List<Map<String, dynamic>>> getAllTags();
+
+  Future<List<Map<String, dynamic>>> getAllFolders();
 }

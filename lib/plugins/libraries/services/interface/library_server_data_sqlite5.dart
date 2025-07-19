@@ -14,7 +14,6 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Future<void> initialize(Map<String, dynamic> config) async {
     final dbPath = config['path'] as String;
     _db = sqlite3.open(dbPath);
-
     // 创建文件表
     _db?.execute('''
       CREATE TABLE IF NOT EXISTS files(
@@ -87,6 +86,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       fileData['path'],
       fileData['thumb'] ?? 0,
     ]);
+    stmt.dispose();
     return {'id': _db!.lastInsertRowId, ...fileData};
   }
 
@@ -123,6 +123,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     final stmt = _db!.prepare(query);
     stmt.execute(params);
+    stmt.dispose();
     return _db!.updatedRows > 0;
   }
 
@@ -131,6 +132,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     // 直接删除文件记录
     final stmt = _db!.prepare('DELETE FROM files WHERE id = ?');
     stmt.execute([id]);
+    stmt.dispose();
     return _db!.updatedRows > 0;
   }
 
@@ -138,6 +140,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Future<Map<String, dynamic>?> getFile(int id) async {
     final stmt = _db!.prepare('SELECT * FROM files WHERE id = ? LIMIT 1');
     final result = stmt.select([id]);
+    stmt.dispose();
     return result.isNotEmpty ? _rowToMap(result, result.first) : null;
   }
 
@@ -231,6 +234,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     final stmt = _db!.prepare(query);
     final result = stmt.select(params);
+    stmt.dispose();
     return result.map((row) => _rowToMap(result, row)).toList();
   }
 
@@ -248,6 +252,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       folderData['color'],
       folderData['icon'],
     ]);
+    stmt.dispose();
     return _db!.lastInsertRowId;
   }
 
@@ -265,6 +270,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       folderData['icon'],
       id,
     ]);
+    stmt.dispose();
     return _db!.updatedRows > 0;
   }
 
@@ -282,6 +288,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     // 删除文件夹
     final stmt = _db!.prepare('DELETE FROM folders WHERE id = ?');
     stmt.execute([id]);
+    stmt.dispose();
     return _db!.updatedRows > 0;
   }
 
@@ -306,6 +313,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     final stmt = _db!.prepare(query);
     final result = stmt.select(params);
+    stmt.dispose();
     return result.map((row) => _rowToMap(result, row)).toList();
   }
 
@@ -323,6 +331,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       tagData['color'],
       tagData['icon'],
     ]);
+    stmt.dispose();
     return _db!.lastInsertRowId;
   }
 
@@ -340,6 +349,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       tagData['icon'],
       id,
     ]);
+    stmt.dispose();
     return _db!.updatedRows > 0;
   }
 
@@ -354,6 +364,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     // 删除标签
     final stmt = _db!.prepare('DELETE FROM tags WHERE id = ?');
     stmt.execute([id]);
+    stmt.dispose();
     return _db!.updatedRows > 0;
   }
 
@@ -361,6 +372,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Future<Map<String, dynamic>?> getTag(int id) async {
     final stmt = _db!.prepare('SELECT * FROM tags WHERE id = ? LIMIT 1');
     final result = stmt.select([id]);
+    stmt.dispose();
     return result.isNotEmpty ? _rowToMap(result, result.first) : null;
   }
 
@@ -378,6 +390,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     final stmt = _db!.prepare(query);
     final result = stmt.select(params);
+    stmt.dispose();
     return result.map((row) => _rowToMap(result, row)).toList();
   }
 
@@ -463,6 +476,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       WHERE fi.id = ?
     ''');
     final result = stmt.select([fileId]);
+    stmt.dispose();
     return result.map((row) => _rowToMap(result, row)).toList();
   }
 
@@ -470,6 +484,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Future<List<Map<String, dynamic>>> getFileTags(int fileId) async {
     final stmt = _db!.prepare('SELECT tags FROM files WHERE id = ?');
     final result = stmt.select([fileId]);
+    stmt.dispose();
     if (result.isEmpty) return [];
 
     final tagsStr = result.first[0] as String?;
@@ -504,6 +519,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       // 更新文件的folder_id
       final stmt = _db!.prepare('UPDATE files SET folder_id = ? WHERE id = ?');
       stmt.execute([folderId, fileId]);
+      stmt.dispose();
 
       await commitTransaction();
       return _db!.updatedRows > 0;
@@ -521,6 +537,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       // 直接更新files表中的tags字段，使用逗号拼接
       final stmt = _db!.prepare('UPDATE files SET tags = ? WHERE id = ?');
       stmt.execute([tagIds.join(','), fileId]);
+      stmt.dispose();
 
       await commitTransaction();
       return _db!.updatedRows > 0;
@@ -528,5 +545,21 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       await rollbackTransaction();
       rethrow;
     }
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAllTags() async {
+    final stmt = _db!.prepare('SELECT * FROM tags');
+    final result = stmt.select();
+    stmt.dispose();
+    return result.map((row) => _rowToMap(result, row)).toList();
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAllFolders() async {
+    final stmt = _db!.prepare('SELECT * FROM folders');
+    final result = stmt.select();
+    stmt.dispose();
+    return result.map((row) => _rowToMap(result, row)).toList();
   }
 }

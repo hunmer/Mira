@@ -62,7 +62,7 @@ class LibraryFile {
       ),
       notes: map['notes'],
       rating: map['rating'] ?? map['stars'] ?? 0,
-      tags: List<String>.from(map['tags'] ?? []),
+      tags: (map['tags'] ?? '').split(','),
       folderId: map['folderId'] ?? map['folder_id']?.toString() ?? '',
       reference: map['reference'],
       url: map['url'],

@@ -15,6 +15,7 @@ class WebSocketServer {
   final int port;
   final LibraryServerDataInterface _dbService;
   late final _basePath;
+  late bool _connecting = false;
   HttpServer? _server;
   late final ServerEventManager _eventManager;
 
@@ -33,6 +34,9 @@ class WebSocketServer {
     _thumbGenerator = ThumbGenerator(this, _dbService);
   }
 
+  // isStaring
+  bool get connecting => _connecting;
+
   Future<void> start(String basePath) async {
     _basePath = basePath;
     await _dbService.initialize({'path': '$basePath\\library_data.db'});
@@ -50,12 +54,24 @@ class WebSocketServer {
         InternetAddress.anyIPv6,
         port,
       );
-    } catch (err) {}
+      _connecting = true;
+    } catch (err) {
+      _connecting = false;
+    }
 
     print('Serving at ws://${_server?.address.host}:${_server?.port}');
   }
 
-  void _handleConnection(WebSocketChannel channel) {
+  void _handleConnection(WebSocketChannel channel) async {
+    channel.sink.add(
+      jsonEncode({
+        'event': 'connected',
+        'data': {
+          'tags': await _dbService.getAllTags(),
+          'folders': await _dbService.getAllFolders(),
+        },
+      }),
+    );
     _connectedClients.add(channel);
     channel.stream.listen(
       (message) async {
@@ -396,6 +412,7 @@ class WebSocketServer {
     await _dbService.close();
     await _server?.close();
     _connectedClients.clear();
+    _connecting = false;
     print('WebSocket server stopped');
   }
 }

@@ -41,6 +41,7 @@ class LibrariesPlugin extends PluginBase {
   Future<void> initialize() async {
     libraryUIController = LibraryUIController(this);
     dataController = LibraryLocalDataController(storage);
+    server = WebSocketServer(8080);
   }
 
   Future<void> setlibraryController(String connectionAddress) async {
@@ -49,7 +50,9 @@ class LibrariesPlugin extends PluginBase {
         WebSocketChannel.connect(Uri.parse(connectionAddress)),
       );
     } else {
-      server = WebSocketServer(8080);
+      if (server.connecting) {
+        await server.stop();
+      }
       await server.start(connectionAddress);
       final channel = WebSocketChannel.connect(
         Uri.parse('ws://localhost:8080'),
@@ -63,6 +66,5 @@ class LibrariesPlugin extends PluginBase {
   void dispose() {
     libraryController?.close();
     server?.stop();
-    // 其他清理逻辑
   }
 }

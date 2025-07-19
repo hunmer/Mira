@@ -71,33 +71,21 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     try {
       debugPrint('Received WebSocket message: $message');
       final response = jsonDecode(message);
-      debugPrint('Active request IDs: ${_responseHandlers.keys.join(', ')}');
-
       if (response.containsKey('requestId')) {
-        debugPrint(
-          'Processing response for request ID: ${response['requestId']}',
-        );
-
         if (_responseHandlers.containsKey(response['requestId'])) {
           final completer = _responseHandlers.remove(response['requestId']);
-          debugPrint(
-            'Found matching completer for request ID: ${response['requestId']}',
-          );
-
           if (response['status'] == 'success') {
             completer?.complete(response['data']);
           } else {
             completer?.completeError(Exception(response['message']));
           }
-        } else {
-          debugPrint(
-            'No matching completer found for request ID: ${response['requestId']}',
-          );
         }
       } else {
         final eventName = response['event'];
         final data = response['data'];
         switch (eventName) {
+          case 'connected':
+            break;
           case 'thumbnail_generated':
             EventManager.instance.broadcast(eventName, ItemEventArgs(data));
             break;
