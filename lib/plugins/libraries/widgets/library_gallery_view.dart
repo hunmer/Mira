@@ -262,7 +262,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               ],
             ),
           ),
-          VerticalDivider(width: 1),
+          if (!Platform.isAndroid && !Platform.isIOS) VerticalDivider(width: 1),
           Expanded(
             flex: 1,
             child:
