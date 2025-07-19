@@ -65,108 +65,113 @@ class _FileDropDialogState extends State<FileDropDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            DropRegion(
-              onPerformDrop: (event) async {
-                for (final item in event.session.items) {
-                  final reader = item.dataReader!;
-                  if (reader.canProvide(Formats.fileUri)) {
-                    reader.getValue<Uri>(
-                      Formats.fileUri,
-                      (uri) {
-                        if (uri != null) {
-                          setState(() {
-                            final path =
-                                Platform.isWindows && uri.path.startsWith('/')
-                                    ? Uri.decodeFull(uri.path.substring(1))
-                                    : Uri.decodeFull(uri.path);
-                            _selectedFiles.add(File(path));
-                            _selectedItems.add(true);
-                          });
-                        }
-                      },
-                      onError: (error) {
-                        print('Error reading file URI: $error');
-                      },
-                    );
+      insetPadding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
+      child: SizedBox(
+        width: MediaQuery.of(context).size.width * 0.8,
+        height: MediaQuery.of(context).size.height * 0.8,
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              DropRegion(
+                onPerformDrop: (event) async {
+                  for (final item in event.session.items) {
+                    final reader = item.dataReader!;
+                    if (reader.canProvide(Formats.fileUri)) {
+                      reader.getValue<Uri>(
+                        Formats.fileUri,
+                        (uri) {
+                          if (uri != null) {
+                            setState(() {
+                              final path =
+                                  Platform.isWindows && uri.path.startsWith('/')
+                                      ? Uri.decodeFull(uri.path.substring(1))
+                                      : Uri.decodeFull(uri.path);
+                              _selectedFiles.add(File(path));
+                              _selectedItems.add(true);
+                            });
+                          }
+                        },
+                        onError: (error) {
+                          print('Error reading file URI: $error');
+                        },
+                      );
+                    }
                   }
-                }
-              },
-              onDropOver: (event) {
-                return Future.value(DropOperation.copy);
-              },
-              formats: [],
-              child: Container(
-                height: 150,
-                decoration: BoxDecoration(
-                  border: Border.all(color: Colors.grey),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Center(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      Icon(Icons.cloud_upload, size: 48),
-                      SizedBox(height: 8),
-                      Text('拖拽文件到此处或点击下方按钮添加'),
-                    ],
+                },
+                onDropOver: (event) {
+                  return Future.value(DropOperation.copy);
+                },
+                formats: [],
+                child: Container(
+                  height: 150,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.cloud_upload, size: 48),
+                        SizedBox(height: 8),
+                        Text('拖拽文件到此处或点击下方按钮添加'),
+                      ],
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 16),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-              children: [
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.insert_drive_file),
-                  label: const Text('添加文件'),
-                  onPressed: _pickFiles,
-                ),
-                ElevatedButton.icon(
-                  icon: const Icon(Icons.folder),
-                  label: const Text('添加目录'),
-                  onPressed: _pickDirectory,
-                ),
-              ],
-            ),
-            const SizedBox(height: 16),
-            if (_selectedFiles.isNotEmpty) ...[
-              const Text('已选择文件:'),
-              const SizedBox(height: 8),
-              Expanded(
-                child: ListView.builder(
-                  shrinkWrap: true,
-                  itemCount: _selectedFiles.length,
-                  itemBuilder: (context, index) {
-                    return CheckboxListTile(
-                      value: _selectedItems[index],
-                      onChanged: (value) {
-                        setState(() {
-                          _selectedItems[index] = value!;
-                        });
-                      },
-                      title: Text(
-                        _selectedFiles[index].path
-                            .replaceAll('\\', '/')
-                            .split('/')
-                            .last,
-                      ),
-                      subtitle: Text(
-                        formatFileSize((_selectedFiles[index].lengthSync())),
-                      ),
-                    );
-                  },
-                ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                children: [
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.insert_drive_file),
+                    label: const Text('添加文件'),
+                    onPressed: _pickFiles,
+                  ),
+                  ElevatedButton.icon(
+                    icon: const Icon(Icons.folder),
+                    label: const Text('添加目录'),
+                    onPressed: _pickDirectory,
+                  ),
+                ],
               ),
               const SizedBox(height: 16),
-              ElevatedButton(onPressed: _onDone, child: const Text('确认选择')),
+              if (_selectedFiles.isNotEmpty) ...[
+                const Text('已选择文件:'),
+                const SizedBox(height: 8),
+                Expanded(
+                  child: ListView.builder(
+                    shrinkWrap: true,
+                    itemCount: _selectedFiles.length,
+                    itemBuilder: (context, index) {
+                      return CheckboxListTile(
+                        value: _selectedItems[index],
+                        onChanged: (value) {
+                          setState(() {
+                            _selectedItems[index] = value!;
+                          });
+                        },
+                        title: Text(
+                          _selectedFiles[index].path
+                              .replaceAll('\\', '/')
+                              .split('/')
+                              .last,
+                        ),
+                        subtitle: Text(
+                          formatFileSize((_selectedFiles[index].lengthSync())),
+                        ),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: 16),
+                ElevatedButton(onPressed: _onDone, child: const Text('确认选择')),
+              ],
             ],
-          ],
+          ),
         ),
       ),
     );

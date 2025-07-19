@@ -60,6 +60,7 @@ class LibrarySidebarView extends StatelessWidget {
                             )
                             .toList(),
                     library: library,
+                    showSelectAll: false,
                     type: 'tags',
                   );
                 }
@@ -92,6 +93,7 @@ class LibrarySidebarView extends StatelessWidget {
                             )
                             .toList(),
                     library: library,
+                    showSelectAll: false,
                     type: 'folders',
                   );
                 }

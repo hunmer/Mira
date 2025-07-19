@@ -47,17 +47,27 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
   @override
   Widget build(BuildContext context) {
+    final libraries = _tabManager.libraries.asMap().entries;
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
           icon: const Icon(Icons.menu),
           onPressed: () => setState(() => _showSidebar = !_showSidebar),
         ),
+        actions: [
+          IconButton(
+            icon: const Icon(Icons.close),
+            onPressed:
+                () => setState(() {
+                  _tabManager.closeAllTabs();
+                }),
+          ),
+        ],
         title: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
           child: Row(
             children: [
-              ..._tabManager.libraries.asMap().entries.map(
+              ...libraries.map(
                 (entry) => GestureDetector(
                   onTap:
                       () => _tabManager.pageController.animateToPage(
@@ -93,7 +103,10 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                         const SizedBox(width: 4),
                         GestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          onTap: () => _tabManager.closeTab(entry.key),
+                          onTap:
+                              () => setState(() {
+                                _tabManager.closeTab(entry.key);
+                              }),
                           child: const Icon(Icons.close, size: 16),
                         ),
                       ],
@@ -126,7 +139,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                             ),
                           ],
                           content: SizedBox(
-                            width: double.maxFinite,
+                            width: double.minPositive,
                             child: ListView.builder(
                               shrinkWrap: true,
                               itemCount: widget.initialLibraries.length,
@@ -148,6 +161,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                   );
                   if (selectedLibrary != null) {
                     _tabManager.addTab(selectedLibrary);
+                    setState(() {});
                   }
                 },
               ),
@@ -167,23 +181,30 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             child: ValueListenableBuilder<int>(
               valueListenable: _tabManager.currentIndex,
               builder: (context, currentIndex, _) {
-                return PageView(
-                  controller: _tabManager.pageController,
-                  onPageChanged: (index) {
-                    if (index == _tabManager.libraries.length) {
-                      _tabManager.pageController.jumpToPage(currentIndex);
-                    }
-                  },
-                  children: [
-                    ..._tabManager.libraries.map(
-                      (library) => LibraryGalleryView(
-                        plugin: widget.plugin,
-                        library: library,
+                return _tabManager.libraries.isEmpty
+                    ? const Center(
+                      child: Text(
+                        'No libraries available',
+                        style: TextStyle(fontSize: 18),
                       ),
-                    ),
-                    const Center(child: Icon(Icons.add)),
-                  ],
-                );
+                    )
+                    : PageView(
+                      controller: _tabManager.pageController,
+                      onPageChanged: (index) {
+                        if (index == _tabManager.libraries.length) {
+                          _tabManager.pageController.jumpToPage(currentIndex);
+                        }
+                      },
+                      children: [
+                        ..._tabManager.libraries.map(
+                          (library) => LibraryGalleryView(
+                            plugin: widget.plugin,
+                            library: library,
+                          ),
+                        ),
+                        const Center(child: Icon(Icons.add)),
+                      ],
+                    );
               },
             ),
           ),
@@ -201,7 +222,10 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
       tabKey: key,
       library: library,
       initialLibraries: widget.initialLibraries,
-      onCloseTab: () => _tabManager.closeTab(tabIndex),
+      onCloseTab:
+          () => setState(() {
+            _tabManager.closeTab(tabIndex);
+          }),
     );
   }
 }

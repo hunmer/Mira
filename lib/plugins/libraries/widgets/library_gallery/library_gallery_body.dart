@@ -1,12 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
+import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
+import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/widgets/library_item.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_item_actions.dart';
 
-class LibraryGalleryBody extends StatelessWidget {
+class LibraryGalleryBody extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Library library;
   final Map<String, dynamic> filterOptions;
@@ -25,20 +27,42 @@ class LibraryGalleryBody extends StatelessWidget {
   });
 
   @override
-  Widget build(BuildContext context) {
-    return FutureBuilder<List<LibraryFile>>(
-      future: plugin.libraryController
-          .getLibraryInst(library)!
-          .findFiles(query: filterOptions),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return Center(child: Text('加载文件失败: ${snapshot.error}'));
-        }
-        final files = snapshot.data ?? [];
+  State<LibraryGalleryBody> createState() => _LibraryGalleryBodyState();
+}
 
+class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
+  late ValueNotifier<List<LibraryFile>> _filesNotifier;
+  late LibraryDataInterface _libraryController;
+
+  @override
+  void initState() {
+    super.initState();
+    _libraryController =
+        widget.plugin.libraryController.getLibraryInst(widget.library)!;
+    _filesNotifier = ValueNotifier<List<LibraryFile>>([]);
+    _loadFiles();
+  }
+
+  Future<void> _loadFiles() async {
+    final files = await _libraryController.findFiles(
+      query: widget.filterOptions,
+    );
+    if (mounted) {
+      _filesNotifier.value = files;
+    }
+  }
+
+  @override
+  void dispose() {
+    _filesNotifier.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return ValueListenableBuilder<List<LibraryFile>>(
+      valueListenable: _filesNotifier,
+      builder: (context, files, _) {
         return LayoutBuilder(
           builder: (context, constraints) {
             final itemWidth = 150.0;
@@ -57,17 +81,17 @@ class LibraryGalleryBody extends StatelessWidget {
               itemBuilder: (context, index) {
                 final file = files[index];
                 return LibraryItem(
+                  key: ValueKey(file.id), // 添加key避免不必要的重建
                   file: file,
                   getTagTilte:
-                      (tagId) => plugin.foldersTagsController.getTagTitleById(
-                        library.id,
-                        tagId,
-                      ),
+                      (tagId) => widget.plugin.foldersTagsController
+                          .getTagTitleById(widget.library.id, tagId),
                   getFolderTitle:
-                      (folderId) => plugin.foldersTagsController
-                          .getFolderTitleById(library.id, folderId),
+                      (folderId) => widget.plugin.foldersTagsController
+                          .getFolderTitleById(widget.library.id, folderId),
                   isSelected:
-                      isSelectionMode && selectedFileIds.contains(file.id),
+                      widget.isSelectionMode &&
+                      widget.selectedFileIds.contains(file.id),
                   useThumbnail:
                       file.thumb != null ||
                       ['audio', 'video'].contains(getFileType(file.name)),
@@ -81,19 +105,17 @@ class LibraryGalleryBody extends StatelessWidget {
                     'folder',
                     'size',
                   },
-                  onTap: () => onFileSelected(file),
+                  onTap: () => widget.onFileSelected(file),
                   onLongPress: () {
                     showModalBottomSheet(
                       context: context,
                       builder:
                           (context) => LibraryGalleryItemActions(
-                            plugin: plugin,
+                            plugin: widget.plugin,
                             file: file,
-                            library: library,
+                            library: widget.library,
                             onDelete:
-                                () => plugin.libraryController
-                                    .getLibraryInst(library)!
-                                    .deleteFile(file.id),
+                                () => _libraryController.deleteFile(file.id),
                           ),
                     );
                   },

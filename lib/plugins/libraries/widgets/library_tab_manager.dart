@@ -31,6 +31,12 @@ class LibraryTabManager {
     pageController.jumpToPage(currentIndex.value);
   }
 
+  void closeAllTabs() {
+    libraries.clear();
+    currentIndex.value = 0;
+    pageController.jumpToPage(currentIndex.value);
+  }
+
   void dispose() {
     pageController.removeListener(_handlePageChange);
     pageController.dispose();

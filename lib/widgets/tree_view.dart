@@ -70,6 +70,7 @@ class customTreeView extends StatefulWidget {
   const customTreeView({
     super.key,
     required this.items,
+    this.showSelectAll = false,
     this.title = 'Tree View',
     required this.defaultIcon,
     this.selected = const [],
@@ -79,6 +80,7 @@ class customTreeView extends StatefulWidget {
 
   final List<TreeItem> items;
   final String title;
+  final bool showSelectAll;
   final IconData defaultIcon;
   final List<String> selected;
   final void Function(TreeItem item)? onAddNode;
@@ -213,7 +215,7 @@ class _customTreeViewState extends State<customTreeView> {
                         initialExpandedLevels:
                             99, // Ensure all nodes are expanded
                         showExpandCollapseButton: true,
-                        showSelectAll: true,
+                        showSelectAll: widget.showSelectAll,
                         onSelectionChanged: (ids) {
                           for (final id in ids) {
                             widget

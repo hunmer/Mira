@@ -11,6 +11,7 @@ class FolderTreeWidget extends StatefulWidget {
   final Set<String>? selected;
   final List<TreeItem> items;
   final Library library;
+  final bool? showSelectAll;
   final IconData? defaultIcon;
   final String? type;
   final OnAddNode? onAddNode;
@@ -20,6 +21,7 @@ class FolderTreeWidget extends StatefulWidget {
     this.selected,
     this.defaultIcon,
     this.type,
+    this.showSelectAll,
     required this.items,
     required this.library,
     this.onAddNode,
@@ -105,6 +107,7 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
       items: _items,
       defaultIcon: _currentIcon,
       title: '',
+      showSelectAll: widget.showSelectAll ?? true,
       selected: _selectedItems.toList(),
       onAddNode: (TreeItem node) async {
         await _onAddNode(node);
