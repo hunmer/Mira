@@ -113,6 +113,12 @@ class FolderCache {
   Future<void> close() async {
     return await cache.close();
   }
+
+  Future<List<LibraryFolder?>> getAll() async {
+    return (await cache.getAll(
+      (await cache.keys).toSet(),
+    )).values.whereType<LibraryFolder>().toList();
+  }
 }
 
 class TagCache {
@@ -158,5 +164,11 @@ class TagCache {
 
   Future<void> close() async {
     return await cache.close();
+  }
+
+  Future<List<LibraryTag?>> getAll() async {
+    return (await cache.getAll(
+      (await cache.keys).toSet(),
+    )).values.whereType<LibraryTag>().toList();
   }
 }

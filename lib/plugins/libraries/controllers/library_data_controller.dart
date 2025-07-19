@@ -30,8 +30,11 @@ class LibraryDataController {
       context,
       MaterialPageRoute(
         builder:
-            (context) =>
-                LibraryTabsView(plugin: plugin, initialLibraries: [library]),
+            (context) => LibraryTabsView(
+              plugin: plugin,
+              library: library,
+              initialLibraries: [library],
+            ),
       ),
     );
   }
