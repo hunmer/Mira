@@ -2,7 +2,6 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mira/core/event/event.dart';
-import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
@@ -11,9 +10,7 @@ import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_drop_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_preview_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_item.dart';
 import 'package:mira/plugins/libraries/widgets/upload_queue_dialog.dart';
-import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_body.dart';
@@ -44,7 +41,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   @override
   void initState() {
     super.initState();
-    _uploadQueue = UploadQueueService(widget.plugin);
+    _uploadQueue = UploadQueueService(widget.plugin, widget.library);
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
       setState(() {
         _uploadProgress = _uploadQueue.progress;
@@ -92,11 +89,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     }
   }
 
-  void _deleteFile(LibraryFile file) {
-    widget.plugin.libraryController.deleteFile(file.id);
-    setState(() {});
-  }
-
   void _showUploadDialog() {
     showDialog(
       context: context,
@@ -113,16 +105,19 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void _toggleSelectAll() {
-    widget.plugin.libraryController.getFiles().then((fileList) {
-      setState(() {
-        final allFileIds = fileList.map((f) => f.id).toSet();
-        if (_selectedFileIds.length == allFileIds.length) {
-          _selectedFileIds.clear();
-        } else {
-          _selectedFileIds = allFileIds;
-        }
-      });
-    });
+    widget.plugin.libraryController
+        .getLibraryInst(widget.library)!
+        .getFiles()
+        .then((fileList) {
+          setState(() {
+            final allFileIds = fileList.map((f) => f.id).toSet();
+            if (_selectedFileIds.length == allFileIds.length) {
+              _selectedFileIds.clear();
+            } else {
+              _selectedFileIds = allFileIds;
+            }
+          });
+        });
   }
 
   void _exitSelectionMode() {
@@ -188,18 +183,28 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           );
         },
         onFolder: () {
-          widget.plugin.libraryController.getFolders().then((folders) async {
-            await widget.plugin.libraryUIController.showFolderSelector(context);
-          });
+          widget.plugin.libraryController
+              .getLibraryInst(widget.library)!
+              .getFolders()
+              .then((folders) async {
+                await widget.plugin.libraryUIController.showFolderSelector(
+                  widget.library,
+                  context,
+                );
+              });
         },
         onTag: () async {
-          await widget.plugin.libraryUIController.showTagSelector(context);
+          await widget.plugin.libraryUIController.showTagSelector(
+            widget.library,
+            context,
+          );
         },
         pendingUploadCount: _uploadQueue.pendingFiles.length,
       ),
       bottomSheet: LibraryGalleryBottomSheet(uploadProgress: _uploadProgress),
       body: LibraryGalleryBody(
         plugin: widget.plugin,
+        library: widget.library,
         filterOptions: _filterOptions,
         isSelectionMode: _isSelectionMode,
         selectedFileIds: _selectedFileIds,

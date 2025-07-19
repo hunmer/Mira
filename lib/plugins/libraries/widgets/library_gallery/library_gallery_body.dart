@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/widgets/library_item.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_item_actions.dart';
 
 class LibraryGalleryBody extends StatelessWidget {
   final LibrariesPlugin plugin;
+  final Library library;
   final Map<String, dynamic> filterOptions;
   final bool isSelectionMode;
   final Set<int> selectedFileIds;
@@ -14,6 +16,7 @@ class LibraryGalleryBody extends StatelessWidget {
 
   const LibraryGalleryBody({
     required this.plugin,
+    required this.library,
     required this.filterOptions,
     required this.isSelectionMode,
     required this.selectedFileIds,
@@ -24,7 +27,9 @@ class LibraryGalleryBody extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<List<LibraryFile>>(
-      future: plugin.libraryController.findFiles(query: filterOptions),
+      future: plugin.libraryController
+          .getLibraryInst(library)!
+          .findFiles(query: filterOptions),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
           return const Center(child: CircularProgressIndicator());
@@ -67,8 +72,11 @@ class LibraryGalleryBody extends StatelessWidget {
                       (context) => LibraryGalleryItemActions(
                         plugin: plugin,
                         file: file,
+                        library: library,
                         onDelete:
-                            () => plugin.libraryController.deleteFile(file.id),
+                            () => plugin.libraryController
+                                .getLibraryInst(library)!
+                                .deleteFile(file.id),
                       ),
                 );
               },

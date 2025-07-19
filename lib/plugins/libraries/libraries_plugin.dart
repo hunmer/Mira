@@ -1,7 +1,10 @@
 import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
-import 'package:mira/plugins/libraries/controllers/localdata_controller.dart';
+import 'package:mira/plugins/libraries/controllers/folders_controller.dart';
+import 'package:mira/plugins/libraries/controllers/libraray_controller.dart';
+import 'package:mira/plugins/libraries/controllers/libraray_controller.dart';
+import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'controllers/library_data_interface.dart';
@@ -24,9 +27,10 @@ class LibrariesPlugin extends PluginBase {
   @override
   String get id => 'libraries';
   late final LibraryUIController libraryUIController;
-  late final LibraryDataInterface libraryController;
+  late final LibraryDataController libraryController;
   late final LibraryLocalDataController dataController;
   late final WebSocketServer server;
+  late final FoldersController foldersController;
 
   @override
   Future<void> registerToApp(
@@ -40,26 +44,11 @@ class LibrariesPlugin extends PluginBase {
   @override
   Future<void> initialize() async {
     libraryUIController = LibraryUIController(this);
-    dataController = LibraryLocalDataController(storage);
+    dataController = LibraryLocalDataController(this);
+    foldersController = FoldersController();
+    await foldersController.init();
+    libraryController = LibraryDataController(plugin: this);
     server = WebSocketServer(8080);
-  }
-
-  Future<void> setlibraryController(String connectionAddress) async {
-    if (connectionAddress.startsWith('ws://')) {
-      libraryController = LibraryDataWebSocket(
-        WebSocketChannel.connect(Uri.parse(connectionAddress)),
-      );
-    } else {
-      if (server.connecting) {
-        await server.stop();
-      }
-      await server.start(connectionAddress);
-      final channel = WebSocketChannel.connect(
-        Uri.parse('ws://localhost:8080'),
-      );
-      await channel.ready;
-      libraryController = LibraryDataWebSocket(channel);
-    }
   }
 
   @override

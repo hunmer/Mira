@@ -1,16 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 
 class LibraryGalleryItemActions extends StatelessWidget {
   final LibrariesPlugin plugin;
   final LibraryFile file;
+  final Library library;
   final VoidCallback onDelete;
 
   const LibraryGalleryItemActions({
     required this.plugin,
     required this.file,
+    required this.library,
     required this.onDelete,
     super.key,
   });
@@ -26,13 +29,13 @@ class LibraryGalleryItemActions extends StatelessWidget {
           onTap: () async {
             Navigator.pop(context);
             final result = await plugin.libraryUIController.showFolderSelector(
+              library,
               context,
             );
             if (result != null && result.isNotEmpty) {
-              await plugin.libraryController.setFileFolders(
-                file.id,
-                result.first.id,
-              );
+              await plugin.libraryController
+                  .getLibraryInst(library)!
+                  .setFileFolders(file.id, result.first.id);
             }
           },
         ),
@@ -42,13 +45,13 @@ class LibraryGalleryItemActions extends StatelessWidget {
           onTap: () async {
             Navigator.pop(context);
             final result = await plugin.libraryUIController.showTagSelector(
+              library,
               context,
             );
             if (result != null && result.isNotEmpty) {
-              await plugin.libraryController.setFileTags(
-                file.id,
-                result.map((item) => item.id).toList(),
-              );
+              await plugin.libraryController
+                  .getLibraryInst(library)!
+                  .setFileTags(file.id, result.map((item) => item.id).toList());
             }
           },
         ),

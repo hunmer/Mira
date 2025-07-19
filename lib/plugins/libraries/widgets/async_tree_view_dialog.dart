@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
 import '../../../../widgets/tree_view.dart';
 
 typedef OnAddNode = Future<void> Function(TreeItem node);
@@ -9,6 +10,7 @@ typedef OnDeleteNode = Future<void> Function(TreeItem node);
 class AsyncTreeViewDialog extends StatefulWidget {
   final Set<String>? selected;
   final List<TreeItem> items;
+  final Library library;
   final String title;
   final IconData? defaultIcon;
   final String? type;
@@ -18,6 +20,7 @@ class AsyncTreeViewDialog extends StatefulWidget {
     this.defaultIcon,
     this.type,
     required this.items,
+    required this.library,
     required this.title,
     super.key,
   });
@@ -51,7 +54,7 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
       final plugin =
           PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
       if (widget.type == 'folders') {
-        plugin.libraryController.addFolder({
+        plugin.libraryController.getLibraryInst(widget.library)!.addFolder({
           'id': node.id,
           'title': node.title,
           'parent_id': node.parentId,
@@ -59,7 +62,7 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
           'icon': node.icon?.codePoint,
         });
       } else if (widget.type == 'tags') {
-        plugin.libraryController.addTag({
+        plugin.libraryController.getLibraryInst(widget.library)!.addTag({
           'id': node.id,
           'title': node.title,
           'parent_id': node.parentId,
@@ -76,9 +79,13 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
       final plugin =
           PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
       if (widget.type == 'folders') {
-        plugin.libraryController.deleteFolder(node.id);
+        plugin.libraryController
+            .getLibraryInst(widget.library)!
+            .deleteFolder(node.id);
       } else if (widget.type == 'tags') {
-        plugin.libraryController.deleteTag(node.id);
+        plugin.libraryController
+            .getLibraryInst(widget.library)!
+            .deleteTag(node.id);
       }
     }
   }

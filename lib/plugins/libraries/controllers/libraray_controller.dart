@@ -1,16 +1,19 @@
+import 'package:flutter/material.dart';
 import 'package:mira/core/storage/storage_manager.dart';
+import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/plugins/libraries/widgets/library_tabs_view.dart';
 
 class LibraryLocalDataController {
-  final StorageManager _storage;
+  final LibrariesPlugin plugin;
 
-  LibraryLocalDataController(this._storage);
+  LibraryLocalDataController(this.plugin);
 
   /// 添加库记录
   Future<void> addLibrary(Library library) async {
     final libraries = await listLibraries();
     libraries.add(library);
-    await _storage.writeJson(
+    await plugin.storage.writeJson(
       'libraries',
       libraries.map((e) => e.toJson()).toList(),
     );
@@ -20,7 +23,7 @@ class LibraryLocalDataController {
   Future<void> removeLibrary(String libraryId) async {
     final libraries = await listLibraries();
     libraries.removeWhere((lib) => lib.id == libraryId);
-    await _storage.writeJson(
+    await plugin.storage.writeJson(
       'libraries',
       libraries.map((e) => e.toJson()).toList(),
     );
@@ -39,7 +42,7 @@ class LibraryLocalDataController {
 
   /// 列举所有库记录
   Future<List<Library>> listLibraries() async {
-    final jsonData = await _storage.readJson('libraries');
+    final jsonData = await plugin.storage.readJson('libraries');
     if (jsonData == null) return [];
     if (jsonData is List) {
       return jsonData

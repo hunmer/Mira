@@ -85,6 +85,8 @@ class LibraryDataWebSocket implements LibraryDataInterface {
         final data = response['data'];
         switch (eventName) {
           case 'connected':
+            final tags = data['tags'];
+            final folders = data['tags'];
             break;
           case 'thumbnail_generated':
             EventManager.instance.broadcast(eventName, ItemEventArgs(data));

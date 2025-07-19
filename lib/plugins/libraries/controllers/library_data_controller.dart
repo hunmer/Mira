@@ -1,0 +1,52 @@
+import 'package:flutter/material.dart';
+import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
+import 'package:mira/plugins/libraries/controllers/library_data_websocket.dart';
+import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/plugins/libraries/widgets/library_tabs_view.dart';
+import 'package:web_socket_channel/web_socket_channel.dart';
+
+class LibraryDataController {
+  final LibrariesPlugin plugin;
+  final Map<String, LibraryDataInterface> dataInterfaces = {};
+  LibraryDataController({required this.plugin});
+
+  openLibrary(Library library, BuildContext context) async {
+    final libraryId = library.id;
+    print('Opening library ${library.name}...');
+    await plugin.foldersController.createCache(library.name);
+    final path = library.customFields['path'];
+    if (path.startsWith('ws://')) {
+      dataInterfaces[libraryId] = LibraryDataWebSocket(
+        WebSocketChannel.connect(Uri.parse(path)),
+      );
+    } else {
+      if (plugin.server.connecting) {
+        await plugin.server.stop();
+      }
+      await plugin.server.start(path);
+      final channel = WebSocketChannel.connect(
+        Uri.parse('ws://localhost:8080'),
+      );
+      await channel.ready;
+      dataInterfaces[libraryId] = LibraryDataWebSocket(channel);
+    }
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder:
+            (context) =>
+                LibraryTabsView(plugin: plugin, initialLibraries: [library]),
+      ),
+    );
+  }
+
+  LibraryDataInterface? getLibraryInst(libraryId) {
+    if (libraryId is Library) {
+      libraryId = libraryId.id;
+    }
+    return dataInterfaces[libraryId];
+  }
+
+  void close() {}
+}

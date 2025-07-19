@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/async_tree_view_dialog.dart';
 import 'package:mira/widgets/tree_view.dart';
@@ -10,13 +11,18 @@ class LibraryUIController {
 
   LibraryUIController(this._plugin);
 
-  Future<List<LibraryFolder>> showFolderSelector(BuildContext context) async {
-    final folders = await _plugin.libraryController.getFolders();
+  Future<List<LibraryFolder>> showFolderSelector(
+    Library library,
+    BuildContext context,
+  ) async {
+    final folders =
+        await _plugin.libraryController.getLibraryInst(library)!.getFolders();
     final result = await showDialog<List<Map<String, dynamic>>>(
       context: context,
       builder:
           (context) => AsyncTreeViewDialog(
             title: '选择文件夹',
+            library: library,
             selected: null,
             type: 'folders',
             items: folders.map((f) => TreeItem.fromMap(f)).toList(),
@@ -26,13 +32,18 @@ class LibraryUIController {
     return result.map((item) => LibraryFolder.fromMap(item)).toList();
   }
 
-  Future<List<LibraryTag>> showTagSelector(BuildContext context) async {
-    final tags = await _plugin.libraryController.getTags();
+  Future<List<LibraryTag>> showTagSelector(
+    Library library,
+    BuildContext context,
+  ) async {
+    final tags =
+        await _plugin.libraryController.getLibraryInst(library)!.getTags();
     final result = await showDialog<List<Map<String, dynamic>>>(
       context: context,
       builder:
           (context) => AsyncTreeViewDialog(
             title: '选择标签',
+            library: library,
             selected: null,
             type: 'tags',
             items: tags.map((f) => TreeItem.fromMap(f)).toList(),
