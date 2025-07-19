@@ -14,7 +14,8 @@ class LibraryDataController {
   openLibrary(Library library, BuildContext context) async {
     final libraryId = library.id;
     print('Opening library ${library.name}...');
-    await plugin.foldersController.createCache(library.id);
+    await plugin.foldersTagsController.createFolderCache(library.id);
+    await plugin.foldersTagsController.createTagCache(library.id);
     final path = library.customFields['path'];
     final url = path.startsWith('ws://') ? path : 'ws://localhost:8080';
 

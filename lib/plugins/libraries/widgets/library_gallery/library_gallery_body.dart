@@ -39,45 +39,64 @@ class LibraryGalleryBody extends StatelessWidget {
         }
         final files = snapshot.data ?? [];
 
-        return GridView.builder(
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 8,
-            mainAxisSpacing: 8,
-          ),
-          itemCount: files.length,
-          itemBuilder: (context, index) {
-            final file = files[index];
-            return LibraryItem(
-              file: file,
-              isSelected: isSelectionMode && selectedFileIds.contains(file.id),
-              useThumbnail:
-                  file.thumb != null ||
-                  ['audio', 'video'].contains(getFileType(file.name)),
-              displayFields: const {
-                'title',
-                'cover',
-                'rating',
-                'notes',
-                'createdAt',
-                'tags',
-                'folder',
-                'size',
-              },
-              onTap: () => onFileSelected(file),
-              onLongPress: () {
-                showModalBottomSheet(
-                  context: context,
-                  builder:
-                      (context) => LibraryGalleryItemActions(
-                        plugin: plugin,
-                        file: file,
-                        library: library,
-                        onDelete:
-                            () => plugin.libraryController
-                                .getLibraryInst(library)!
-                                .deleteFile(file.id),
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final itemWidth = 150.0;
+            final spacing = 8.0;
+            final crossAxisCount =
+                (constraints.maxWidth / (itemWidth + spacing)).floor();
+
+            return GridView.builder(
+              gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: crossAxisCount > 0 ? crossAxisCount : 1,
+                crossAxisSpacing: spacing,
+                mainAxisSpacing: spacing,
+                childAspectRatio: 0.8,
+              ),
+              itemCount: files.length,
+              itemBuilder: (context, index) {
+                final file = files[index];
+                return LibraryItem(
+                  file: file,
+                  getTagTilte:
+                      (tagId) => plugin.foldersTagsController.getTagTitleById(
+                        library.id,
+                        tagId,
                       ),
+                  getFolderTitle:
+                      (folderId) => plugin.foldersTagsController
+                          .getFolderTitleById(library.id, folderId),
+                  isSelected:
+                      isSelectionMode && selectedFileIds.contains(file.id),
+                  useThumbnail:
+                      file.thumb != null ||
+                      ['audio', 'video'].contains(getFileType(file.name)),
+                  displayFields: const {
+                    'title',
+                    'cover',
+                    'rating',
+                    'notes',
+                    'createdAt',
+                    'tags',
+                    'folder',
+                    'size',
+                  },
+                  onTap: () => onFileSelected(file),
+                  onLongPress: () {
+                    showModalBottomSheet(
+                      context: context,
+                      builder:
+                          (context) => LibraryGalleryItemActions(
+                            plugin: plugin,
+                            file: file,
+                            library: library,
+                            onDelete:
+                                () => plugin.libraryController
+                                    .getLibraryInst(library)!
+                                    .deleteFile(file.id),
+                          ),
+                    );
+                  },
                 );
               },
             );

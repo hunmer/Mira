@@ -2,7 +2,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:checkable_treeview/checkable_treeview.dart';
 import 'circle_icon_picker.dart';
-import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 
 class TreeItem {
   TreeItem({
@@ -43,10 +42,16 @@ class TreeItem {
     id: map['id']?.toString() ?? '',
     title: map['title'] as String? ?? '',
     parentId: map['parentId'] as String?,
-    color: map['color'] != null ? Color(map['color'] as int) : null,
+    color:
+        map['color'] != null
+            ? Color(int.tryParse(map['color'].toString()) ?? 0)
+            : null,
     icon:
         map['icon'] != null
-            ? IconData(map['icon'] as int, fontFamily: 'MaterialIcons')
+            ? IconData(
+              int.tryParse(map['icon'].toString()) ?? 0,
+              fontFamily: 'MaterialIcons',
+            )
             : null,
     isSelected: map['isSelected'] as bool? ?? false,
   );
@@ -61,8 +66,8 @@ class TreeItem {
   };
 }
 
-class TreeViewDialog extends StatefulWidget {
-  const TreeViewDialog({
+class customTreeView extends StatefulWidget {
+  const customTreeView({
     super.key,
     required this.items,
     this.title = 'Tree View',
@@ -80,10 +85,10 @@ class TreeViewDialog extends StatefulWidget {
   final void Function(TreeItem item)? onDeleteNode;
 
   @override
-  State<TreeViewDialog> createState() => _TreeViewDialogState();
+  State<customTreeView> createState() => _customTreeViewState();
 }
 
-class _TreeViewDialogState extends State<TreeViewDialog> {
+class _customTreeViewState extends State<customTreeView> {
   List<TreeNode<String>> _treeNodes = [];
   final TextEditingController _searchController = TextEditingController();
   bool _showSearch = false;

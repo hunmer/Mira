@@ -108,7 +108,7 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
       content: SizedBox(
         width: maxWidth,
         height: maxHeight,
-        child: TreeViewDialog(
+        child: customTreeView(
           items: _items,
           defaultIcon: _currentIcon,
           title: '',

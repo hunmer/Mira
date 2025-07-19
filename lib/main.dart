@@ -1,7 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:async';
-import 'package:ansicolor/ansicolor.dart' show AnsiPen;
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';

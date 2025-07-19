@@ -3,7 +3,7 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
-import 'package:mira/plugins/libraries/widgets/async_tree_view_dialog.dart';
+import 'package:mira/plugins/libraries/widgets/folder_tree_dialog.dart';
 import 'package:mira/widgets/tree_view.dart';
 
 class LibraryUIController {

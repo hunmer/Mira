@@ -5,9 +5,6 @@ import 'package:mira/plugins/libraries/controllers/folders_controller.dart';
 import 'package:mira/plugins/libraries/controllers/libraray_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
-import 'controllers/library_data_interface.dart';
-import 'controllers/library_data_websocket.dart';
 import 'services/websocket_server.dart';
 
 class LibrariesPlugin extends PluginBase {
@@ -29,7 +26,7 @@ class LibrariesPlugin extends PluginBase {
   late final LibraryDataController libraryController;
   late final LibraryLocalDataController dataController;
   late final WebSocketServer server;
-  late final FoldersController foldersController;
+  late final FoldersTagsController foldersTagsController;
 
   @override
   Future<void> registerToApp(
@@ -44,8 +41,8 @@ class LibrariesPlugin extends PluginBase {
   Future<void> initialize() async {
     libraryUIController = LibraryUIController(this);
     dataController = LibraryLocalDataController(this);
-    foldersController = FoldersController();
-    await foldersController.init();
+    foldersTagsController = FoldersTagsController();
+    await foldersTagsController.init();
     libraryController = LibraryDataController(plugin: this);
     server = WebSocketServer(8080);
   }

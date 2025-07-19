@@ -1,8 +1,5 @@
-import 'package:flutter/material.dart';
-import 'package:mira/core/storage/storage_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
-import 'package:mira/plugins/libraries/widgets/library_tabs_view.dart';
 
 class LibraryLocalDataController {
   final LibrariesPlugin plugin;

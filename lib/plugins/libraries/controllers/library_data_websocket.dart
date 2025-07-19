@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:mira/core/event/event.dart';
+import 'package:mira/core/plugin_manager.dart';
+import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:uuid/uuid.dart';
@@ -28,7 +30,8 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   final Library library;
   final WebSocketChannel _channel;
   final Map<String, Completer<dynamic>> _responseHandlers = {};
-
+  final LibrariesPlugin _plugin =
+      PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
   Future<dynamic> _sendRequest({
     required String action,
     required String type,
@@ -339,6 +342,24 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       action: 'update',
       type: 'file_tag',
       data: {'id': id, 'data': tagIds},
+    );
+  }
+
+  @override
+  Future<String> getFolderTitle(String folderId) async {
+    // 使用缓存读取
+    return await _plugin.foldersTagsController.getFolderTitleById(
+      library.id,
+      folderId,
+    );
+  }
+
+  @override
+  Future<String> getTagTitle(String tagId) async {
+    // 使用缓存读取
+    return await _plugin.foldersTagsController.getTagTitleById(
+      library.id,
+      tagId,
     );
   }
 }
