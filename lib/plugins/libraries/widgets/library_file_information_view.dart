@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:http/http.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 
@@ -67,6 +66,23 @@ class _LibraryFileInformationViewState
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Center(
+              child:
+                  widget.file.thumb != null
+                      ? buildImageFromUrl(widget.file.thumb!)
+                      : Icon(
+                        Icons.insert_drive_file,
+                        size: 48,
+                        color:
+                            [
+                                  'audio',
+                                  'video',
+                                ].contains(widget.file.type?.toLowerCase())
+                                ? Colors.blue
+                                : null,
+                      ),
+            ),
+            const SizedBox(height: 16),
             TextFormField(
               controller: _nameController,
               decoration: const InputDecoration(labelText: '文件名'),

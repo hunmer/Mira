@@ -1,5 +1,8 @@
 // 电话号码正则验证
+import 'dart:io';
 import 'dart:math';
+
+import 'package:flutter/material.dart';
 
 bool isValidPhoneNumber(String phone) {
   final phoneRegex = RegExp(r'^1[3-9]\d{9}$');
@@ -32,6 +35,24 @@ String getFileName(String path, [bool extName = false]) {
   return extName
       ? path.substring(index)
       : path.substring(index, path.lastIndexOf('.'));
+}
+
+Widget buildImageFromUrl(String url) {
+  return url.startsWith('http')
+      ? Image.network(
+        url,
+        fit: BoxFit.cover,
+        errorBuilder:
+            (context, error, stackTrace) =>
+                Icon(Icons.insert_drive_file, size: 48),
+      )
+      : Image.file(
+        File(url),
+        fit: BoxFit.cover,
+        errorBuilder:
+            (context, error, stackTrace) =>
+                Icon(Icons.insert_drive_file, size: 48),
+      );
 }
 
 String getFileType(String filename) {

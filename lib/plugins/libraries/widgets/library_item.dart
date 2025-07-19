@@ -83,27 +83,7 @@ class LibraryItem extends StatelessWidget {
                             Expanded(
                               child:
                                   useThumbnail && file.thumb != null
-                                      ? file.thumb!.startsWith('http')
-                                          ? Image.network(
-                                            file.thumb!,
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) =>
-                                                    Icon(
-                                                      Icons.insert_drive_file,
-                                                      size: 48,
-                                                    ),
-                                          )
-                                          : Image.file(
-                                            File(file.thumb!),
-                                            fit: BoxFit.cover,
-                                            errorBuilder:
-                                                (context, error, stackTrace) =>
-                                                    Icon(
-                                                      Icons.insert_drive_file,
-                                                      size: 48,
-                                                    ),
-                                          )
+                                      ? buildImageFromUrl(file.thumb!)
                                       : Icon(
                                         Icons.insert_drive_file,
                                         size: 48,
