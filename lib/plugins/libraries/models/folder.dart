@@ -20,8 +20,8 @@ class LibraryFolder {
       id: map['id'].toString(),
       title: map['title'],
       parentId: map['parentId'],
-      color: map['color'] != null ? Color(map['color']) : null,
-      icon: map['icon'] != null ? IconData(map['icon']) : null,
+      color: map['color'] != null ? Color(int.parse(map['color'])) : null,
+      icon: map['icon'] != null ? IconData(int.parse(map['icon'])) : null,
     );
   }
 

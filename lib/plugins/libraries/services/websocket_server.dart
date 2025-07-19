@@ -16,7 +16,6 @@ class WebSocketServer {
   late bool _connecting = false;
   late List<LibraryServerDataInterface> _libraryServices = [];
   late HttpServer? _server;
-  late final ServerEventManager eventManager;
 
   WebSocketServer(this.port) {}
 
@@ -24,14 +23,14 @@ class WebSocketServer {
     Map<String, dynamic> dbConfig,
   ) async {
     final dbServer = LibraryServerDataSQLite5(this, dbConfig);
-    await dbServer.initialize({'path': '${dbConfig['path']}\\library_data.db'});
+    await dbServer.initialize();
 
     _libraryServices.add(dbServer);
     return dbServer;
   }
 
-  LibraryServerDataInterface? findLibrary(String libraryId) {
-    return _libraryServices.firstWhere(
+  bool libraryExists(String libraryId) {
+    return _libraryServices.any(
       (library) => library.getLibraryId() == libraryId,
     );
   }
@@ -70,8 +69,8 @@ class WebSocketServer {
           await _handleMessage(channel, data);
 
           // 如果有libraryId，添加到_libraryClients
-          if (data is Map && data.containsKey('libraray')) {
-            final libraryId = data['libraray'] as String;
+          if (data is Map && data.containsKey('library')) {
+            final libraryId = data['library'] as String;
             if (!_libraryClients.containsKey(libraryId)) {
               _libraryClients[libraryId] = [];
             }
@@ -103,42 +102,50 @@ class WebSocketServer {
     WebSocketChannel channel,
     Map<String, dynamic> row,
   ) async {
-    try {
-      final payload = row['payload'] as Map<String, dynamic>;
-      final action = row['action'] as String;
-      final libraryId = row['library'] as String;
-      final data = payload['data'] as Map<String, dynamic>;
-      final recordType = payload['type'] as String;
-      var dbService = findLibrary(libraryId);
-      if (dbService == null && action != 'connected') {
-        channel.sink.add(
-          jsonEncode({'status': 'error', 'msg': 'Library not founded!'}),
-        );
-        return;
+    final payload = row['payload'] as Map<String, dynamic>;
+    final action = row['action'] as String;
+    final requestId = row['requestId'] as String;
+    final libraryId = row['library'] as String;
+    final data = payload['data'] as Map<String, dynamic>? ?? {};
+    final recordType = payload['type'] as String;
+    final exists = libraryExists(libraryId);
+    if (action == 'connected') {
+      if (!exists) {
+        final library = data['library'];
+        try {
+          final dbService = await loadLibrary(library);
+          channel.sink.add(
+            jsonEncode({
+              'event': 'connected',
+              'data': {
+                'library': dbService!.getLibraryId(),
+                'tags': await dbService!.getAllTags(),
+                'folders': await dbService!.getAllFolders(),
+              },
+            }),
+          );
+        } catch (err) {
+          channel.sink.add(
+            jsonEncode({
+              'status': 'error',
+              'msg': 'Library load error: ${err.toString()}',
+            }),
+          );
+        }
       }
+      return;
+    }
+    if (!exists) {
+      channel.sink.add(
+        jsonEncode({'status': 'error', 'msg': 'Library not founded!'}),
+      );
+      return;
+    }
+    final dbService = _libraryServices.firstWhere(
+      (library) => library.getLibraryId() == libraryId,
+    );
+    try {
       switch (action) {
-        case 'connected':
-          final library = data['libraray'];
-          try {
-            dbService = await loadLibrary(library);
-            channel.sink.add(
-              jsonEncode({
-                'event': 'connected',
-                'data': {
-                  'tags': await dbService!.getAllTags(),
-                  'folders': await dbService!.getAllFolders(),
-                },
-              }),
-            );
-          } catch (err) {
-            channel.sink.add(
-              jsonEncode({
-                'status': 'error',
-                'msg': 'Library load error: ${err.toString()}',
-              }),
-            );
-          }
-          break;
         case 'create':
           int id;
           switch (recordType) {
@@ -190,12 +197,7 @@ class WebSocketServer {
               throw ArgumentError('Invalid record type: $recordType');
           }
           channel.sink.add(
-            jsonEncode({
-              'status': 'success',
-              'id': id,
-              'requestId':
-                  data.containsKey('requestId') ? data['requestId'] : null,
-            }),
+            jsonEncode({'status': 'success', 'id': id, 'requestId': requestId}),
           );
           break;
         case 'read':
@@ -224,7 +226,7 @@ class WebSocketServer {
                   jsonEncode({
                     'status': 'success',
                     'data': folders,
-                    'requestId': data['requestId'],
+                    'requestId': requestId,
                   }),
                 );
                 break;
@@ -234,7 +236,7 @@ class WebSocketServer {
                   jsonEncode({
                     'status': 'success',
                     'data': tags,
-                    'requestId': data['requestId'],
+                    'requestId': requestId,
                   }),
                 );
                 break;
@@ -245,8 +247,7 @@ class WebSocketServer {
               jsonEncode({
                 'status': 'success',
                 'data': record,
-                'requestId':
-                    data.containsKey('requestId') ? data['requestId'] : null,
+                'requestId': requestId,
               }),
             );
           } else {
@@ -284,8 +285,7 @@ class WebSocketServer {
               jsonEncode({
                 'status': 'success',
                 'data': records,
-                'requestId':
-                    data.containsKey('requestId') ? data['requestId'] : null,
+                'requestId': requestId,
               }),
             );
           }
@@ -328,7 +328,7 @@ class WebSocketServer {
                 jsonEncode({
                   'status': success ? 'success' : 'failed',
                   'message': success ? 'File folders updated' : 'Update failed',
-                  'requestId': data['requestId'],
+                  'requestId': requestId,
                 }),
               );
               break;
@@ -338,7 +338,7 @@ class WebSocketServer {
                 jsonEncode({
                   'status': success ? 'success' : 'failed',
                   'message': success ? 'File tags updated' : 'Update failed',
-                  'requestId': data['requestId'],
+                  'requestId': requestId,
                 }),
               );
               break;
@@ -349,8 +349,7 @@ class WebSocketServer {
             jsonEncode({
               'status': success ? 'success' : 'failed',
               'message': success ? 'Record updated' : 'Update failed',
-              'requestId':
-                  data.containsKey('requestId') ? data['requestId'] : null,
+              'requestId': requestId,
             }),
           );
           break;
@@ -396,8 +395,7 @@ class WebSocketServer {
             jsonEncode({
               'status': success ? 'success' : 'failed',
               'message': success ? 'Record deleted' : 'Delete failed',
-              'requestId':
-                  data.containsKey('requestId') ? data['requestId'] : null,
+              'requestId': requestId,
             }),
           );
           break;
@@ -407,8 +405,7 @@ class WebSocketServer {
             jsonEncode({
               'status': 'error',
               'message': 'Unknown action',
-              'requestId':
-                  data.containsKey('requestId') ? data['requestId'] : null,
+              'requestId': requestId,
             }),
           );
       }
@@ -418,7 +415,7 @@ class WebSocketServer {
           'status': 'error',
           'message': 'Operation failed',
           'details': e.toString(),
-          'requestId': row.containsKey('requestId') ? row['requestId'] : null,
+          'requestId': requestId,
         }),
       );
     }

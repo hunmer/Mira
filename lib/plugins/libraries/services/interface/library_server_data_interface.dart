@@ -15,7 +15,7 @@ abstract class LibraryServerDataInterface {
   String getItemThumbPath(item);
 
   /// 初始化数据库连接
-  Future<void> initialize(Map<String, dynamic> config);
+  Future<void> initialize();
 
   // 文件表操作
   Future<Map<String, dynamic>> createFile(Map<String, dynamic> fileData);

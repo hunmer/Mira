@@ -13,8 +13,8 @@ class ThumbGenerator {
 
   ThumbGenerator(this._server, this._dbService) {
     // 注册事件监听
-    _server.eventManager.subscribe('file_created', _onFileCreated);
-    _server.eventManager.subscribe('file_deleted', _onFileDeleted);
+    _dbService.getEventManager().subscribe('file_created', _onFileCreated);
+    _dbService.getEventManager().subscribe('file_deleted', _onFileDeleted);
   }
 
   Future<void> _onFileCreated(EventArgs args) async {
@@ -50,7 +50,10 @@ class ThumbGenerator {
       // 更新数据库中的thumb字段
       await _dbService.updateFile(args.item['id'], {'thumb': 1});
       // 通知客户端缩略图已生成
-      _server.eventManager.broadcastToClients('thumbnail_generated', args);
+      _dbService.getEventManager().broadcastToClients(
+        'thumbnail_generated',
+        args,
+      );
     } catch (e) {
       debugPrint('Failed to generate thumbnail: $e');
     }

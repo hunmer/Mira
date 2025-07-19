@@ -19,7 +19,7 @@ class FoldersController {
     print('Folders updated');
     final data = args.item;
     final cache = getLibraryCache(data['library']);
-    data['folders'].map((e) => e as LibraryFolder).forEach(cache.putAll);
+    data['folders'].forEach((e) => cache.put(LibraryFolder.fromMap(e)));
   }
 
   Future<FolderCache> createCache(String libraryName) async {
@@ -65,13 +65,8 @@ class FolderCache {
           );
   }
 
-  // putAll
-  Future<void> putAll(Map<String, LibraryFolder> folders) async {
-    return await cache.putAll(folders);
-  }
-
-  Future<void> put(String name, LibraryFolder folder) async {
-    return await cache.put(name, folder);
+  Future<void> put(LibraryFolder folder) async {
+    return await cache.put(folder.id, folder);
   }
 
   Future<LibraryFolder?> get(String name) async {

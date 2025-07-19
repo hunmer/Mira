@@ -22,7 +22,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     _sendRequest(
       action: 'connected',
       type: 'library_update',
-      data: library.toJson(),
+      data: {'library': library.toJson()},
     );
   }
   final Library library;
@@ -87,19 +87,25 @@ class LibraryDataWebSocket implements LibraryDataInterface {
           }
         }
       } else {
+        final status = response['status'];
+        if (status == 'error') {
+          // response['msg'];
+          return;
+        }
+
         final eventName = response['event'];
         final data = response['data'];
-        final libraray = data['library'];
+        final library = data['library'];
 
         switch (eventName) {
           case 'connected':
             EventManager.instance.broadcast(
               'tags_update',
-              MapEventArgs({'libraray': libraray, 'tags': data['tags']}),
+              MapEventArgs({'library': library, 'tags': data['tags']}),
             );
             EventManager.instance.broadcast(
               'folders_update',
-              MapEventArgs({'libraray': libraray, 'folders': data['folders']}),
+              MapEventArgs({'library': library, 'folders': data['folders']}),
             );
             break;
           case 'thumbnail_generated':
@@ -193,6 +199,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       type: 'file',
       query: query ?? {},
     );
+    if (result == null) return [];
     return (result as List).map((json) => LibraryFile.fromMap(json)).toList();
   }
 

@@ -17,11 +17,12 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   LibraryServerDataSQLite5(this.server, this.config);
 
   @override
-  Future<void> initialize(Map<String, dynamic> config) async {
+  Future<void> initialize() async {
+    final path = getLibraryPath();
     eventManager = ServerEventManager(server, this);
     ThumbGenerator(server, this);
 
-    final dbPath = config['path'] as String;
+    final dbPath = '$path\\library_data.db';
     _db = sqlite3.open(dbPath);
     // 创建文件表
     _db?.execute('''
@@ -572,6 +573,10 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     return result.map((row) => _rowToMap(result, row)).toList();
   }
 
+  String getLibraryPath() {
+    return config['customFields']['path'];
+  }
+
   @override
   String getLibraryId() {
     return config['id'];
@@ -579,7 +584,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   @override
   String getItemPath(item) {
-    return '${config['path']}\\${item['hash']}\\';
+    return '${getLibraryPath()}\\${item['hash']}\\';
   }
 
   @override

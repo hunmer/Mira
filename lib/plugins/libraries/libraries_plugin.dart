@@ -3,7 +3,6 @@ import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/controllers/folders_controller.dart';
 import 'package:mira/plugins/libraries/controllers/libraray_controller.dart';
-import 'package:mira/plugins/libraries/controllers/libraray_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
