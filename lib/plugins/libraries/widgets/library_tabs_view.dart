@@ -56,6 +56,63 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
         ),
         actions: [
           IconButton(
+            icon: const Icon(Icons.add),
+            onPressed: () async {
+              final itemCount = widget.initialLibraries.length;
+              if (itemCount == 1) {
+                _tabManager.addTab(widget.initialLibraries[0]);
+                setState(() {});
+                return;
+              }
+              final selectedLibrary = await showDialog<Library>(
+                context: context,
+                builder:
+                    (context) => AlertDialog(
+                      title: const Text('Select Library'),
+                      actions: [
+                        IconButton(
+                          icon: const Icon(Icons.add),
+                          onPressed: () async {
+                            final newLibrary = await Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) => LibraryEditView(),
+                              ),
+                            );
+                            if (newLibrary != null) {
+                              Navigator.pop(context, newLibrary);
+                            }
+                          },
+                        ),
+                      ],
+                      content: SizedBox(
+                        width: double.minPositive,
+                        child: ListView.builder(
+                          shrinkWrap: true,
+                          itemCount: itemCount,
+                          itemBuilder:
+                              (context, index) => ListTile(
+                                title: Text(
+                                  widget.initialLibraries[index].name,
+                                ),
+                                onTap: () {
+                                  Navigator.pop(
+                                    context,
+                                    widget.initialLibraries[index],
+                                  );
+                                },
+                              ),
+                        ),
+                      ),
+                    ),
+              );
+              if (selectedLibrary != null) {
+                _tabManager.addTab(selectedLibrary);
+                setState(() {});
+              }
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.close),
             onPressed:
                 () => setState(() {
@@ -113,63 +170,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                     ),
                   ),
                 ),
-              ),
-              IconButton(
-                icon: const Icon(Icons.add),
-                onPressed: () async {
-                  final itemCount = widget.initialLibraries.length;
-                  if (itemCount == 1) {
-                    _tabManager.addTab(widget.initialLibraries[0]);
-                    setState(() {});
-                    return;
-                  }
-                  final selectedLibrary = await showDialog<Library>(
-                    context: context,
-                    builder:
-                        (context) => AlertDialog(
-                          title: const Text('Select Library'),
-                          actions: [
-                            IconButton(
-                              icon: const Icon(Icons.add),
-                              onPressed: () async {
-                                final newLibrary = await Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => LibraryEditView(),
-                                  ),
-                                );
-                                if (newLibrary != null) {
-                                  Navigator.pop(context, newLibrary);
-                                }
-                              },
-                            ),
-                          ],
-                          content: SizedBox(
-                            width: double.minPositive,
-                            child: ListView.builder(
-                              shrinkWrap: true,
-                              itemCount: itemCount,
-                              itemBuilder:
-                                  (context, index) => ListTile(
-                                    title: Text(
-                                      widget.initialLibraries[index].name,
-                                    ),
-                                    onTap: () {
-                                      Navigator.pop(
-                                        context,
-                                        widget.initialLibraries[index],
-                                      );
-                                    },
-                                  ),
-                            ),
-                          ),
-                        ),
-                  );
-                  if (selectedLibrary != null) {
-                    _tabManager.addTab(selectedLibrary);
-                    setState(() {});
-                  }
-                },
               ),
             ],
           ),

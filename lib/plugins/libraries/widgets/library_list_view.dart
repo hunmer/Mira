@@ -42,16 +42,60 @@ class _LibraryListViewState extends State<LibraryListView> {
 
         final libraries = snapshot.data ?? [];
         return Scaffold(
-          appBar: AppBar(title: Text(localizations.librariesTitle)),
-          body: ListView.builder(
-            itemCount: libraries.length,
-            itemBuilder: (context, index) {
-              final library = libraries[index];
-              return ListTile(
-                leading: Icon(Icons.library_books),
-                title: Text(library.name),
-                subtitle: Text(library.type),
-                onTap: () => _onLibrarySelected(library),
+          body: LayoutBuilder(
+            builder: (context, constraints) {
+              // 根据屏幕宽度动态计算列数
+              final width = constraints.maxWidth;
+              final crossAxisCount =
+                  width > 1200
+                      ? 6
+                      : width > 800
+                      ? 4
+                      : width > 500
+                      ? 3
+                      : 2;
+
+              return GridView.builder(
+                padding: EdgeInsets.all(8),
+                gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                  crossAxisCount: crossAxisCount,
+                  crossAxisSpacing: 8,
+                  mainAxisSpacing: 8,
+                  childAspectRatio: 0.8,
+                ),
+                itemCount: libraries.length,
+                itemBuilder: (context, index) {
+                  final library = libraries[index];
+                  return Card(
+                    elevation: 2,
+                    child: InkWell(
+                      onTap: () => _onLibrarySelected(library),
+                      child: Padding(
+                        padding: EdgeInsets.all(12),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Icon(Icons.library_books, size: 40),
+                            SizedBox(height: 8),
+                            Text(
+                              library.name,
+                              style: Theme.of(context).textTheme.titleMedium,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                            SizedBox(height: 4),
+                            Text(
+                              library.type,
+                              style: Theme.of(context).textTheme.bodySmall,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                },
               );
             },
           ),

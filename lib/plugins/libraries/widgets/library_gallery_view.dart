@@ -51,9 +51,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   Map<String, dynamic> _filterOptions = {};
   Map<String, dynamic> _paginationOptions = {'page': 1, 'perPage': 20};
   LibraryFile? _selectedFile;
+  int _imagesPerRow = 3; // 默认每行显示3张图片
 
   @override
-  void initState() {
+  void initState() async {
     super.initState();
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
@@ -260,6 +261,12 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             _displayFields = newFields;
           });
         },
+        imagesPerRow: _imagesPerRow,
+        onImagesPerRowChanged: (count) {
+          setState(() {
+            _imagesPerRow = count;
+          });
+        },
       ),
       bottomSheet: LibraryGalleryBottomSheet(uploadProgress: _uploadProgress),
       body: Row(
@@ -278,6 +285,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                     selectedFileIds: _selectedFileIds,
                     onFileSelected: _onFileSelected,
                     onFileOpen: _onFileOpen,
+                    imagesPerRow: _imagesPerRow,
                   ),
                 ),
                 _buildPaginationControls(),

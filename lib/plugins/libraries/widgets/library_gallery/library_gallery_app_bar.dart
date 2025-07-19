@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
 
 class LibraryGalleryAppBar extends StatelessWidget
@@ -17,6 +16,8 @@ class LibraryGalleryAppBar extends StatelessWidget
   final int pendingUploadCount;
   final Set<String> displayFields;
   final ValueChanged<Set<String>> onDisplayFieldsChanged;
+  final int imagesPerRow;
+  final ValueChanged<int> onImagesPerRowChanged;
 
   const LibraryGalleryAppBar({
     required this.isSelectionMode,
@@ -32,6 +33,8 @@ class LibraryGalleryAppBar extends StatelessWidget
     required this.pendingUploadCount,
     required this.displayFields,
     required this.onDisplayFieldsChanged,
+    required this.imagesPerRow,
+    required this.onImagesPerRowChanged,
     super.key,
   });
 
@@ -111,7 +114,6 @@ class LibraryGalleryAppBar extends StatelessWidget
                   onPressed: onShowUploadQueue,
                 ),
                 IconButton(icon: const Icon(Icons.folder), onPressed: onFolder),
-                IconButton(icon: const Icon(Icons.tag), onPressed: onTag),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.view_column),
                   itemBuilder:
@@ -140,6 +142,21 @@ class LibraryGalleryAppBar extends StatelessWidget
                       newFields.add(field);
                     }
                     onDisplayFieldsChanged(newFields);
+                  },
+                ),
+                PopupMenuButton<int>(
+                  icon: const Icon(Icons.grid_view),
+                  itemBuilder:
+                      (context) =>
+                          [1, 2, 3, 4, 5].map((count) {
+                            return CheckedPopupMenuItem<int>(
+                              value: count,
+                              checked: imagesPerRow == count,
+                              child: Text('每行 $count 张'),
+                            );
+                          }).toList(),
+                  onSelected: (count) {
+                    onImagesPerRowChanged(count);
                   },
                 ),
               ],

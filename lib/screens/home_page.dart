@@ -26,7 +26,6 @@ class _HomePageState extends State<HomePage> {
           Container(
             height: 56,
             alignment: Alignment.centerLeft,
-            padding: const EdgeInsets.symmetric(horizontal: 16),
             child: CupertinoButton(
               padding: EdgeInsets.zero,
               onPressed: () {

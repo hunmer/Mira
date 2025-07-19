@@ -18,6 +18,7 @@ class LibraryGalleryBody extends StatefulWidget {
   final Set<String> displayFields;
   final Function(LibraryFile) onFileSelected;
   final Function(LibraryFile) onFileOpen;
+  final int imagesPerRow;
 
   const LibraryGalleryBody({
     required this.plugin,
@@ -28,6 +29,7 @@ class LibraryGalleryBody extends StatefulWidget {
     required this.selectedFileIds,
     required this.onFileSelected,
     required this.onFileOpen,
+    required this.imagesPerRow,
     super.key,
   });
 
@@ -73,8 +75,7 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
           builder: (context, constraints) {
             final itemWidth = 150.0;
             final spacing = 8.0;
-            final crossAxisCount =
-                (constraints.maxWidth / (itemWidth + spacing)).floor();
+            final crossAxisCount = widget.imagesPerRow;
 
             return GridView.builder(
               gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
