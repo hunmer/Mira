@@ -1,4 +1,19 @@
+import 'package:mira/plugins/libraries/services/server_event_manager.dart';
+
 abstract class LibraryServerDataInterface {
+  /// 获取事件管理器
+
+  ServerEventManager getEventManager();
+
+  /// 获取库ID
+  String getLibraryId();
+
+  /// 获取项目路径
+  String getItemPath(item);
+
+  /// 获取项目缩略图路径
+  String getItemThumbPath(item);
+
   /// 初始化数据库连接
   Future<void> initialize(Map<String, dynamic> config);
 

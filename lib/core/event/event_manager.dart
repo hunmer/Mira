@@ -3,7 +3,7 @@ import 'package:flutter/foundation.dart';
 /// 事件参数基类
 class EventArgs {
   /// 事件名称
-  final String eventName;
+  String eventName;
 
   /// 事件发生时间
   final DateTime whenOccurred;
@@ -132,6 +132,9 @@ class EventManager {
     // 创建订阅列表的副本，以防在处理过程中列表被修改
     final activeSubscriptions =
         subscriptions.where((subscription) => subscription.isActive).toList();
+    if (args.eventName.isEmpty) {
+      args.eventName = eventName;
+    }
 
     for (var subscription in activeSubscriptions) {
       try {

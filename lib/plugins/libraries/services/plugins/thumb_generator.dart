@@ -30,7 +30,7 @@ class ThumbGenerator {
       final fileType = _getFileType(path);
       if (fileType == null) return;
 
-      final thumbPath = _server.getItemThumbPath(args.item);
+      final thumbPath = _dbService.getItemThumbPath(args.item);
       final thumbFile = File(thumbPath);
 
       if (!thumbFile.parent.existsSync()) {
@@ -60,7 +60,7 @@ class ThumbGenerator {
     if (args is! ItemEventArgs) return;
 
     try {
-      final thumbPath = '${_server.getItemPath(args.item)}preview.png';
+      final thumbPath = '${_dbService.getItemPath(args.item)}preview.png';
       final thumbFile = File(thumbPath);
 
       if (thumbFile.existsSync()) {

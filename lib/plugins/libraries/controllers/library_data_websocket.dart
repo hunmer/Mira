@@ -3,15 +3,31 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
-import 'package:mira/plugins/libraries/services/server_item_event.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'library_data_interface.dart';
 
 class LibraryDataWebSocket implements LibraryDataInterface {
+  LibraryDataWebSocket(this._channel, this.library) {
+    _channel.stream.listen(
+      _handleResponse,
+      onError: (error) {
+        print('连接出错: $error');
+      },
+      onDone: () {
+        print('连接已关闭');
+      },
+    );
+    _sendRequest(
+      action: 'connected',
+      type: 'library_update',
+      data: library.toJson(),
+    );
+  }
+  final Library library;
   final WebSocketChannel _channel;
   final Map<String, Completer<dynamic>> _responseHandlers = {};
-  static int _requestCounter = 0;
 
   Future<dynamic> _sendRequest({
     required String action,
@@ -27,6 +43,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     final message = {
       'action': action,
       'requestId': requestId,
+      'library': library.id,
       'payload': {
         'type': type,
         if (data != null) 'data': data,
@@ -51,18 +68,6 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     }
   }
 
-  LibraryDataWebSocket(this._channel) {
-    _channel.stream.listen(
-      _handleResponse,
-      onError: (error) {
-        print('连接出错: $error');
-      },
-      onDone: () {
-        print('连接已关闭');
-      },
-    );
-  }
-
   String _generateRequestId() {
     return Uuid().v4();
   }
@@ -71,6 +76,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     try {
       debugPrint('Received WebSocket message: $message');
       final response = jsonDecode(message);
+
       if (response.containsKey('requestId')) {
         if (_responseHandlers.containsKey(response['requestId'])) {
           final completer = _responseHandlers.remove(response['requestId']);
@@ -83,13 +89,21 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       } else {
         final eventName = response['event'];
         final data = response['data'];
+        final libraray = data['library'];
+
         switch (eventName) {
           case 'connected':
-            final tags = data['tags'];
-            final folders = data['tags'];
+            EventManager.instance.broadcast(
+              'tags_update',
+              MapEventArgs({'libraray': libraray, 'tags': data['tags']}),
+            );
+            EventManager.instance.broadcast(
+              'folders_update',
+              MapEventArgs({'libraray': libraray, 'folders': data['folders']}),
+            );
             break;
           case 'thumbnail_generated':
-            EventManager.instance.broadcast(eventName, ItemEventArgs(data));
+            EventManager.instance.broadcast(eventName, MapEventArgs(data));
             break;
         }
       }

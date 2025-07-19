@@ -1,7 +1,9 @@
-import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
+import 'package:mira/plugins/libraries/services/plugins/thumb_generator.dart';
+import 'package:mira/plugins/libraries/services/server_event_manager.dart';
+import 'package:mira/plugins/libraries/services/websocket_server.dart';
 import 'package:xxh3/xxh3.dart';
 import 'package:sqlite3/sqlite3.dart';
 import 'library_server_data_interface.dart';
@@ -9,9 +11,16 @@ import 'library_server_data_interface.dart';
 class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Database? _db;
   bool _inTransaction = false;
+  final WebSocketServer server;
+  late final ServerEventManager eventManager;
+  final Map<String, dynamic> config;
+  LibraryServerDataSQLite5(this.server, this.config);
 
   @override
   Future<void> initialize(Map<String, dynamic> config) async {
+    eventManager = ServerEventManager(server, this);
+    ThumbGenerator(server, this);
+
     final dbPath = config['path'] as String;
     _db = sqlite3.open(dbPath);
     // 创建文件表
@@ -561,5 +570,25 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     final result = stmt.select();
     stmt.dispose();
     return result.map((row) => _rowToMap(result, row)).toList();
+  }
+
+  @override
+  String getLibraryId() {
+    return config['id'];
+  }
+
+  @override
+  String getItemPath(item) {
+    return '${config['path']}\\${item['hash']}\\';
+  }
+
+  @override
+  String getItemThumbPath(item) {
+    return '${getItemPath(item)}preview.png';
+  }
+
+  @override
+  ServerEventManager getEventManager() {
+    return eventManager;
   }
 }

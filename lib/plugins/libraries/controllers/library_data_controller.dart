@@ -16,21 +16,15 @@ class LibraryDataController {
     print('Opening library ${library.name}...');
     await plugin.foldersController.createCache(library.name);
     final path = library.customFields['path'];
-    if (path.startsWith('ws://')) {
-      dataInterfaces[libraryId] = LibraryDataWebSocket(
-        WebSocketChannel.connect(Uri.parse(path)),
-      );
-    } else {
-      if (plugin.server.connecting) {
-        await plugin.server.stop();
-      }
-      await plugin.server.start(path);
-      final channel = WebSocketChannel.connect(
-        Uri.parse('ws://localhost:8080'),
-      );
-      await channel.ready;
-      dataInterfaces[libraryId] = LibraryDataWebSocket(channel);
+    final url = path.startsWith('ws://') ? path : 'ws://localhost:8080';
+
+    if (plugin.server.connecting) {
+      await plugin.server.stop();
     }
+    await plugin.server.start(path);
+    final channel = WebSocketChannel.connect(Uri.parse(url));
+    await channel.ready;
+    dataInterfaces[libraryId] = LibraryDataWebSocket(channel, library);
     Navigator.push(
       context,
       MaterialPageRoute(

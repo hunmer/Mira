@@ -3,7 +3,7 @@ import 'event_manager.dart';
 /// 用于传递单个值的事件参数
 class Value<T> extends EventArgs {
   final T value;
-  
+
   Value(this.value, [String eventName = '']) : super(eventName);
 }
 
@@ -11,7 +11,7 @@ class Value<T> extends EventArgs {
 class Values<T1, T2> extends EventArgs {
   final T1 value1;
   final T2 value2;
-  
+
   Values(this.value1, this.value2, [String eventName = '']) : super(eventName);
 }
 
@@ -20,11 +20,21 @@ class UpdateEvent extends EventArgs {
   final String version;
   final bool forceUpdate;
   final String? changelog;
-  
+
   UpdateEvent({
     required this.version,
     this.forceUpdate = false,
     this.changelog,
     String eventName = '',
   }) : super(eventName);
+}
+
+class ListArgEvent extends EventArgs {
+  final List<dynamic> item;
+  ListArgEvent(this.item, [String eventName = '']) : super(eventName);
+}
+
+class MapEventArgs extends EventArgs {
+  final Map<String, dynamic> item;
+  MapEventArgs(this.item, [String eventName = '']) : super(eventName);
 }

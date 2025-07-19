@@ -1,15 +1,25 @@
+import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';
 
 class FoldersController {
-  FoldersController();
-
   late final MemoryCacheStore store;
   final List<FolderCache> caches = [];
   Future<void> init() async {
     store = await newMemoryCacheStore();
     print('Store created');
+    EventManager.instance.subscribe(
+      'folders_update',
+      (EventArgs args) => _onFoldersUpdate(args as MapEventArgs),
+    );
+  }
+
+  void _onFoldersUpdate(MapEventArgs args) {
+    print('Folders updated');
+    final data = args.item;
+    final cache = getLibraryCache(data['library']);
+    data['folders'].map((e) => e as LibraryFolder).forEach(cache.putAll);
   }
 
   Future<FolderCache> createCache(String libraryName) async {
