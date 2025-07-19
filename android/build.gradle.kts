@@ -1,9 +1,10 @@
 allprojects {
     repositories {
         // 国内镜像源
-        maven { url = uri("https://maven.aliyun.com/repository/public") }
-        maven { url = uri("https://maven.aliyun.com/repository/google") }
-        maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+        // maven { url = uri("https://maven.aliyun.com/repository/public") }
+        // maven { url = uri("https://maven.aliyun.com/repository/google") }
+        // maven { url = uri("https://maven.aliyun.com/repository/gradle-plugin") }
+        maven { url = uri("https://jitpack.io") }
         maven { url = uri("https://storage.flutter-io.cn/download.flutter.io") }
         google()
         mavenCentral()

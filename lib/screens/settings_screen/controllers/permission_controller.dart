@@ -17,12 +17,7 @@ class PermissionController {
     if (!UniversalPlatform.isAndroid) {
       return [];
     }
-    return [
-      Permission.photos,
-      Permission.videos,
-      Permission.audio,
-      Permission.notification,
-    ];
+    return [Permission.photos, Permission.notification];
   }
 
   // 检查单个权限的状态
