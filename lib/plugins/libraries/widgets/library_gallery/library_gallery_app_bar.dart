@@ -18,6 +18,7 @@ class LibraryGalleryAppBar extends StatelessWidget
   final ValueChanged<Set<String>> onDisplayFieldsChanged;
   final int imagesPerRow;
   final ValueChanged<int> onImagesPerRowChanged;
+  final VoidCallback onRefresh;
 
   const LibraryGalleryAppBar({
     required this.isSelectionMode,
@@ -35,6 +36,7 @@ class LibraryGalleryAppBar extends StatelessWidget
     required this.onDisplayFieldsChanged,
     required this.imagesPerRow,
     required this.onImagesPerRowChanged,
+    required this.onRefresh,
     super.key,
   });
 
@@ -157,6 +159,10 @@ class LibraryGalleryAppBar extends StatelessWidget
                   onSelected: (count) {
                     onImagesPerRowChanged(count);
                   },
+                ),
+                IconButton(
+                  icon: const Icon(Icons.refresh),
+                  onPressed: onRefresh,
                 ),
               ],
     );

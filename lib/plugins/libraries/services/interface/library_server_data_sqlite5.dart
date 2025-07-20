@@ -156,18 +156,17 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getFiles({
+  Future<dynamic> getFiles({
     List<int>? folderIds,
     List<int>? tagIds,
-    int? minStars,
-    int limit = 100,
-    int offset = 0,
     String? select = '*',
     Map<String, dynamic>? filters,
   }) async {
+    var totalCount = 0;
     var whereClauses = <String>[];
     var params = <dynamic>[];
-
+    var limit = filters?['limit'] as int? ?? 100;
+    var offset = filters?['offset'] as int? ?? 0;
     if (folderIds != null && folderIds.isNotEmpty) {
       whereClauses.add(
         'folder_id IN (${List.filled(folderIds.length, '?').join(',')})',
@@ -187,13 +186,13 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       params.addAll(tagIds);
     }
 
-    if (minStars != null) {
-      whereClauses.add('stars >= ?');
-      params.add(minStars);
-    }
-
     // 处理文件过滤条件
     if (filters != null) {
+      if (filters['star'] != null) {
+        whereClauses.add('stars >= ?');
+        params.add(filters['star']);
+      }
+
       if (filters['name'] != null) {
         whereClauses.add('name LIKE ?');
         params.add('%${filters['name']}%');
@@ -242,11 +241,22 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
         whereClauses.isNotEmpty ? 'WHERE ${whereClauses.join(' AND ')}' : '';
     final query = 'SELECT $select FROM files $where LIMIT ? OFFSET ?';
     params.addAll([limit, offset]);
+    // 添加分页信息到返回结果
+    final countQuery = 'SELECT COUNT(*) FROM files $where';
+    final countStmt = _db!.prepare(countQuery);
+    final countResult = countStmt.select(params.sublist(0, params.length - 2));
+    totalCount = countResult.first[0] as int;
+    countStmt.dispose();
 
     final stmt = _db!.prepare(query);
     final result = stmt.select(params);
     stmt.dispose();
-    return result.map((row) => _rowToMap(result, row)).toList();
+    return {
+      'result': result.map((row) => _rowToMap(result, row)).toList(),
+      'limit': limit,
+      'offset': offset,
+      'total': totalCount,
+    };
   }
 
   // 文件夹表操作实现
@@ -398,7 +408,6 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     final query = 'SELECT * FROM tags $where LIMIT ? OFFSET ?';
     final params =
         parentId != null ? [parentId, limit, offset] : [limit, offset];
-
     final stmt = _db!.prepare(query);
     final result = stmt.select(params);
     stmt.dispose();

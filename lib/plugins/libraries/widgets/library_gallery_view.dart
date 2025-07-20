@@ -38,6 +38,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   StreamSubscription<int>? _progressSubscription;
   bool _isSelectionMode = false;
   Set<int> _selectedFileIds = {};
+  late int _totalItems = 0;
+  late List<LibraryFile> _items = [];
+
   late Set<String> _displayFields = {
     'title',
     'cover',
@@ -50,7 +53,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   };
   Map<String, dynamic> _filterOptions = {};
   Map<String, dynamic> _paginationOptions = {'page': 1, 'perPage': 20};
-  LibraryFile? _selectedFile;
+  final ValueNotifier<LibraryFile?> _selectedFileNotifier = ValueNotifier(null);
   int _imagesPerRow = 3; // 默认每行显示3张图片
 
   @override
@@ -68,6 +71,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       'thumbnail_generated',
       _onThumbnailGenerated,
     );
+    _loadFiles();
   }
 
   void _onThumbnailGenerated(EventArgs args) {
@@ -148,39 +152,30 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     });
   }
 
-  Widget _buildPaginationControls() {
-    // 临时计算总页数，实际应从API获取
-    // final totalItems =
-    //     widget.plugin.libraryController
-    //         .getLibraryInst(widget.library)!
-    //         .getFilesCount();
-    final totalItems = 3000;
-    final totalPages = (totalItems / _paginationOptions['perPage']).ceil();
-
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: NumberPagination(
-        currentPage: _paginationOptions['page'],
-        totalPages: totalPages,
-        onPageChanged: (page) {
-          setState(() {
-            _paginationOptions['page'] = page;
-          });
-        },
-        visiblePagesCount: MediaQuery.of(context).size.width ~/ 200 + 2,
-        buttonRadius: 10.0,
-        buttonElevation: 1.0,
-        controlButtonSize: Size(34, 34),
-        numberButtonSize: Size(34, 34),
-        selectedButtonColor: Theme.of(context).primaryColor,
-      ),
-    );
+  Future<void> _loadFiles() async {
+    final query = {
+      'name': _filterOptions['name'] ?? '',
+      // 'dateRange': _filterOptions['dateRange'] ?? [],
+      // 'minSize': _filterOptions['minSize'] ?? 0,
+      // 'maxSize': _filterOptions['maxSize'] ?? 0,
+      // 'tags': _filterOptions['tags'] ?? [],
+      // 'minRating': _filterOptions['minRating'] ?? 0,
+      // 'type': _filterOptions['type'] ?? '',
+      'offset':
+          (_paginationOptions['page']! - 1) * _paginationOptions['perPage'],
+      'limit': _paginationOptions['perPage'],
+    };
+    final result = await widget.plugin.libraryController
+        .getLibraryInst(widget.library)!
+        .findFiles(query: query);
+    setState(() {
+      _items = result['results'] as List<LibraryFile>;
+      _totalItems = result['total'] as int;
+    });
   }
 
   void _onFileSelected(LibraryFile file) {
-    setState(() {
-      _selectedFile = file;
-    });
+    _selectedFileNotifier.value = file;
     if (Platform.isAndroid || Platform.isIOS) {
       showModalBottomSheet(
         context: context,
@@ -210,6 +205,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   @override
   Widget build(BuildContext context) {
+    final totalPages = (_totalItems / _paginationOptions['perPage']).ceil();
     return Scaffold(
       appBar: LibraryGalleryAppBar(
         isSelectionMode: _isSelectionMode,
@@ -269,6 +265,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             _imagesPerRow = count;
           });
         },
+        onRefresh: () => _loadFiles(),
       ),
       bottomSheet: LibraryGalleryBottomSheet(uploadProgress: _uploadProgress),
       body: Row(
@@ -282,7 +279,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                     plugin: widget.plugin,
                     library: widget.library,
                     displayFields: _displayFields,
-                    filterOptions: {..._filterOptions, ..._paginationOptions},
+                    items: ValueNotifier(_items),
                     isSelectionMode: _isSelectionMode,
                     selectedFileIds: _selectedFileIds,
                     onFileSelected: _onFileSelected,
@@ -290,7 +287,24 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                     imagesPerRow: _imagesPerRow,
                   ),
                 ),
-                _buildPaginationControls(),
+                Padding(
+                  padding: const EdgeInsets.symmetric(vertical: 8.0),
+                  child: NumberPagination(
+                    currentPage: _paginationOptions['page'],
+                    totalPages: totalPages,
+                    onPageChanged: (page) {
+                      _paginationOptions['page'] = page;
+                      _loadFiles();
+                    },
+                    visiblePagesCount:
+                        MediaQuery.of(context).size.width ~/ 200 + 2,
+                    buttonRadius: 10.0,
+                    buttonElevation: 1.0,
+                    controlButtonSize: Size(34, 34),
+                    numberButtonSize: Size(34, 34),
+                    selectedButtonColor: Theme.of(context).primaryColor,
+                  ),
+                ),
               ],
             ),
           ),
@@ -301,9 +315,14 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             Expanded(
               flex: 1,
               child:
-                  _selectedFile != null
-                      ? LibraryFileInformationView(file: _selectedFile!)
-                      : const Center(child: Text('请选择一个文件查看详情')),
+                  ValueListenableBuilder<LibraryFile?>(
+                    valueListenable: _selectedFileNotifier,
+                    builder: (context, selectedFile, _) {
+                      return selectedFile != null
+                          ? LibraryFileInformationView(file: selectedFile)
+                          : const Center(child: Text('请选择一个文件查看详情'));
+                    },
+                  ),
             ),
           ],
         ],

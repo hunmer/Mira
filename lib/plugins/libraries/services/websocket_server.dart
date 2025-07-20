@@ -251,20 +251,19 @@ class WebSocketServer {
               }),
             );
           } else {
-            List<Map<String, dynamic>> records;
+            var records;
             switch (recordType) {
               case 'file':
-                records = await dbService!.getFiles(
-                  limit: payload['limit'] as int? ?? 100,
-                  offset: payload['offset'] as int? ?? 0,
+                final result = await dbService!.getFiles(
                   select: payload['select'] as String? ?? '*',
                   filters: payload['query'] as Map<String, dynamic>?,
                 );
-                for (var record in records) {
+                for (var record in result['result']) {
                   if (record['thumb'] == 1) {
                     record['thumb'] = await dbService.getItemThumbPath(record);
                   }
                 }
+                records = result;
                 break;
               case 'folder':
                 records = await dbService!.getFolders(

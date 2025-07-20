@@ -26,12 +26,9 @@ abstract class LibraryServerDataInterface {
   Future<bool> updateFile(int id, Map<String, dynamic> fileData);
   Future<bool> deleteFile(int id);
   Future<Map<String, dynamic>?> getFile(int id);
-  Future<List<Map<String, dynamic>>> getFiles({
+  Future<dynamic> getFiles({
     List<int>? folderIds,
     List<int>? tagIds,
-    int? minStars,
-    int limit = 100,
-    int offset = 0,
     String? select = '*',
     Map<String, dynamic>? filters,
   });

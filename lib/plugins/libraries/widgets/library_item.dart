@@ -1,5 +1,7 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
+import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/widgets/icon_chip.dart';
@@ -25,12 +27,12 @@ class LibraryItem extends StatelessWidget {
     required this.getTagTilte,
     this.onTap,
     this.onDoubleTap,
-    this.onLongPress,
+    required this.onLongPress,
     required this.displayFields,
     super.key,
   });
 
-  final VoidCallback? onLongPress;
+  final Function(dynamic) onLongPress;
 
   @override
   Widget build(BuildContext context) {
@@ -60,113 +62,133 @@ class LibraryItem extends StatelessWidget {
           allowedOperations: () => [DropOperation.copy],
           child: DraggableWidget(
             child: GestureDetector(
-              onLongPress: onLongPress,
+              onSecondaryTapDown: (details) => onLongPress(details),
+              onLongPressDown:
+                  kIsWeb ? onLongPress(LongPressDownDetails) : null,
               child: Card(
                 child: Stack(
                   children: [
                     InkWell(
                       onTap: onTap,
                       onDoubleTap: onDoubleTap,
-                      child: SizedBox(
-                        width: double.infinity,
-                        child: Column(
-                          children: [
-                            if (displayFields.contains('cover'))
-                              Expanded(
-                                child:
-                                    useThumbnail && file.thumb != null
-                                        ? buildImageFromUrl(file.thumb!)
-                                        : Icon(
-                                          Icons.insert_drive_file,
-                                          size: 48,
-                                          color:
-                                              ['audio', 'video'].contains(
-                                                    file.type?.toLowerCase(),
-                                                  )
-                                                  ? Colors.blue
-                                                  : null,
-                                        ),
-                              ),
-                            Padding(
-                              padding: const EdgeInsets.all(8.0),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  if (displayFields.contains('title'))
-                                    Text(
-                                      file.path!
-                                          .replaceAll('\\', '/')
-                                          .split('/')
-                                          .last
-                                          .split('.')
-                                          .first,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                    ),
-
-                                  if (displayFields.contains('notes') &&
-                                      file.notes != null)
-                                    Text(
-                                      file.notes!,
-                                      maxLines: 1,
-                                      overflow: TextOverflow.ellipsis,
-                                      style:
-                                          Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                  if (displayFields.contains('createdAt'))
-                                    Text(
-                                      '创建: ${file.createdAt.toString().split(' ')[0]}',
-                                      style:
-                                          Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                  if (displayFields.contains('size'))
-                                    Text(
-                                      '大小: ${(file.size / 1024).toStringAsFixed(1)}KB',
-                                      style:
-                                          Theme.of(context).textTheme.bodySmall,
-                                    ),
-                                  if (displayFields.any(
-                                    (field) => [
-                                      'rating',
-                                      'folder',
-                                      'tags',
-                                    ].contains(field),
-                                  ))
-                                    Wrap(
-                                      spacing: 4,
+                      child: LayoutBuilder(
+                        builder: (context, constraints) {
+                          final isCompact = constraints.maxWidth < 100;
+                          return SizedBox(
+                            width: double.infinity,
+                            child: Column(
+                              children: [
+                                Expanded(
+                                  child:
+                                      useThumbnail && file.thumb != null
+                                          ? buildImageFromUrl(file.thumb!)
+                                          : Icon(
+                                            Icons.insert_drive_file,
+                                            size: 48,
+                                            color:
+                                                ['audio', 'video'].contains(
+                                                      file.type?.toLowerCase(),
+                                                    )
+                                                    ? Colors.blue
+                                                    : null,
+                                          ),
+                                ),
+                                if (!isCompact)
+                                  Padding(
+                                    padding: const EdgeInsets.all(8.0),
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
                                       children: [
-                                        if (displayFields.contains('rating') &&
-                                            file.rating != null &&
-                                            file.rating! > 0)
-                                          IconChip(
-                                            icon: Icons.star,
-                                            label: '${file.rating}/5',
-                                            iconColor: Colors.amber,
+                                        if (displayFields.contains('title'))
+                                          Text(
+                                            file.path!
+                                                .replaceAll('\\', '/')
+                                                .split('/')
+                                                .last
+                                                .split('.')
+                                                .first,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
                                           ),
-                                        if (displayFields.contains('folder') &&
-                                            folderTitle.isNotEmpty)
-                                          IconChip(
-                                            icon: Icons.folder,
-                                            label: folderTitle,
+
+                                        if (displayFields.contains('notes') &&
+                                            file.notes != null)
+                                          Text(
+                                            file.notes!,
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                            style:
+                                                Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
                                           ),
-                                        if (displayFields.contains('tags') &&
-                                            file.tags.isNotEmpty)
-                                          ...tagTitles
-                                              .where((t) => t.isNotEmpty)
-                                              .map(
-                                                (tag) => IconChip(
-                                                  icon: Icons.label,
-                                                  label: tag,
+                                        if (displayFields.contains('createdAt'))
+                                          Text(
+                                            '创建: ${file.createdAt.toString().split(' ')[0]}',
+                                            style:
+                                                Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                          ),
+                                        if (displayFields.contains('size'))
+                                          Text(
+                                            '大小: ${(file.size / 1024).toStringAsFixed(1)}KB',
+                                            style:
+                                                Theme.of(
+                                                  context,
+                                                ).textTheme.bodySmall,
+                                          ),
+                                        if (displayFields.any(
+                                          (field) => [
+                                            'rating',
+                                            'folder',
+                                            'tags',
+                                          ].contains(field),
+                                        ))
+                                          Wrap(
+                                            spacing: 4,
+                                            children: [
+                                              if (displayFields.contains(
+                                                    'rating',
+                                                  ) &&
+                                                  file.rating != null &&
+                                                  file.rating! > 0)
+                                                IconChip(
+                                                  icon: Icons.star,
+                                                  label: '${file.rating}/5',
+                                                  iconColor: Colors.amber,
                                                 ),
-                                              )
-                                              .toList(),
+                                              if (displayFields.contains(
+                                                    'folder',
+                                                  ) &&
+                                                  folderTitle.isNotEmpty)
+                                                IconChip(
+                                                  icon: Icons.folder,
+                                                  label: folderTitle,
+                                                ),
+                                              if (displayFields.contains(
+                                                    'tags',
+                                                  ) &&
+                                                  file.tags.isNotEmpty)
+                                                ...tagTitles
+                                                    .where((t) => t.isNotEmpty)
+                                                    .map(
+                                                      (tag) => IconChip(
+                                                        icon: Icons.label,
+                                                        label: tag,
+                                                      ),
+                                                    )
+                                                    .toList(),
+                                            ],
+                                          ),
                                       ],
                                     ),
-                                ],
-                              ),
+                                  ),
+                              ],
                             ),
-                          ],
-                        ),
+                          );
+                        },
                       ),
                     ),
                     Positioned(
