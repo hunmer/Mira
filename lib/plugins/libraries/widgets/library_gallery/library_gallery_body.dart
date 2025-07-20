@@ -6,8 +6,10 @@ import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_gallery/library_file_context_menu.dart'
+    as LibraryFileContextMenu;
 import 'package:mira/plugins/libraries/widgets/library_item.dart';
-import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_item_actions.dart';
 
 class LibraryGalleryBody extends StatefulWidget {
   final LibrariesPlugin plugin;
@@ -87,8 +89,9 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
               itemCount: files.length,
               itemBuilder: (context, index) {
                 final file = files[index];
+                final itemKey = GlobalKey();
                 return LibraryItem(
-                  key: ValueKey(file.id), // 添加key避免不必要的重建
+                  key: itemKey, // 使用GlobalKey获取组件位置
                   file: file,
                   getTagTilte:
                       (tagId) => widget.plugin.foldersTagsController
@@ -114,16 +117,41 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                               ? widget.onFileSelected(file)
                               : widget.onFileOpen(file),
                   onLongPress: () {
-                    showModalBottomSheet(
+                    LibraryFileContextMenu.show(
                       context: context,
-                      builder:
-                          (context) => LibraryGalleryItemActions(
-                            plugin: widget.plugin,
-                            file: file,
-                            library: widget.library,
-                            onDelete:
-                                () => _libraryController.deleteFile(file.id),
+                      plugin: widget.plugin,
+                      file: file,
+                      library: widget.library,
+                      tabKey: itemKey,
+                      onDelete: () => _libraryController.deleteFile(file.id),
+                      onShowInfo:
+                          () => showModalBottomSheet(
+                            context: context,
+                            builder:
+                                (context) =>
+                                    LibraryFileInformationView(file: file),
                           ),
+                      onSelectFolder: () async {
+                        final result = await widget.plugin.libraryUIController
+                            .showFolderSelector(widget.library, context);
+                        if (result != null && result.isNotEmpty) {
+                          await widget.plugin.libraryController
+                              .getLibraryInst(widget.library)!
+                              .setFileFolders(file.id, result.first.id);
+                        }
+                      },
+                      onSelectTag: () async {
+                        final result = await widget.plugin.libraryUIController
+                            .showTagSelector(widget.library, context);
+                        if (result != null && result.isNotEmpty) {
+                          await widget.plugin.libraryController
+                              .getLibraryInst(widget.library)!
+                              .setFileTags(
+                                file.id,
+                                result.map((item) => item.id).toList(),
+                              );
+                        }
+                      },
                     );
                   },
                 );
