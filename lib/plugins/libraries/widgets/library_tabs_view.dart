@@ -3,7 +3,7 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/library_context_menu.dart'
     as LibraryContextMenu;
 import 'package:mira/plugins/libraries/widgets/library_edit_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import '../models/library.dart';
@@ -52,15 +52,18 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     final tabsContents = <Widget>[];
     _tabManager.tabDatas.forEach((tabId, tabData) {
       tabsContents.add(
-        LibraryGalleryView(
+        LibraryContentView(
           plugin: widget.plugin,
           tabId: tabId,
-          library: tabData['library'],
+          tabData: tabData,
         ),
       );
       tabsTab.add(
         GestureDetector(
-          onTap: () => _tabManager.setTabActive(tabId),
+          onTap:
+              () => setState(() {
+                _tabManager.setTabActive(tabId);
+              }),
           onSecondaryTapDown:
               (details) => _showContextMenu(
                 context,
@@ -197,13 +200,8 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                         style: TextStyle(fontSize: 18),
                       ),
                     )
-                    : PageView(
-                      controller: _tabManager.pageController,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _tabManager.currentIndex.value = index;
-                        });
-                      },
+                    : IndexedStack(
+                      index: _tabManager.currentIndex.value,
                       children: tabsContents,
                     );
               },

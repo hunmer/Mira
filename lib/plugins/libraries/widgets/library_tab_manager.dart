@@ -20,7 +20,7 @@ class LibraryTabManager {
   }
 
   void _handlePageChange() {
-    currentIndex.value = pageController.page?.round() ?? 0;
+    // 保留方法但不再使用，因为我们现在使用IndexedStack
   }
 
   void addTab(Library library) {
@@ -137,7 +137,10 @@ class LibraryTabManager {
   }
 
   setTabActive(String tabId) {
-    pageController.jumpToPage(getTabIds().indexOf(tabId));
+    final index = getTabIds().indexOf(tabId);
+    if (index != -1) {
+      currentIndex.value = index;
+    }
   }
 
   dynamic getCurrentData() {

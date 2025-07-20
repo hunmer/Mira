@@ -28,8 +28,8 @@ class LibrarySidebarView extends StatelessWidget {
           const SizedBox(height: 16),
           ListTile(
             leading: const Icon(Icons.all_inbox),
-            title: const Text('所有素材'),
-            onTap: onHideSidebar,
+            title: const Text('所有素材库'),
+            onTap: () => Navigator.pushNamed(context, '/libraries'),
           ),
           ListTile(
             leading: const Icon(Icons.favorite),
