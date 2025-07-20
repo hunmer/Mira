@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
@@ -163,26 +164,10 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     var totalCount = 0;
     var whereClauses = <String>[];
     var params = <dynamic>[];
-    var folderId = filters?['folder'] as String;
-    var tagIds = filters?['tags'] as List<String>;
+    var folderId = int.tryParse(filters?['folder']?.toString() ?? '') ?? 0;
+    var tagIds = List<String>.from(filters?['tags'] ?? []);
     var limit = filters?['limit'] as int? ?? 100;
     var offset = filters?['offset'] as int? ?? 0;
-    if (folderId != null && folderId.isNotEmpty) {
-      whereClauses.add('folder_id = ($folderId)');
-      params.add(folderId);
-    }
-
-    if (tagIds != null && tagIds.isNotEmpty) {
-      whereClauses.add('''
-        (
-          SELECT COUNT(*) FROM (
-            SELECT value FROM json_each(replace(replace(tags, ',', '","'), '"', '["') || '"]')
-            WHERE value IN (${List.filled(tagIds.length, '?').join(',')})
-          ) > 0
-        )
-      ''');
-      params.addAll(tagIds);
-    }
 
     // 处理文件过滤条件
     if (filters != null) {
@@ -219,19 +204,18 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
         whereClauses.add('stars >= ?');
         params.add(filters['minRating']);
       }
-      if (filters['tags'] != null) {
-        final tags = filters['tags'] as List<String>;
+
+      if (folderId != 0) {
+        whereClauses.add('folder_id = ?');
+        params.add(folderId);
+      }
+      if (tagIds != null && tagIds.isNotEmpty) {
         whereClauses.add('''
-        (
-          SELECT COUNT(*) FROM (
-            SELECT value FROM json_each(replace(replace(tags, ',', '","'), '"', '["') || '"]')
-            WHERE value IN (
-              SELECT id FROM tags WHERE title IN (${List.filled(tags.length, '?').join(',')})
-            )
-          ) > 0
-        )
+        (SELECT COUNT(*) FROM json_each(tags) 
+         WHERE value IN (${List.filled(tagIds.length, '?').join(',')})
+        ) = ${tagIds.length}
       ''');
-        params.addAll(tags);
+        params.addAll(tagIds);
       }
     }
 
@@ -510,11 +494,9 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     try {
       final tagIds =
-          tagsStr
-              .split(',')
-              .where((id) => id.isNotEmpty)
-              .map(int.parse)
-              .toList();
+          jsonDecode(
+            tagsStr,
+          ).where((id) => id.isNotEmpty).map(int.parse).toList();
       if (tagIds.isEmpty) return [];
 
       final tagStmt = _db!.prepare('''
@@ -552,9 +534,9 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     try {
       await beginTransaction();
 
-      // 直接更新files表中的tags字段，使用逗号拼接
+      // 更新files表中的tags字段，使用JSON数组格式
       final stmt = _db!.prepare('UPDATE files SET tags = ? WHERE id = ?');
-      stmt.execute([tagIds.join(','), fileId]);
+      stmt.execute([jsonEncode(tagIds), fileId]);
       stmt.dispose();
 
       await commitTransaction();
@@ -600,7 +582,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   @override
   Future<String> getItemThumbPath(item) async {
-    return '${await getItemPath(item)}preview.png';
+    return path.join(await getItemPath(item), 'preview.png');
   }
 
   @override

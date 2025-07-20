@@ -27,8 +27,6 @@ abstract class LibraryServerDataInterface {
   Future<bool> deleteFile(int id);
   Future<Map<String, dynamic>?> getFile(int id);
   Future<dynamic> getFiles({
-    List<int>? folderIds,
-    List<int>? tagIds,
     String? select = '*',
     Map<String, dynamic>? filters,
   });

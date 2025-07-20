@@ -80,7 +80,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     final library = args.item['library'];
     if (library == null || library.id != widget.library.id) return;
     setState(() {
-      _filterOptions = args.item['filter'];
+      _filterOptions = Map<String, dynamic>.from(args.item['filter']);
       _loadFiles();
     });
   }
@@ -178,12 +178,18 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           (_paginationOptions['page']! - 1) * _paginationOptions['perPage'],
       'limit': _paginationOptions['perPage'],
     };
+
     final result = await widget.plugin.libraryController
         .getLibraryInst(widget.library)!
         .findFiles(query: query);
+
     setState(() {
-      _items = result['results'] as List<LibraryFile>;
-      _totalItems = result['total'] as int;
+      if (result == null || result.isEmpty) {
+        _items = [];
+      } else {
+        _items = result['results'] as List<LibraryFile>;
+        _totalItems = result['total'] as int;
+      }
     });
   }
 

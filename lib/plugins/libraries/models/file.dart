@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 class LibraryFile {
   final int id;
   final String name;
@@ -62,7 +64,7 @@ class LibraryFile {
       ),
       notes: map['notes'],
       rating: map['rating'] ?? map['stars'] ?? 0,
-      tags: (map['tags'] ?? '').split(','),
+      tags: List<String>.from(jsonDecode(map['tags'] ?? '[]')),
       folderId: map['folderId'] ?? map['folder_id']?.toString() ?? '',
       reference: map['reference'],
       url: map['url'],

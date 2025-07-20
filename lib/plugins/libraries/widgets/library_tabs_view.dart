@@ -65,17 +65,10 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
               (details) => _showContextMenu(
                 context,
                 details.globalPosition,
-                tabData.library,
+                tabData['library'],
                 tabId,
               ),
 
-          onLongPressDown:
-              (details) => _showContextMenu(
-                context,
-                details.globalPosition,
-                tabData.library,
-                tabId,
-              ),
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
@@ -207,7 +200,9 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                     : PageView(
                       controller: _tabManager.pageController,
                       onPageChanged: (index) {
-                        _tabManager.currentIndex.value = index;
+                        setState(() {
+                          _tabManager.currentIndex.value = index;
+                        });
                       },
                       children: tabsContents,
                     );

@@ -98,10 +98,15 @@ class LibrarySidebarView extends StatelessWidget {
                             .toList(),
                     library: library,
                     showSelectAll: false,
-                    onSelectionChanged:
-                        (ids) => plugin.tabManager.updateCurrentFitler({
+                    onSelectionChanged: (ids) {
+                      if (ids != null && ids.isNotEmpty) {
+                        plugin.tabManager.updateCurrentFitler({
                           'folder': ids.first,
-                        }),
+                        });
+                      } else {
+                        plugin.tabManager.updateCurrentFitler({'folder': ''});
+                      }
+                    },
                     type: 'folders',
                   );
                 }
