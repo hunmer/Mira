@@ -74,15 +74,18 @@ class LibraryGalleryAppBar extends StatelessWidget
                   icon: const Icon(Icons.check_box),
                   onPressed: onEnterSelection,
                 ),
+                IconButton(
+                  icon: const Icon(Icons.file_upload),
+                  onPressed: onUpload,
+                ),
                 if (pendingUploadCount > 0)
                   Stack(
                     alignment: Alignment.center,
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.file_upload),
-                        onPressed: onUpload,
+                        icon: const Icon(Icons.cloud_upload),
+                        onPressed: onShowUploadQueue,
                       ),
-
                       Positioned(
                         top: 8,
                         right: 8,
@@ -109,10 +112,6 @@ class LibraryGalleryAppBar extends StatelessWidget
                     ],
                   ),
 
-                IconButton(
-                  icon: const Icon(Icons.cloud_upload),
-                  onPressed: onShowUploadQueue,
-                ),
                 IconButton(icon: const Icon(Icons.folder), onPressed: onFolder),
                 PopupMenuButton<String>(
                   icon: const Icon(Icons.view_column),

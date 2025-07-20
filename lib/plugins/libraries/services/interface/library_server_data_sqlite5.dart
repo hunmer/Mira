@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/services/plugins/thumb_generator.dart';
 import 'package:mira/plugins/libraries/services/server_event_manager.dart';
 import 'package:mira/plugins/libraries/services/websocket_server.dart';
+import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
 import 'package:xxh3/xxh3.dart';
 import 'package:sqlite3/sqlite3.dart';
@@ -19,11 +20,10 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   @override
   Future<void> initialize() async {
-    final path = await getLibraryPath();
     eventManager = ServerEventManager(server, this);
     ThumbGenerator(server, this);
 
-    final dbPath = '$path\\library_data.db';
+    final dbPath = path.join(await getLibraryPath(), 'library_data.db');
     _db = sqlite3.open(dbPath);
     // 创建文件表
     _db?.execute('''
@@ -588,7 +588,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   @override
   Future<String> getItemPath(item) async {
-    return '${await getLibraryPath()}\\${item['hash']}\\';
+    return path.join((await getLibraryPath()), item['hash']);
   }
 
   @override

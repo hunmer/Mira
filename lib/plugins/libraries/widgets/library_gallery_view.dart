@@ -54,13 +54,15 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   int _imagesPerRow = 3; // 默认每行显示3张图片
 
   @override
-  void initState() async {
+  void initState() {
     super.initState();
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
-      setState(() {
-        _uploadProgress = _uploadQueue.progress;
-      });
+      if (mounted) {
+        setState(() {
+          _uploadProgress = _uploadQueue.progress;
+        });
+      }
     });
     EventManager.instance.subscribe(
       'thumbnail_generated',
@@ -88,19 +90,19 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
     try {
       await _uploadQueue.addFiles(filesToUpload);
-      await _uploadQueue.onComplete;
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text('开始上传')));
-      setState(() {});
+      // await _uploadQueue.onComplete;
+      // ScaffoldMessenger.of(
+      //   context,
+      // ).showSnackBar(const SnackBar(content: Text('开始上传')));
+      // setState(() {});
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('${localizations.uploadFailed}: $e')),
       );
     } finally {
-      setState(() {
-        _uploadProgress = 0;
-      });
+      // setState(() {
+      //   _uploadProgress = 0;
+      // });
     }
   }
 
@@ -292,7 +294,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               ],
             ),
           ),
-          if (!Platform.isAndroid && !Platform.isIOS) ...[
+          if (!Platform.isAndroid &&
+              !Platform.isIOS &&
+              MediaQuery.of(context).size.width > 800) ...[
             VerticalDivider(width: 1),
             Expanded(
               flex: 1,
