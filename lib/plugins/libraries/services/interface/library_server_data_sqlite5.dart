@@ -157,21 +157,19 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   @override
   Future<dynamic> getFiles({
-    List<int>? folderIds,
-    List<int>? tagIds,
     String? select = '*',
     Map<String, dynamic>? filters,
   }) async {
     var totalCount = 0;
     var whereClauses = <String>[];
     var params = <dynamic>[];
+    var folderId = filters?['folder'] as String;
+    var tagIds = filters?['tags'] as List<String>;
     var limit = filters?['limit'] as int? ?? 100;
     var offset = filters?['offset'] as int? ?? 0;
-    if (folderIds != null && folderIds.isNotEmpty) {
-      whereClauses.add(
-        'folder_id IN (${List.filled(folderIds.length, '?').join(',')})',
-      );
-      params.addAll(folderIds);
+    if (folderId != null && folderId.isNotEmpty) {
+      whereClauses.add('folder_id = ($folderId)');
+      params.add(folderId);
     }
 
     if (tagIds != null && tagIds.isNotEmpty) {

@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:number_pagination/number_pagination.dart';
 import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
@@ -21,10 +22,12 @@ import '../l10n/libraries_localizations.dart';
 class LibraryGalleryView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Library library;
+  final String tabId;
 
   const LibraryGalleryView({
     required this.plugin,
     required this.library,
+    required this.tabId,
     super.key,
   });
 
@@ -40,25 +43,21 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   Set<int> _selectedFileIds = {};
   late int _totalItems = 0;
   late List<LibraryFile> _items = [];
+  late LibraryTabManager _tabManager;
 
-  late Set<String> _displayFields = {
-    'title',
-    'cover',
-    'rating',
-    'notes',
-    'createdAt',
-    'tags',
-    'folder',
-    'size',
-  };
+  late Set<String> _displayFields = {};
   Map<String, dynamic> _filterOptions = {};
-  Map<String, dynamic> _paginationOptions = {'page': 1, 'perPage': 20};
+  Map<String, dynamic> _paginationOptions = {};
   final ValueNotifier<LibraryFile?> _selectedFileNotifier = ValueNotifier(null);
   int _imagesPerRow = 3; // 默认每行显示3张图片
 
   @override
   void initState() {
     super.initState();
+    _tabManager = widget.plugin.tabManager;
+    _paginationOptions = _tabManager.getPageOptions(widget.tabId);
+    _displayFields = _tabManager.getLibraryDisplayFields(widget.tabId);
+    _filterOptions = _tabManager.getLibraryFilter(widget.tabId);
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
       if (mounted) {
@@ -71,7 +70,19 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       'thumbnail_generated',
       _onThumbnailGenerated,
     );
+    EventManager.instance.subscribe('library::filter_updated', _onFilterUpdate);
     _loadFiles();
+  }
+
+  //  使用广播更新
+  void _onFilterUpdate(EventArgs args) {
+    if (args is! MapEventArgs) return;
+    final library = args.item['library'];
+    if (library == null || library.id != widget.library.id) return;
+    setState(() {
+      _filterOptions = args.item['filter'];
+      _loadFiles();
+    });
   }
 
   void _onThumbnailGenerated(EventArgs args) {
@@ -155,6 +166,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   Future<void> _loadFiles() async {
     final query = {
       'name': _filterOptions['name'] ?? '',
+      'tags': _filterOptions['tags'] ?? [],
+      'folder': _filterOptions['folder'] ?? '',
       // 'dateRange': _filterOptions['dateRange'] ?? [],
       // 'minSize': _filterOptions['minSize'] ?? 0,
       // 'maxSize': _filterOptions['maxSize'] ?? 0,
@@ -221,6 +234,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             setState(() {
               _filterOptions = filterOptions;
             });
+            _tabManager.setLibraryFilter(widget.tabId, _filterOptions);
           }
         },
         onEnterSelection: () {
@@ -258,6 +272,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           setState(() {
             _displayFields = newFields;
           });
+          _tabManager.setLibraryDisplayFields(widget.tabId, _displayFields);
         },
         imagesPerRow: _imagesPerRow,
         onImagesPerRowChanged: (count) {
@@ -314,15 +329,14 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             VerticalDivider(width: 1),
             Expanded(
               flex: 1,
-              child:
-                  ValueListenableBuilder<LibraryFile?>(
-                    valueListenable: _selectedFileNotifier,
-                    builder: (context, selectedFile, _) {
-                      return selectedFile != null
-                          ? LibraryFileInformationView(file: selectedFile)
-                          : const Center(child: Text('请选择一个文件查看详情'));
-                    },
-                  ),
+              child: ValueListenableBuilder<LibraryFile?>(
+                valueListenable: _selectedFileNotifier,
+                builder: (context, selectedFile, _) {
+                  return selectedFile != null
+                      ? LibraryFileInformationView(file: selectedFile)
+                      : const Center(child: Text('请选择一个文件查看详情'));
+                },
+              ),
             ),
           ],
         ],

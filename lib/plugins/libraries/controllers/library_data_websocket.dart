@@ -103,11 +103,11 @@ class LibraryDataWebSocket implements LibraryDataInterface {
         switch (eventName) {
           case 'connected':
             EventManager.instance.broadcast(
-              'tags_update',
+              'tags::update',
               MapEventArgs({'library': library, 'tags': data['tags']}),
             );
             EventManager.instance.broadcast(
-              'folders_update',
+              'folders::update',
               MapEventArgs({'library': library, 'folders': data['folders']}),
             );
             break;

@@ -61,6 +61,10 @@ class LibrarySidebarView extends StatelessWidget {
                             .toList(),
                     library: library,
                     showSelectAll: false,
+                    onSelectionChanged:
+                        (ids) => plugin.tabManager.updateCurrentFitler({
+                          'tags': ids,
+                        }),
                     type: 'tags',
                   );
                 }
@@ -94,6 +98,10 @@ class LibrarySidebarView extends StatelessWidget {
                             .toList(),
                     library: library,
                     showSelectAll: false,
+                    onSelectionChanged:
+                        (ids) => plugin.tabManager.updateCurrentFitler({
+                          'folder': ids.first,
+                        }),
                     type: 'folders',
                   );
                 }

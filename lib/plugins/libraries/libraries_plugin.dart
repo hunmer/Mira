@@ -1,10 +1,12 @@
+import 'package:flutter/material.dart';
 import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
-import 'package:mira/plugins/libraries/controllers/folders_controller.dart';
+import 'package:mira/plugins/libraries/controllers/folders_tags_cache.dart';
 import 'package:mira/plugins/libraries/controllers/libraray_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'services/websocket_server.dart';
 
 class LibrariesPlugin extends PluginBase {
@@ -20,13 +22,18 @@ class LibrariesPlugin extends PluginBase {
     return _instance!;
   }
 
+  setTabManager(LibraryTabManager tabManager) {
+    this.tabManager = tabManager;
+  }
+
   @override
   String get id => 'libraries';
-  late final LibraryUIController libraryUIController;
-  late final LibraryDataController libraryController;
-  late final LibraryLocalDataController dataController;
-  late final WebSocketServer server;
-  late final FoldersTagsController foldersTagsController;
+  late final LibraryUIController libraryUIController; // 弹出组件
+  late final LibraryDataController libraryController; // 数据库
+  late final LibraryLocalDataController dataController; // 本地数据
+  late final WebSocketServer server; // 后端服务器
+  late final LibraryTabManager tabManager; // 标签视图管理器
+  late final FoldersTagsCache foldersTagsController; // 文件夹标签缓存
 
   @override
   Future<void> registerToApp(
@@ -41,7 +48,7 @@ class LibrariesPlugin extends PluginBase {
   Future<void> initialize() async {
     libraryUIController = LibraryUIController(this);
     dataController = LibraryLocalDataController(this);
-    foldersTagsController = FoldersTagsController();
+    foldersTagsController = FoldersTagsCache();
     await foldersTagsController.init();
     libraryController = LibraryDataController(plugin: this);
     server = WebSocketServer(8080);

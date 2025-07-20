@@ -16,6 +16,7 @@ class FolderTreeWidget extends StatefulWidget {
   final String? type;
   final OnAddNode? onAddNode;
   final OnDeleteNode? onDeleteNode;
+  final Function(List<String>) onSelectionChanged;
 
   const FolderTreeWidget({
     this.selected,
@@ -24,6 +25,7 @@ class FolderTreeWidget extends StatefulWidget {
     this.showSelectAll,
     required this.items,
     required this.library,
+    required this.onSelectionChanged,
     this.onAddNode,
     this.onDeleteNode,
     super.key,
@@ -109,6 +111,7 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
       title: '',
       showSelectAll: widget.showSelectAll ?? true,
       selected: _selectedItems.toList(),
+      onSelectionChanged: widget.onSelectionChanged,
       onAddNode: (TreeItem node) async {
         await _onAddNode(node);
         if (widget.onAddNode != null) {

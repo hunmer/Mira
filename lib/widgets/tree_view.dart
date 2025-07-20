@@ -73,6 +73,7 @@ class customTreeView extends StatefulWidget {
     this.showSelectAll = false,
     this.title = 'Tree View',
     required this.defaultIcon,
+    required this.onSelectionChanged,
     this.selected = const [],
     this.onAddNode,
     this.onDeleteNode,
@@ -84,6 +85,7 @@ class customTreeView extends StatefulWidget {
   final IconData defaultIcon;
   final List<String> selected;
   final void Function(TreeItem item)? onAddNode;
+  final Function(List<String>) onSelectionChanged;
   final void Function(TreeItem item)? onDeleteNode;
 
   @override
@@ -217,6 +219,7 @@ class _customTreeViewState extends State<customTreeView> {
                         showExpandCollapseButton: true,
                         showSelectAll: widget.showSelectAll,
                         onSelectionChanged: (ids) {
+                          widget.onSelectionChanged(List<String>.from(ids));
                           for (final id in ids) {
                             widget
                                 .items
@@ -423,7 +426,6 @@ class _customTreeViewState extends State<customTreeView> {
     });
   }
 
-  // Fix: Filter tree and preserve hierarchy for matching items
   void _filterTree(String searchText) {
     if (searchText.isEmpty) {
       setState(() {
@@ -432,7 +434,6 @@ class _customTreeViewState extends State<customTreeView> {
       return;
     }
 
-    // Find all items that match
     final filtered =
         widget.items
             .where(
@@ -441,7 +442,6 @@ class _customTreeViewState extends State<customTreeView> {
             )
             .toList();
 
-    // To show their parents in the tree, collect all ancestors
     final Set<TreeItem> resultItems = Set.from(filtered);
     void collectAncestors(TreeItem item) {
       if (item.parentId != null) {

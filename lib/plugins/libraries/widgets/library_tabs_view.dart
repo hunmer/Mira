@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/plugins/libraries/widgets/library_context_menu.dart'
+    as LibraryContextMenu;
 import 'package:mira/plugins/libraries/widgets/library_edit_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_context_menu.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import '../models/library.dart';
 
@@ -25,7 +26,6 @@ class LibraryTabsView extends StatefulWidget {
 
 class _LibraryTabsViewState extends State<LibraryTabsView> {
   late final LibraryTabManager _tabManager;
-  final Map<int, GlobalKey> _tabKeys = {};
 
   @override
   void initState() {
@@ -34,6 +34,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
       libraries: List.from(widget.initialLibraries),
       initialLibraries: widget.initialLibraries,
     );
+    widget.plugin.setTabManager(_tabManager);
   }
 
   @override
@@ -47,7 +48,66 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
   @override
   Widget build(BuildContext context) {
-    final libraries = _tabManager.libraries.asMap().entries;
+    final tabsTab = <Widget>[];
+    final tabsContents = <Widget>[];
+    _tabManager.tabDatas.forEach((tabId, tabData) {
+      tabsContents.add(
+        LibraryGalleryView(
+          plugin: widget.plugin,
+          tabId: tabId,
+          library: tabData['library'],
+        ),
+      );
+      tabsTab.add(
+        GestureDetector(
+          onTap: () => _tabManager.setTabActive(tabId),
+          onSecondaryTapDown:
+              (details) => _showContextMenu(
+                context,
+                details.globalPosition,
+                tabData.library,
+                tabId,
+              ),
+
+          onLongPressDown:
+              (details) => _showContextMenu(
+                context,
+                details.globalPosition,
+                tabData.library,
+                tabId,
+              ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            decoration: BoxDecoration(
+              border: Border(
+                bottom: BorderSide(
+                  color:
+                      _tabManager.getCurrentTabId() == tabId
+                          ? Theme.of(context).colorScheme.primary
+                          : Colors.transparent,
+                  width: 2,
+                ),
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(tabData['name'] ?? tabData['library'].name),
+                const SizedBox(width: 4),
+                GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap:
+                      () => setState(() {
+                        _tabManager.closeTab(tabId);
+                      }),
+                  child: const Icon(Icons.close, size: 16),
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+    });
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -122,57 +182,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
         ],
         title: SingleChildScrollView(
           scrollDirection: Axis.horizontal,
-          child: Row(
-            children: [
-              ...libraries.map(
-                (entry) => GestureDetector(
-                  onTap:
-                      () => _tabManager.pageController.animateToPage(
-                        entry.key,
-                        duration: const Duration(milliseconds: 300),
-                        curve: Curves.ease,
-                      ),
-                  onLongPress:
-                      () => _showContextMenu(context, entry.value, entry.key),
-                  onSecondaryTap:
-                      () => _showContextMenu(context, entry.value, entry.key),
-                  child: Container(
-                    key: _tabKeys[entry.key] ??= GlobalKey(),
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 8,
-                    ),
-                    decoration: BoxDecoration(
-                      border: Border(
-                        bottom: BorderSide(
-                          color:
-                              _tabManager.currentIndex.value == entry.key
-                                  ? Theme.of(context).colorScheme.primary
-                                  : Colors.transparent,
-                          width: 2,
-                        ),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Text(entry.value.name),
-                        const SizedBox(width: 4),
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap:
-                              () => setState(() {
-                                _tabManager.closeTab(entry.key);
-                              }),
-                          child: const Icon(Icons.close, size: 16),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
+          child: Row(children: tabsTab),
         ),
       ),
       body: Row(
@@ -197,19 +207,9 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                     : PageView(
                       controller: _tabManager.pageController,
                       onPageChanged: (index) {
-                        if (index == _tabManager.libraries.length) {
-                          _tabManager.pageController.jumpToPage(currentIndex);
-                        }
+                        _tabManager.currentIndex.value = index;
                       },
-                      children: [
-                        ..._tabManager.libraries.map(
-                          (library) => LibraryGalleryView(
-                            plugin: widget.plugin,
-                            library: library,
-                          ),
-                        ),
-                        const Center(child: Icon(Icons.add)),
-                      ],
+                      children: tabsContents,
                     );
               },
             ),
@@ -219,18 +219,20 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     );
   }
 
-  void _showContextMenu(BuildContext context, Library library, int tabIndex) {
-    final key = _tabKeys[tabIndex];
-    if (key == null || key.currentContext == null) return;
-
+  void _showContextMenu(
+    BuildContext context,
+    Offset position,
+    Library library,
+    String tabId,
+  ) {
     LibraryContextMenu.show(
       context: context,
-      tabKey: key,
       library: library,
+      position: position,
       initialLibraries: widget.initialLibraries,
       onCloseTab:
           () => setState(() {
-            _tabManager.closeTab(tabIndex);
+            _tabManager.closeTab(tabId);
           }),
     );
   }

@@ -10,12 +10,14 @@ class AsyncTreeViewDialog extends StatefulWidget {
   final String title;
   final IconData? defaultIcon;
   final String? type;
+  final Function(List<String>) onSelectionChanged;
 
   const AsyncTreeViewDialog({
     this.selected,
     this.defaultIcon,
     this.type,
     required this.items,
+    required this.onSelectionChanged,
     required this.library,
     required this.title,
     super.key,
@@ -39,6 +41,7 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
       defaultIcon: widget.defaultIcon,
       type: widget.type,
       key: _treeWidgetStateKey,
+      onSelectionChanged: widget.onSelectionChanged,
     );
   }
 

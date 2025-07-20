@@ -25,6 +25,7 @@ class LibraryUIController {
             library: library,
             selected: null,
             type: 'folders',
+            onSelectionChanged: (ids) => {},
             items: folders.map((f) => TreeItem.fromMap(f)).toList(),
           ),
     );
@@ -46,6 +47,7 @@ class LibraryUIController {
             library: library,
             selected: null,
             type: 'tags',
+            onSelectionChanged: (ids) => {},
             items: tags.map((f) => TreeItem.fromMap(f)).toList(),
           ),
     );

@@ -4,16 +4,16 @@ import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:stash/stash_api.dart';
 import 'package:stash_memory/stash_memory.dart';
 
-class FoldersTagsController {
+class FoldersTagsCache {
   final List<FolderCache> folder_caches = [];
   final List<TagCache> tag_caches = [];
   Future<void> init() async {
     EventManager.instance.subscribe(
-      'folders_update',
+      'folders::update',
       (EventArgs args) => _onFoldersUpdate(args as MapEventArgs),
     );
     EventManager.instance.subscribe(
-      'tags_update',
+      'tags::update',
       (EventArgs args) => _onTagsUpdate(args as MapEventArgs),
     );
   }
