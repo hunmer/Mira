@@ -5,6 +5,7 @@ import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/websocket_server.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:image/image.dart' as img;
+import 'package:path/path.dart' as path;
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 class ThumbGenerator {
@@ -14,19 +15,15 @@ class ThumbGenerator {
 
   ThumbGenerator(this._server, this._dbService) {
     // 注册事件监听
-    _dbService.getEventManager().subscribe('file_created', _onFileCreated);
-    _dbService.getEventManager().subscribe('file_deleted', _onFileDeleted);
+    _dbService.getEventManager().subscribe('file::created', _onFileCreated);
+    _dbService.getEventManager().subscribe('file::deleted', _onFileDeleted);
   }
 
   Future<void> _onFileCreated(EventArgs args) async {
     if (args is! serverEventArgs) return;
 
     try {
-      final file = await _dbService.getFile(args.item['id']);
-      if (file == null) return;
-
-      final path = file['path'] as String?;
-      if (path == null) return;
+      final path = args.item['path'];
 
       final fileType = _getFileType(path);
       if (fileType == null) return;
@@ -64,7 +61,10 @@ class ThumbGenerator {
     if (args is! serverEventArgs) return;
 
     try {
-      final thumbPath = '${_dbService.getItemPath(args.item)}preview.png';
+      final thumbPath = path.join(
+        await _dbService.getItemPath(args.item),
+        'preview.png',
+      );
       final thumbFile = File(thumbPath);
 
       if (thumbFile.existsSync()) {

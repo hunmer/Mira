@@ -446,44 +446,24 @@ class _customTreeViewState extends State<customTreeView> {
             )
             .toList();
 
-    final Set<TreeItem> resultItems = Set.from(filtered);
-    void collectAncestors(TreeItem item) {
-      if (item.parentId != null) {
-        final parent = widget.items.firstWhere(
-          (it) => it.id == item.parentId,
-          orElse: () => TreeItem(id: '', title: ''),
-        );
-        if (parent.id.isNotEmpty && !resultItems.contains(parent)) {
-          resultItems.add(parent);
-          collectAncestors(parent);
-        }
-      }
-    }
+    final Set<TreeItem> itemsToShow = {};
 
+    // 1. Add matched items and their ancestors
     for (final item in filtered) {
-      collectAncestors(item);
+      itemsToShow.add(item);
+      _collectAncestors(item, itemsToShow);
     }
 
-    // Also include all children of matched items
-    final Set<TreeItem> itemsToShow = Set.from(resultItems);
-    void collectChildren(TreeItem item) {
-      final children = widget.items.where((child) => child.parentId == item.id);
-      for (final child in children) {
-        itemsToShow.add(child);
-        collectChildren(child);
-      }
+    // 2. Add all children of matched items
+    for (final item in List.from(itemsToShow)) {
+      _collectChildren(item, itemsToShow);
     }
 
-    for (final item in filtered) {
-      collectChildren(item);
-    }
-
+    // 3. Build tree with filtered items while preserving original styling
     final rootItems =
         itemsToShow.where((item) => item.parentId == null).toList();
     final newTreeNodes =
-        rootItems.map((item) {
-          return _createFilteredTreeNode(item, itemsToShow);
-        }).toList();
+        rootItems.map((item) => _createTreeNode(item)).toList();
 
     if (!listEquals(_treeNodes, newTreeNodes)) {
       setState(() {
@@ -492,37 +472,26 @@ class _customTreeViewState extends State<customTreeView> {
     }
   }
 
-  // Helper: Only build tree nodes for filtered items
-  TreeNode<String> _createFilteredTreeNode(
-    TreeItem item,
-    Set<TreeItem> allowedItems,
-  ) {
-    final children =
-        widget.items
-            .where(
-              (child) =>
-                  child.parentId == item.id && allowedItems.contains(child),
-            )
-            .map((child) => _createFilteredTreeNode(child, allowedItems))
-            .toList();
-    return TreeNode(
-      label: Row(
-        children: [
-          Expanded(child: Text(item.title)),
-          IconButton(
-            icon: const Icon(Icons.more_vert, size: 16),
-            onPressed: () => _showNodeMenu(item),
-            padding: EdgeInsets.zero,
-            visualDensity: VisualDensity.compact,
-          ),
-        ],
-      ),
-      value: item.id,
-      icon:
-          children.isEmpty
-              ? const Icon(Icons.insert_drive_file)
-              : const Icon(Icons.folder),
-      children: children,
-    );
+  void _collectAncestors(TreeItem item, Set<TreeItem> result) {
+    if (item.parentId != null) {
+      final parent = widget.items.firstWhere(
+        (it) => it.id == item.parentId,
+        orElse: () => TreeItem(id: '', title: ''),
+      );
+      if (parent.id.isNotEmpty && !result.contains(parent)) {
+        result.add(parent);
+        _collectAncestors(parent, result);
+      }
+    }
+  }
+
+  void _collectChildren(TreeItem item, Set<TreeItem> result) {
+    final children = widget.items.where((child) => child.parentId == item.id);
+    for (final child in children) {
+      if (!result.contains(child)) {
+        result.add(child);
+        _collectChildren(child, result);
+      }
+    }
   }
 }

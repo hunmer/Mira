@@ -171,12 +171,12 @@ class WebSocketServer {
               id = item['id'];
               // 通知所有客户端
               dbService.getEventManager().broadcastToClients(
-                'file_created',
+                'file::uploaded',
                 serverEventArgs({'id': id}),
               );
               // 通知所有插件
               dbService.getEventManager().broadcast(
-                'file::uploaded',
+                'file::created',
                 serverEventArgs(item),
               );
               channel.sink.add(
@@ -375,11 +375,11 @@ class WebSocketServer {
               success = await dbService.deleteFile(id);
               if (success) {
                 dbService.getEventManager().broadcastToClients(
-                  'file_deleted',
+                  'file::deleted',
                   serverEventArgs({'id': id}),
                 );
                 dbService.getEventManager().broadcast(
-                  'file_deleted',
+                  'file::deleted',
                   serverEventArgs({'id': id}),
                 );
               }
