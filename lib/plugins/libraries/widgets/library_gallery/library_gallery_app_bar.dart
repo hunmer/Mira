@@ -11,8 +11,6 @@ class LibraryGalleryAppBar extends StatelessWidget
   final VoidCallback onEnterSelection;
   final VoidCallback onUpload;
   final VoidCallback onShowUploadQueue;
-  final VoidCallback onFolder;
-  final VoidCallback onTag;
   final int pendingUploadCount;
   final Set<String> displayFields;
   final ValueChanged<Set<String>> onDisplayFieldsChanged;
@@ -29,8 +27,6 @@ class LibraryGalleryAppBar extends StatelessWidget
     required this.onEnterSelection,
     required this.onUpload,
     required this.onShowUploadQueue,
-    required this.onFolder,
-    required this.onTag,
     required this.pendingUploadCount,
     required this.displayFields,
     required this.onDisplayFieldsChanged,
@@ -113,38 +109,6 @@ class LibraryGalleryAppBar extends StatelessWidget
                       ),
                     ],
                   ),
-
-                IconButton(icon: const Icon(Icons.folder), onPressed: onFolder),
-                PopupMenuButton<String>(
-                  icon: const Icon(Icons.view_column),
-                  itemBuilder:
-                      (context) =>
-                          [
-                            'title',
-                            'cover',
-                            'rating',
-                            'notes',
-                            'createdAt',
-                            'tags',
-                            'folder',
-                            'size',
-                          ].map((field) {
-                            return CheckedPopupMenuItem<String>(
-                              value: field,
-                              checked: displayFields.contains(field),
-                              child: Text(field),
-                            );
-                          }).toList(),
-                  onSelected: (field) {
-                    final newFields = Set<String>.from(displayFields);
-                    if (newFields.contains(field)) {
-                      newFields.remove(field);
-                    } else {
-                      newFields.add(field);
-                    }
-                    onDisplayFieldsChanged(newFields);
-                  },
-                ),
                 PopupMenuButton<int>(
                   icon: const Icon(Icons.grid_view),
                   itemBuilder:

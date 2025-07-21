@@ -40,17 +40,22 @@ class _FileDropDialogState extends State<FileDropDialog> {
   Future<void> _pickDirectory() async {
     String? directory = await FilePicker.platform.getDirectoryPath();
     if (directory != null) {
-      final dir = Directory(directory);
-      final files =
-          await dir
-              .list(recursive: true)
-              .where((entity) => entity is File)
-              .toList();
-      setState(() {
-        _selectedFiles.addAll(files.cast<File>());
-        _selectedItems.addAll(List.filled(files.length, true));
-      });
+      await _scanDir(directory);
     }
+  }
+
+  // scan dir files
+  Future<void> _scanDir(String path) async {
+    final dir = Directory(path);
+    final files =
+        await dir
+            .list(recursive: true)
+            .where((entity) => entity is File)
+            .toList();
+    setState(() {
+      _selectedFiles.addAll(files.cast<File>());
+      _selectedItems.addAll(List.filled(files.length, true));
+    });
   }
 
   void _onDone() {
@@ -85,13 +90,19 @@ class _FileDropDialogState extends State<FileDropDialog> {
                         Formats.fileUri,
                         (uri) {
                           if (uri != null) {
-                            setState(() {
+                            setState(() async {
                               final path =
                                   Platform.isWindows && uri.path.startsWith('/')
                                       ? Uri.decodeFull(uri.path.substring(1))
                                       : Uri.decodeFull(uri.path);
-                              _selectedFiles.add(File(path));
-                              _selectedItems.add(true);
+                              // check if is dir
+                              final dir = Directory(path);
+                              if (await dir.exists()) {
+                                await _scanDir(path);
+                              } else {
+                                _selectedFiles.add(File(path));
+                                _selectedItems.add(true);
+                              }
                             });
                           }
                         },

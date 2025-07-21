@@ -4,7 +4,8 @@ import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
 import 'package:file_picker/file_picker.dart';
 
 class LibraryEditView extends StatefulWidget {
-  const LibraryEditView({super.key});
+  final Library? library;
+  const LibraryEditView({super.key, this.library});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -13,12 +14,39 @@ class LibraryEditView extends StatefulWidget {
 
 class _LibraryEditViewState extends State<LibraryEditView> {
   final _formKey = GlobalKey<FormState>();
-  late LibraryType _selectedType = LibraryType.local;
-  final TextEditingController _nameController = TextEditingController();
-  final TextEditingController _serverController = TextEditingController();
-  final TextEditingController _usernameController = TextEditingController();
-  final TextEditingController _passwordController = TextEditingController();
-  String _localPath = '';
+  late LibraryType _selectedType;
+  late final TextEditingController _nameController;
+  late final TextEditingController _serverController;
+  late final TextEditingController _usernameController;
+  late final TextEditingController _passwordController;
+  late String _localPath;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+    _serverController = TextEditingController();
+    _usernameController = TextEditingController();
+    _passwordController = TextEditingController();
+    _localPath = '';
+
+    if (widget.library != null) {
+      final library = widget.library!;
+      _nameController.text = library.name;
+      _selectedType =
+          library.type == 'local' ? LibraryType.local : LibraryType.network;
+
+      if (_selectedType == LibraryType.local) {
+        _localPath = library.customFields['path'] ?? '';
+      } else {
+        _serverController.text = library.customFields['server'] ?? '';
+        _usernameController.text = library.customFields['username'] ?? '';
+        _passwordController.text = library.customFields['password'] ?? '';
+      }
+    } else {
+      _selectedType = LibraryType.local;
+    }
+  }
 
   Future<void> _pickFolder() async {
     if (Theme.of(context).platform == TargetPlatform.android) {
@@ -49,7 +77,9 @@ class _LibraryEditViewState extends State<LibraryEditView> {
   void _saveLibrary() {
     if (_formKey.currentState!.validate()) {
       final library = Library(
-        id: DateTime.now().millisecondsSinceEpoch.toString(),
+        id:
+            widget.library?.id ??
+            DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text,
         icon: 'default',
         type: _selectedType == LibraryType.local ? 'local' : 'network',
@@ -74,7 +104,11 @@ class _LibraryEditViewState extends State<LibraryEditView> {
 
     return Scaffold(
       appBar: AppBar(
-        title: Text(localizations.newLibrary),
+        title: Text(
+          widget.library == null
+              ? localizations.newLibrary
+              : localizations.editLibrary,
+        ),
         actions: [IconButton(icon: Icon(Icons.save), onPressed: _saveLibrary)],
       ),
       body: Padding(

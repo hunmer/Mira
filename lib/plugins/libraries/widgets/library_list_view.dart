@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_context_menu/flutter_context_menu.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/library_edit_view.dart';
@@ -71,6 +72,13 @@ class _LibraryListViewState extends State<LibraryListView> {
                     elevation: 2,
                     child: InkWell(
                       onTap: () => _onLibrarySelected(library),
+                      onSecondaryTapDown: (details) {
+                        _showContextMenu(
+                          context,
+                          details.globalPosition,
+                          library,
+                        );
+                      },
                       child: Padding(
                         padding: EdgeInsets.all(12),
                         child: Column(
@@ -107,10 +115,10 @@ class _LibraryListViewState extends State<LibraryListView> {
                 context,
                 MaterialPageRoute(builder: (context) => LibraryEditView()),
               );
-
               if (newLibrary != null) {
+                await _plugin.dataController.addLibrary(newLibrary);
                 setState(() {
-                  _plugin.dataController.addLibrary(newLibrary);
+                  _librariesFuture = _plugin.dataController.findLibraries();
                 });
               }
             },
@@ -118,5 +126,51 @@ class _LibraryListViewState extends State<LibraryListView> {
         );
       },
     );
+  }
+
+  void _showContextMenu(
+    BuildContext context,
+    Offset position,
+    Library library,
+  ) {
+    final entries = <ContextMenuEntry>[
+      MenuItem(
+        label: '编辑',
+        icon: Icons.edit,
+        onSelected: () async {
+          final updatedLibrary = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => LibraryEditView(library: library),
+            ),
+          );
+
+          if (updatedLibrary != null) {
+            await _plugin.dataController.updateLibrary(updatedLibrary);
+            setState(() {
+              _librariesFuture = _plugin.dataController.findLibraries();
+            });
+          }
+        },
+      ),
+      MenuItem(
+        label: '删除',
+        icon: Icons.delete,
+        onSelected: () async {
+          await _plugin.dataController.deleteLibrary(library.id);
+          setState(() {
+            _librariesFuture = _plugin.dataController.findLibraries();
+          });
+        },
+      ),
+    ];
+
+    final menu = ContextMenu(
+      entries: entries,
+      position: position,
+      padding: const EdgeInsets.all(8.0),
+    );
+
+    showContextMenu(context, contextMenu: menu);
   }
 }

@@ -45,11 +45,25 @@ class LibraryTabManager {
   }
 
   void closeTabIndex(int index) {
-    libraries.removeAt(index);
-    if (currentIndex.value >= libraries.length) {
-      currentIndex.value = libraries.length - 1;
+    final tabData = getTabIds()[index];
+    tabDatas.remove(tabData);
+    onPageChange('close', index);
+  }
+
+  void onPageChange(String reason, int index) {
+    final len = getTabIds().length;
+    int newIndex = -1;
+    switch (reason) {
+      case 'close':
+        if (currentIndex.value == index) {
+          newIndex = index == 0 ? len - 1 : index - 1;
+        }
+        break;
     }
-    pageController.jumpToPage(currentIndex.value);
+    if (newIndex != -1) {
+      currentIndex.value = len - 1;
+      pageController.jumpToPage(newIndex);
+    }
   }
 
   void closeTab(String tabId) {
@@ -64,7 +78,6 @@ class LibraryTabManager {
   }
 
   void closeAllTabs() {
-    libraries.clear();
     currentIndex.value = 0;
     pageController.jumpToPage(currentIndex.value);
   }

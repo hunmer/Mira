@@ -255,23 +255,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             builder: (context) => UploadQueueDialog(uploadQueue: _uploadQueue),
           );
         },
-        onFolder: () {
-          widget.plugin.libraryController
-              .getLibraryInst(widget.library)!
-              .getFolders()
-              .then((folders) async {
-                await widget.plugin.libraryUIController.showFolderSelector(
-                  widget.library,
-                  context,
-                );
-              });
-        },
-        onTag: () async {
-          await widget.plugin.libraryUIController.showTagSelector(
-            widget.library,
-            context,
-          );
-        },
         pendingUploadCount: _uploadQueue.pendingFiles.length,
         displayFields: _displayFields,
         onDisplayFieldsChanged: (newFields) {

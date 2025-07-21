@@ -17,7 +17,7 @@ class LibraryLocalDataController {
   }
 
   /// 删除库记录
-  Future<void> removeLibrary(String libraryId) async {
+  Future<void> deleteLibrary(String libraryId) async {
     final libraries = await listLibraries();
     libraries.removeWhere((lib) => lib.id == libraryId);
     await plugin.storage.writeJson(
@@ -50,5 +50,18 @@ class LibraryLocalDataController {
       return [Library.fromJson(jsonData as Map<String, dynamic>)];
     }
     return [];
+  }
+
+  /// 更新库记录
+  Future<void> updateLibrary(Library library) async {
+    final libraries = await listLibraries();
+    final index = libraries.indexWhere((lib) => lib.id == library.id);
+    if (index != -1) {
+      libraries[index] = library;
+      await plugin.storage.writeJson(
+        'libraries',
+        libraries.map((e) => e.toJson()).toList(),
+      );
+    }
   }
 }

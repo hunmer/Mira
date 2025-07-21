@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
-import 'package:mira/plugins/libraries/widgets/library_context_menu.dart'
+import 'package:mira/plugins/libraries/widgets/library_tabs_context_menu.dart'
     // ignore: library_prefixes
     as LibraryContextMenu;
 import 'package:mira/plugins/libraries/widgets/library_edit_view.dart';
@@ -73,7 +73,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                 tabData['library'],
                 tabId,
               ),
-
           child: Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
