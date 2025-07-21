@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:number_pagination/number_pagination.dart';
@@ -95,30 +96,13 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     super.dispose();
   }
 
-  Future<void> _uploadFiles(List<File> filesToUpload) async {
-    final localizations = LibrariesLocalizations.of(context);
-    if (localizations == null) return;
-    await _uploadQueue.addFiles(filesToUpload);
-    // await _uploadQueue.onComplete;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('开始上传')));
-    setState(() {
-      _uploadProgress = _uploadQueue.progress;
-    });
-  }
-
   void _showDropDialog() {
     showDialog(
       context: context,
       builder:
           (context) => FileUploadListDialog(
             plugin: widget.plugin,
-            onFilesSelected: (files) async {
-              if (files.isNotEmpty) {
-                await _uploadFiles(files);
-              }
-            },
+            uploadQueue: _uploadQueue,
           ),
     );
   }

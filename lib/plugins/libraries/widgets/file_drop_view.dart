@@ -11,10 +11,12 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 
 class FileDropView extends StatefulWidget {
   final LibrariesPlugin plugin;
+  final String btnOk;
   final Function(List<File>) onFilesSelected;
 
   const FileDropView({
     super.key,
+    this.btnOk = '确定上传',
     required this.plugin,
     required this.onFilesSelected,
   });
@@ -35,17 +37,6 @@ class FileDataSource extends AsyncDataTableSource {
   }) {
     addListener(() {});
   }
-
-  @override
-  Future<int> getRowCount() async {
-    return files.length;
-  }
-
-  @override
-  Future<int> getSelectedRowCount() async {
-    return selectedItems.where((element) => element).length;
-  }
-
   @override
   DataRow? getRow(int index) {
     if (index >= files.length) return null;
@@ -114,7 +105,10 @@ class FileDataSource extends AsyncDataTableSource {
   }
 }
 
-class _FileDropViewState extends State<FileDropView> {
+class _FileDropViewState extends State<FileDropView>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
   final List<File> _selectedFiles = [];
   final List<bool> _selectedItems = [];
   late FileDataSource _fileDataSource;
@@ -222,7 +216,10 @@ class _FileDropViewState extends State<FileDropView> {
       }
     }
     widget.onFilesSelected(filesToUpload);
-    Navigator.of(context).pop();
+    setState(() {
+      _selectedFiles.clear();
+      _selectedItems.clear();
+    });
   }
 
   @override
@@ -379,7 +376,7 @@ class _FileDropViewState extends State<FileDropView> {
                     '共 ${_selectedFiles.length} 个文件',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  ElevatedButton(onPressed: _onDone, child: const Text('确认选择')),
+                  ElevatedButton(onPressed: _onDone, child: Text(widget.btnOk)),
                 ],
               ),
             ],
