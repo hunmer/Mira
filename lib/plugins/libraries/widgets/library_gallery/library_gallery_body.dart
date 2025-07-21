@@ -55,7 +55,10 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
     return LayoutBuilder(
       builder: (context, constraints) {
         final spacing = 8.0;
-        final crossAxisCount = widget.imagesPerRow;
+        final crossAxisCount =
+            widget.imagesPerRow > 0
+                ? widget.imagesPerRow
+                : (constraints.maxWidth / 150).floor();
 
         return GridView.builder(
           gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(

@@ -185,16 +185,18 @@ class WebSocketServer {
               break;
             case 'folder':
               id = await dbService.createFolder(data);
+              final folders = await dbService.getAllFolders();
               dbService.getEventManager().broadcastToClients(
-                'folder_created',
-                serverEventArgs({'id': id}),
+                'folder::created',
+                serverEventArgs({'id': id, 'folders': folders}),
               );
               break;
             case 'tag':
               id = await dbService.createTag(data);
+              final tags = await dbService.getAllTags();
               dbService.getEventManager().broadcastToClients(
-                'tag_created',
-                serverEventArgs({'id': id}),
+                'tag::created',
+                serverEventArgs({'id': id, 'tags': tags}),
               );
               break;
             default:
@@ -303,7 +305,7 @@ class WebSocketServer {
               success = await dbService.updateFile(id, values);
               if (success) {
                 dbService.getEventManager().broadcastToClients(
-                  'file_updated',
+                  'file::updated',
                   serverEventArgs({'id': id}),
                 );
               }

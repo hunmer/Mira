@@ -111,6 +111,8 @@ class LibraryDataWebSocket implements LibraryDataInterface {
               MapEventArgs({'library': library, 'folders': data['folders']}),
             );
             break;
+          case 'tag::created': // 标签创建
+          case 'folder::created': // 文件夹创建
           case 'thumbnail::generated': // 文件生成缩略图
           case 'file::uploaded': // 文件上传结果
             EventManager.instance.broadcast(
