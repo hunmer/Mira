@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:path/path.dart' as path;
 
 class LibraryFileInformationView extends StatefulWidget {
   final LibraryFile file;
@@ -26,7 +27,7 @@ class _LibraryFileInformationViewState
   void initState() {
     super.initState();
     _nameController = TextEditingController(
-      text: getFileName(widget.file.path!, true),
+      text: path.basename(widget.file.path!),
     );
     _notesController = TextEditingController(text: widget.file.notes);
     _ratingController = TextEditingController(
@@ -54,7 +55,7 @@ class _LibraryFileInformationViewState
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: Text(getFileName(widget.file.name)),
+        title: Text(path.basename(widget.file.name)),
         automaticallyImplyLeading: false,
         actions: [
           // IconButton(icon: const Icon(Icons.save), onPressed: _saveChanges),

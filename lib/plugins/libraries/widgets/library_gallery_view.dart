@@ -13,7 +13,7 @@ import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_drop_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_preview_view.dart';
-import 'package:mira/plugins/libraries/widgets/upload_queue_dialog.dart';
+import 'package:mira/plugins/libraries/widgets/upload_queue_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_body.dart';
@@ -60,11 +60,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     _filterOptions = _tabManager.getLibraryFilter(widget.tabId);
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
-      if (mounted) {
-        setState(() {
-          _uploadProgress = _uploadQueue.progress;
-        });
-      }
+      setState(() {
+        _uploadProgress = _uploadQueue.progress;
+      });
     });
     EventManager.instance.subscribe(
       'thumbnail_generated',
@@ -102,26 +100,17 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   Future<void> _uploadFiles(List<File> filesToUpload) async {
     final localizations = LibrariesLocalizations.of(context);
     if (localizations == null) return;
-
-    try {
-      await _uploadQueue.addFiles(filesToUpload);
-      // await _uploadQueue.onComplete;
-      // ScaffoldMessenger.of(
-      //   context,
-      // ).showSnackBar(const SnackBar(content: Text('开始上传')));
-      // setState(() {});
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${localizations.uploadFailed}: $e')),
-      );
-    } finally {
-      // setState(() {
-      //   _uploadProgress = 0;
-      // });
-    }
+    await _uploadQueue.addFiles(filesToUpload);
+    // await _uploadQueue.onComplete;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(const SnackBar(content: Text('开始上传')));
+    setState(() {
+      _uploadProgress = _uploadQueue.progress;
+    });
   }
 
-  void _showUploadDialog() {
+  void _showDropDialog() {
     showDialog(
       context: context,
       builder:
@@ -248,14 +237,14 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             _isSelectionMode = true;
           });
         },
-        onUpload: _showUploadDialog,
+        onUpload: _showDropDialog,
         onShowUploadQueue: () {
-          showDialog(
+          showModalBottomSheet(
             context: context,
             builder: (context) => UploadQueueDialog(uploadQueue: _uploadQueue),
           );
         },
-        pendingUploadCount: _uploadQueue.pendingFiles.length,
+        uploadProgress: _uploadProgress,
         displayFields: _displayFields,
         onDisplayFieldsChanged: (newFields) {
           setState(() {

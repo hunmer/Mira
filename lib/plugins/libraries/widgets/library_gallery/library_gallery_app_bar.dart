@@ -11,7 +11,7 @@ class LibraryGalleryAppBar extends StatelessWidget
   final VoidCallback onEnterSelection;
   final VoidCallback onUpload;
   final VoidCallback onShowUploadQueue;
-  final int pendingUploadCount;
+  final double uploadProgress;
   final Set<String> displayFields;
   final ValueChanged<Set<String>> onDisplayFieldsChanged;
   final int imagesPerRow;
@@ -27,7 +27,7 @@ class LibraryGalleryAppBar extends StatelessWidget
     required this.onEnterSelection,
     required this.onUpload,
     required this.onShowUploadQueue,
-    required this.pendingUploadCount,
+    required this.uploadProgress,
     required this.displayFields,
     required this.onDisplayFieldsChanged,
     required this.imagesPerRow,
@@ -72,39 +72,41 @@ class LibraryGalleryAppBar extends StatelessWidget
                   icon: const Icon(Icons.check_box),
                   onPressed: onEnterSelection,
                 ),
-                IconButton(
-                  icon: const Icon(Icons.file_upload),
-                  onPressed: onUpload,
-                ),
-                if (pendingUploadCount > 0)
+                IconButton(icon: Icon(Icons.file_upload), onPressed: onUpload),
+                if (uploadProgress > 0)
                   Stack(
                     alignment: Alignment.center,
                     children: [
                       IconButton(
                         icon: const Icon(Icons.cloud_upload),
+                        color: uploadProgress == 1 ? Colors.green : null,
                         onPressed: onShowUploadQueue,
                       ),
+
                       Positioned(
-                        top: 8,
-                        right: 8,
+                        top: 0,
+                        right: 0,
                         child: Container(
                           padding: const EdgeInsets.all(2),
-                          decoration: BoxDecoration(
-                            color: Colors.red,
-                            borderRadius: BorderRadius.circular(10),
-                          ),
                           constraints: const BoxConstraints(
                             minWidth: 16,
                             minHeight: 16,
                           ),
-                          child: Text(
-                            '$pendingUploadCount',
-                            style: const TextStyle(
-                              color: Colors.white,
-                              fontSize: 10,
-                            ),
-                            textAlign: TextAlign.center,
-                          ),
+                          child:
+                              uploadProgress == 1
+                                  ? const Icon(
+                                    Icons.check,
+                                    size: 12,
+                                    color: Colors.green,
+                                  )
+                                  : Text(
+                                    '${uploadProgress * 100}%',
+                                    style: const TextStyle(
+                                      color: Colors.blue,
+                                      fontSize: 10,
+                                    ),
+                                    textAlign: TextAlign.center,
+                                  ),
                         ),
                       ),
                     ],

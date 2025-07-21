@@ -26,17 +26,6 @@ String formatFileSize(int bytes) {
   return '${(bytes / pow(1024, i)).toStringAsFixed(2)} ${suffixes[i]}';
 }
 
-// getFileName
-String getFileName(String path, [bool extName = false]) {
-  if (path.isEmpty) return '';
-  path = path.replaceAll('\\', '/');
-  var index = path.lastIndexOf('/');
-  index = index == -1 ? 0 : index + 1;
-  return extName
-      ? path.substring(index)
-      : path.substring(index, path.lastIndexOf('.'));
-}
-
 Widget buildImageFromUrl(String url) {
   return url.startsWith('http')
       ? Image.network(
