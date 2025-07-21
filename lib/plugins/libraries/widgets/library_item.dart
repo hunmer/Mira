@@ -1,9 +1,12 @@
+import 'dart:io';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/widgets/icon_chip.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:path/path.dart' as path;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 
 class LibraryItem extends StatelessWidget {
@@ -51,7 +54,8 @@ class LibraryItem extends StatelessWidget {
               localData: {'fileId': file.id},
               suggestedName: file.name,
             );
-            if (file.path != null) {
+            if ((Platform.isLinux || Platform.isMacOS || Platform.isWindows) &&
+                file.path != null) {
               final path = filePathToUri(file.path!);
               item.add(Formats.fileUri(Uri.tryParse(path)!));
             }
@@ -100,12 +104,9 @@ class LibraryItem extends StatelessWidget {
                                       children: [
                                         if (displayFields.contains('title'))
                                           Text(
-                                            file.path!
-                                                .replaceAll('\\', '/')
-                                                .split('/')
-                                                .last
-                                                .split('.')
-                                                .first,
+                                            path.basenameWithoutExtension(
+                                              file.path!,
+                                            ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
                                           ),
@@ -131,7 +132,7 @@ class LibraryItem extends StatelessWidget {
                                           ),
                                         if (displayFields.contains('size'))
                                           Text(
-                                            '大小: ${(file.size / 1024).toStringAsFixed(1)}KB',
+                                            '大小: ${formatFileSize(file.size)}',
                                             style:
                                                 Theme.of(
                                                   context,
@@ -210,7 +211,7 @@ class LibraryItem extends StatelessWidget {
                             ),
                             SizedBox(width: 4),
                             Text(
-                              file.path!.split('.').last.toUpperCase(),
+                              path.extension(file.path!).toUpperCase(),
                               style: TextStyle(fontSize: 10),
                             ),
                           ],
