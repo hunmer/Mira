@@ -1,3 +1,5 @@
+// ignore_for_file: non_constant_identifier_names
+
 import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';

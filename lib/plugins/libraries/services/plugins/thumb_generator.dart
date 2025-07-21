@@ -8,6 +8,7 @@ import 'package:image/image.dart' as img;
 import 'package:video_thumbnail/video_thumbnail.dart';
 
 class ThumbGenerator {
+  // ignore: unused_field
   final WebSocketServer _server;
   final LibraryServerDataInterface _dbService;
 

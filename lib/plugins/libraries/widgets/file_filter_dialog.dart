@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 
 class FileFilterDialog extends StatefulWidget {
-  const FileFilterDialog({Key? key}) : super(key: key);
+  const FileFilterDialog({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _FileFilterDialogState createState() => _FileFilterDialogState();
 }
 

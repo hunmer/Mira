@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
@@ -10,10 +12,10 @@ class FileDropDialog extends StatefulWidget {
   final Function(List<File>) onFilesSelected;
 
   const FileDropDialog({
-    Key? key,
+    super.key,
     required this.plugin,
     required this.onFilesSelected,
-  }) : super(key: key);
+  });
 
   @override
   _FileDropDialogState createState() => _FileDropDialogState();

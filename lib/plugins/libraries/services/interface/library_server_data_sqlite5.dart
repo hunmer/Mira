@@ -1,3 +1,5 @@
+// ignore_for_file: collection_methods_unrelated_type
+
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
@@ -110,7 +112,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     void addField(String key, dynamic value) {
       if (fileData.containsKey(key)) {
         fields.add('$key = ?');
-        params.add(value ?? null);
+        params.add(value);
       }
     }
 

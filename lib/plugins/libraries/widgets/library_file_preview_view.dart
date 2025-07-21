@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fvp/fvp.dart' as fvp;
 import 'package:mira/plugins/libraries/models/file.dart';
+// ignore: depend_on_referenced_packages
 import 'package:video_player/video_player.dart';
 
 class LibraryFilePreviewView extends StatefulWidget {

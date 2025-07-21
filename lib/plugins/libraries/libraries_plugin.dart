@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
@@ -54,9 +53,8 @@ class LibrariesPlugin extends PluginBase {
     server = WebSocketServer(8080);
   }
 
-  @override
   void dispose() {
-    libraryController?.close();
-    server?.stop();
+    libraryController.close();
+    server.stop();
   }
 }

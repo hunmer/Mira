@@ -1,12 +1,14 @@
+// ignore_for_file: prefer_typing_uninitialized_variables
+
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_sqlite5.dart';
-import 'package:mira/plugins/libraries/services/server_event_manager.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
+// ignore: depend_on_referenced_packages
 import 'package:shelf/shelf_io.dart' as shelf_io;
 import 'package:shelf_web_socket/shelf_web_socket.dart';
 
@@ -17,7 +19,7 @@ class WebSocketServer {
   late List<LibraryServerDataInterface> _libraryServices = [];
   late HttpServer? _server;
 
-  WebSocketServer(this.port) {}
+  WebSocketServer(this.port);
 
   Future<LibraryServerDataInterface> loadLibrary(
     Map<String, dynamic> dbConfig,
@@ -118,9 +120,9 @@ class WebSocketServer {
             jsonEncode({
               'event': 'connected',
               'data': {
-                'library': dbService!.getLibraryId(),
-                'tags': await dbService!.getAllTags(),
-                'folders': await dbService!.getAllFolders(),
+                'library': dbService.getLibraryId(),
+                'tags': await dbService.getAllTags(),
+                'folders': await dbService.getAllFolders(),
               },
             }),
           );
@@ -160,9 +162,9 @@ class WebSocketServer {
                   'path': data['path'],
                   ...data,
                 };
-                item = await dbService!.createFileFromPath(filePath, fileMeta);
+                item = await dbService.createFileFromPath(filePath, fileMeta);
               } else {
-                item = await dbService!.createFile({
+                item = await dbService.createFile({
                   'reference': data['reference'],
                   'url': data['url'],
                   'path': data['path'],
@@ -180,14 +182,14 @@ class WebSocketServer {
               );
               break;
             case 'folder':
-              id = await dbService!.createFolder(data);
+              id = await dbService.createFolder(data);
               dbService.getEventManager().broadcastToClients(
                 'folder_created',
                 ItemEventArgs({'id': id}),
               );
               break;
             case 'tag':
-              id = await dbService!.createTag(data);
+              id = await dbService.createTag(data);
               dbService.getEventManager().broadcastToClients(
                 'tag_created',
                 ItemEventArgs({'id': id}),
@@ -206,7 +208,7 @@ class WebSocketServer {
             Map<String, dynamic>? record;
             switch (recordType) {
               case 'file':
-                record = await dbService!.getFile(id);
+                record = await dbService.getFile(id);
                 if (record != null) {
                   record['thumb'] =
                       record['thumb'] == 1
@@ -215,13 +217,13 @@ class WebSocketServer {
                 }
                 break;
               case 'folder':
-                record = await dbService!.getFolder(id);
+                record = await dbService.getFolder(id);
                 break;
               case 'tag':
-                record = await dbService!.getTag(id);
+                record = await dbService.getTag(id);
                 break;
               case 'file_folder':
-                final folders = await dbService!.getFileFolders(id);
+                final folders = await dbService.getFileFolders(id);
                 channel.sink.add(
                   jsonEncode({
                     'status': 'success',
@@ -231,7 +233,7 @@ class WebSocketServer {
                 );
                 break;
               case 'file_tag':
-                final tags = await dbService!.getFileTags(id);
+                final tags = await dbService.getFileTags(id);
                 channel.sink.add(
                   jsonEncode({
                     'status': 'success',
@@ -254,7 +256,7 @@ class WebSocketServer {
             var records;
             switch (recordType) {
               case 'file':
-                final result = await dbService!.getFiles(
+                final result = await dbService.getFiles(
                   select: payload['select'] as String? ?? '*',
                   filters: payload['query'] as Map<String, dynamic>?,
                 );
@@ -266,13 +268,13 @@ class WebSocketServer {
                 records = result;
                 break;
               case 'folder':
-                records = await dbService!.getFolders(
+                records = await dbService.getFolders(
                   limit: payload['limit'] as int? ?? 100,
                   offset: payload['offset'] as int? ?? 0,
                 );
                 break;
               case 'tag':
-                records = await dbService!.getTags(
+                records = await dbService.getTags(
                   limit: payload['limit'] as int? ?? 100,
                   offset: payload['offset'] as int? ?? 0,
                 );
@@ -295,7 +297,7 @@ class WebSocketServer {
           bool success;
           switch (recordType) {
             case 'file':
-              success = await dbService!.updateFile(id, values);
+              success = await dbService.updateFile(id, values);
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'file_updated',
@@ -304,7 +306,7 @@ class WebSocketServer {
               }
               break;
             case 'folder':
-              success = await dbService!.updateFolder(id, values);
+              success = await dbService.updateFolder(id, values);
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'folder_updated',
@@ -313,7 +315,7 @@ class WebSocketServer {
               }
               break;
             case 'tag':
-              success = await dbService!.updateTag(id, values);
+              success = await dbService.updateTag(id, values);
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'tag_updated',
@@ -322,7 +324,7 @@ class WebSocketServer {
               }
               break;
             case 'file_folder':
-              success = await dbService!.setFileFolders(id, values as String);
+              success = await dbService.setFileFolders(id, values as String);
               channel.sink.add(
                 jsonEncode({
                   'status': success ? 'success' : 'failed',
@@ -332,7 +334,7 @@ class WebSocketServer {
               );
               break;
             case 'file_tag':
-              success = await dbService!.setFileTags(id, values.cast<String>());
+              success = await dbService.setFileTags(id, values.cast<String>());
               channel.sink.add(
                 jsonEncode({
                   'status': success ? 'success' : 'failed',
@@ -357,7 +359,7 @@ class WebSocketServer {
           bool success;
           switch (recordType) {
             case 'file':
-              success = await dbService!.deleteFile(id);
+              success = await dbService.deleteFile(id);
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'file_deleted',
@@ -370,7 +372,7 @@ class WebSocketServer {
               }
               break;
             case 'folder':
-              success = await dbService!.deleteFolder(id);
+              success = await dbService.deleteFolder(id);
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'folder_deleted',
@@ -379,7 +381,7 @@ class WebSocketServer {
               }
               break;
             case 'tag':
-              success = await dbService!.deleteTag(id);
+              success = await dbService.deleteTag(id);
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'tag_deleted',
@@ -439,7 +441,9 @@ class WebSocketServer {
   }
 
   Future<void> stop() async {
-    _libraryServices.forEach((dbService) => dbService.close());
+    for (var dbService in _libraryServices) {
+      dbService.close();
+    }
     await _server?.close();
     _connecting = false;
     _libraryServices = [];

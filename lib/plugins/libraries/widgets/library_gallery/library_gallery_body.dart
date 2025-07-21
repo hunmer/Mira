@@ -1,6 +1,5 @@
 import 'dart:io';
 
-import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
@@ -9,6 +8,7 @@ import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_file_context_menu.dart'
+    // ignore: library_prefixes
     as LibraryFileContextMenu;
 import 'package:mira/plugins/libraries/widgets/library_item.dart';
 
@@ -54,7 +54,6 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
     final isMobile = Platform.isAndroid || Platform.isIOS;
     return LayoutBuilder(
       builder: (context, constraints) {
-        final itemWidth = 150.0;
         final spacing = 8.0;
         final crossAxisCount = widget.imagesPerRow;
 

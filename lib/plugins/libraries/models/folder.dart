@@ -36,6 +36,7 @@ class LibraryFolder {
       'id': id,
       'title': title,
       'parentId': parentId,
+      // ignore: deprecated_member_use
       'color': color?.value,
       'icon': icon?.codePoint,
     };

@@ -12,11 +12,11 @@ class LibrarySidebarView extends StatelessWidget {
   final VoidCallback onHideSidebar;
 
   const LibrarySidebarView({
-    Key? key,
+    super.key,
     required this.plugin,
     required this.library,
     required this.onHideSidebar,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

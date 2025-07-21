@@ -6,9 +6,10 @@ import '../models/library.dart';
 import '../l10n/libraries_localizations.dart';
 
 class LibraryListView extends StatefulWidget {
-  const LibraryListView({Key? key}) : super(key: key);
+  const LibraryListView({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _LibraryListViewState createState() => _LibraryListViewState();
 }
 
@@ -31,7 +32,7 @@ class _LibraryListViewState extends State<LibraryListView> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = LibrariesLocalizations.of(context)!;
+    LibrariesLocalizations.of(context);
 
     return FutureBuilder<List<Library>>(
       future: _librariesFuture,

@@ -280,6 +280,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
+  // ignore: override_on_non_overriding_member
   Future<void> updateTag({
     required String id,
     bool? deleted,

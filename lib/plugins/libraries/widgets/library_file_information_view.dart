@@ -125,6 +125,7 @@ class _LibraryFileInformationViewState
     );
   }
 
+  // ignore: unused_element
   void _saveChanges() {
     final updatedFile = LibraryFile(
       id: widget.file.id,

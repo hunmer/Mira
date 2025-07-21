@@ -4,9 +4,10 @@ import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
 import 'package:file_picker/file_picker.dart';
 
 class LibraryEditView extends StatefulWidget {
-  const LibraryEditView({Key? key}) : super(key: key);
+  const LibraryEditView({super.key});
 
   @override
+  // ignore: library_private_types_in_public_api
   _LibraryEditViewState createState() => _LibraryEditViewState();
 }
 
@@ -69,7 +70,7 @@ class _LibraryEditViewState extends State<LibraryEditView> {
 
   @override
   Widget build(BuildContext context) {
-    final localizations = LibrariesLocalizations.of(context)!;
+    final localizations = LibrariesLocalizations.of(context);
 
     return Scaffold(
       appBar: AppBar(

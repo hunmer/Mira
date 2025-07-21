@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
-import '../models/library.dart';
 
 class LibraryContentView extends StatefulWidget {
   final LibrariesPlugin plugin;
@@ -9,11 +8,11 @@ class LibraryContentView extends StatefulWidget {
   final String tabId;
 
   const LibraryContentView({
-    Key? key,
+    super.key,
     required this.plugin,
     required this.tabData,
     required this.tabId,
-  }) : super(key: key);
+  });
 
   @override
   State<LibraryContentView> createState() => _LibraryContentViewState();

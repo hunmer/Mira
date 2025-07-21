@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:checkable_treeview/checkable_treeview.dart';
@@ -66,6 +68,7 @@ class TreeItem {
   };
 }
 
+// ignore: camel_case_types
 class customTreeView extends StatefulWidget {
   const customTreeView({
     super.key,
@@ -92,6 +95,7 @@ class customTreeView extends StatefulWidget {
   State<customTreeView> createState() => _customTreeViewState();
 }
 
+// ignore: camel_case_types
 class _customTreeViewState extends State<customTreeView> {
   List<TreeNode<String>> _treeNodes = [];
   final TextEditingController _searchController = TextEditingController();

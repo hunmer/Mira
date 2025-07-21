@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/library_context_menu.dart'
+    // ignore: library_prefixes
     as LibraryContextMenu;
 import 'package:mira/plugins/libraries/widgets/library_edit_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
@@ -14,13 +15,14 @@ class LibraryTabsView extends StatefulWidget {
   final List<Library> initialLibraries;
 
   const LibraryTabsView({
-    Key? key,
+    super.key,
     required this.plugin,
     required this.library,
     required this.initialLibraries,
-  }) : super(key: key);
+  });
 
   @override
+  // ignore: library_private_types_in_public_api
   _LibraryTabsViewState createState() => _LibraryTabsViewState();
 }
 

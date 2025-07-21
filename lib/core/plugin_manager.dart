@@ -139,7 +139,9 @@ class PluginManager {
         _settingsStorageKey,
         '{}',
       );
+      // ignore: unused_local_variable
       final data = jsonDecode(settings);
+      // ignore: empty_catches
     } catch (e) {}
   }
 
