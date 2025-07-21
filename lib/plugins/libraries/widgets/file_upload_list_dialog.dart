@@ -30,7 +30,6 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
   late TabController _tabController;
   final List<File> _receivedFiles = [];
   final List<File> _uploadList = [];
-  List<QueueTask> _queueTasks = [];
   StreamSubscription<int>? _progressSubscription;
   StreamSubscription<QueueTask>? _taskStatusSubscription;
   double _uploadProgress = 0;
@@ -52,11 +51,7 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
     ) {
       final taskId = task.id;
       final status = task.status;
-      if (taskId != null && status != null) {
-        setState(() {
-          _queueTasks = widget.uploadQueue.pendingFileList;
-        });
-      }
+      if (taskId != null && status != null) {}
     });
   }
 
@@ -71,28 +66,12 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
     setState(() {
       _uploadList.addAll(files);
       _receivedFiles.clear();
-      _queueTasks = widget.uploadQueue.pendingFileList;
-      _startUpload(); // 自动开始上传
+      _uploadFiles(_uploadList);
     });
   }
 
   Future<void> _uploadFiles(List<File> filesToUpload) async {
     await widget.uploadQueue.addFiles(filesToUpload);
-  }
-
-  void _startUpload() {
-    // 重置所有任务状态为pending
-    _uploadFiles(_uploadList); // 上传接收到的文件
-  }
-
-  void _toggleUpload() {}
-
-  void _clearQueue() {
-    setState(() {
-      _uploadList.clear();
-      widget.uploadQueue.clear();
-      _queueTasks = [];
-    });
   }
 
   @override
@@ -120,32 +99,7 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
                   ),
                   // 上传队列Tab
                   UploadQueueView(
-                    uploadQueue: _queueTasks,
-                    onClearQueue: () {
-                      showDialog(
-                        context: context,
-                        builder: (BuildContext context) {
-                          return AlertDialog(
-                            title: const Text('确认清空队列'),
-                            content: const Text('确定要清空上传队列吗？'),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(context),
-                                child: const Text('取消'),
-                              ),
-                              TextButton(
-                                onPressed: () {
-                                  _clearQueue();
-                                  Navigator.pop(context);
-                                },
-                                child: const Text('确定'),
-                              ),
-                            ],
-                          );
-                        },
-                      );
-                    },
-                    onStartUpload: _startUpload,
+                    queueServer: widget.uploadQueue,
                     key: const PageStorageKey('uploadQueueView'), // 保持状态
                   ),
                 ],

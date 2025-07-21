@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
+import 'package:flutter_queue_it/flutter_queue_it.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:path/path.dart' as path;
-import 'dart:io';
+
+import 'package:queue_it/queue_it.dart';
 
 class UploadQueueView extends StatefulWidget {
-  final List<QueueTask> uploadQueue;
-  final VoidCallback onClearQueue;
-  final VoidCallback onStartUpload;
+  final UploadQueueService queueServer;
 
-  const UploadQueueView({
-    super.key,
-    required this.uploadQueue,
-    required this.onClearQueue,
-    required this.onStartUpload,
-  });
+  const UploadQueueView({super.key, required this.queueServer});
 
   @override
   State<UploadQueueView> createState() => _UploadQueueViewState();
@@ -25,70 +20,123 @@ class _UploadQueueViewState extends State<UploadQueueView>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
+  bool _queueRunning = false;
+
+  void _toggleRunning() {
+    setState(() {
+      _queueRunning = widget.queueServer.toggle();
+    });
+  }
+
+  void _clearQueue() {
+    setState(() {
+      widget.queueServer.clear();
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.all(16.0),
-      child: Column(
-        children: [
-          if (widget.uploadQueue.isNotEmpty)
-            Expanded(
-              child: DataTable2(
-                columnSpacing: 12,
-                horizontalMargin: 12,
-                minWidth: 800,
-                columns: const [
-                  DataColumn2(label: Text('文件名')),
-                  DataColumn2(label: Text('大小'), numeric: true),
-                  DataColumn2(label: Text('状态')),
-                ],
-                rows:
-                    widget.uploadQueue.map((item) {
-                      return DataRow2(
-                        color: MaterialStateProperty.all(
-                          getStatusColor(item.status),
-                        ),
-                        cells: [
-                          DataCell(Text(path.basename(item.file.path))),
-                          DataCell(
-                            FutureBuilder<int>(
-                              future: item.file.length(),
-                              builder: (context, snapshot) {
-                                if (snapshot.hasData) {
-                                  return Text(formatFileSize(snapshot.data!));
-                                }
-                                return const Text('计算中...');
-                              },
+    return QueueItWidget(
+      queue: widget.queueServer.queue,
+      builder: (context, snapshot) {
+        final items = widget.queueServer.queue.items().toList();
+        return Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            children: [
+              if (items.isNotEmpty)
+                Expanded(
+                  child: DataTable2(
+                    columnSpacing: 12,
+                    horizontalMargin: 12,
+                    minWidth: 800,
+                    columns: const [
+                      DataColumn2(label: Text('文件名')),
+                      DataColumn2(label: Text('大小'), numeric: true),
+                      DataColumn2(label: Text('状态')),
+                    ],
+                    rows:
+                        items.map((item) {
+                          final task = item.data as QueueTask;
+                          return DataRow2(
+                            color: MaterialStateProperty.all(
+                              getStatusColor(task.status),
                             ),
-                          ),
-                          DataCell(Text(_getStatusText(item.status))),
-                        ],
-                      );
-                    }).toList(),
-              ),
-            )
-          else
-            const Expanded(child: Center(child: Text('暂无待上传文件'))),
-          if (widget.uploadQueue.isNotEmpty)
-            Padding(
-              padding: const EdgeInsets.only(top: 16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  ElevatedButton(
-                    onPressed: widget.onClearQueue,
-                    child: const Text('清空队列'),
+                            cells: [
+                              DataCell(Text(path.basename(task.file.path))),
+                              DataCell(
+                                FutureBuilder<int>(
+                                  future: task.file.length(),
+                                  builder: (context, snapshot) {
+                                    if (snapshot.hasData) {
+                                      return Text(
+                                        formatFileSize(snapshot.data!),
+                                      );
+                                    }
+                                    return const Text('计算中...');
+                                  },
+                                ),
+                              ),
+                              DataCell(Text(_getStatusText(task.status))),
+                            ],
+                          );
+                        }).toList(),
                   ),
-                  ElevatedButton(
-                    onPressed: widget.onStartUpload,
-                    child: const Text('开始上传'),
+                )
+              else
+                const Expanded(child: Center(child: Text('暂无待上传文件'))),
+              if (items.isNotEmpty)
+                Padding(
+                  padding: const EdgeInsets.only(top: 16.0),
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () {
+                          showDialog(
+                            context: context,
+                            builder: (BuildContext context) {
+                              return AlertDialog(
+                                title: const Text('确认清空队列'),
+                                content: const Text('确定要清空上传队列吗？'),
+                                actions: [
+                                  TextButton(
+                                    onPressed: () => Navigator.pop(context),
+                                    child: const Text('取消'),
+                                  ),
+                                  TextButton(
+                                    onPressed: () {
+                                      _clearQueue();
+                                      Navigator.pop(context);
+                                    },
+                                    child: const Text('确定'),
+                                  ),
+                                ],
+                              );
+                            },
+                          );
+                        },
+                        child: const Text('清空队列'),
+                      ),
+                      ElevatedButton(
+                        onPressed: _toggleRunning,
+                        child: Text(_queueRunning ? '停止上传' : '开始上传'),
+                      ),
+                    ],
                   ),
-                ],
-              ),
-            ),
-        ],
-      ),
+                ),
+            ],
+          ),
+        );
+
+        // return ListView.builder(
+        //   itemCount: items.length,
+        //   itemBuilder: (context, index) {
+        //     final item = items[index];
+        //     return ListTile(title: Text('Item status: ${item.status.name}'));
+        //   },
+        // );
+      },
     );
   }
 

@@ -3,7 +3,6 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_sqlite5.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
