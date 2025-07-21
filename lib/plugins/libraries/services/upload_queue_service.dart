@@ -14,7 +14,7 @@ class QueueTask {
   final String id;
   final DateTime createdAt;
   final File file;
-  UploadStatus status; // 'pending', 'uploading', 'completed', 'failed'
+  UploadStatus status;
   QueueTask({required this.id, required this.file, required this.status})
     : createdAt = DateTime.now();
 }
@@ -31,11 +31,11 @@ class UploadQueueService {
   int _failedFiles = 0;
   final List<File> _completedFileList = [];
   final List<File> _failedFileList = [];
-  late final QueueIt queue; // 同时上传3个文件
+  late final QueueIt queue;
 
   UploadQueueService(this.plugin, this.library) {
     queue = QueueIt(
-        parallel: 3,
+        parallel: 3, // 同时上传3个文件
         itemHandler: (QueueItem<dynamic> item) async {
           final task = item.data as QueueTask;
           task.status = UploadStatus.uploading;
