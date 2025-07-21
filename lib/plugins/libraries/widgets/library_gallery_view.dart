@@ -74,7 +74,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   //  使用广播更新
   void _onFilterUpdate(EventArgs args) {
     if (args is! MapEventArgs) return;
-    final library = args.item['library'];
+    final library = args.item['libraryId'];
     if (library == null || library.id != widget.library.id) return;
     setState(() {
       _filterOptions = Map<String, dynamic>.from(args.item['filter']);

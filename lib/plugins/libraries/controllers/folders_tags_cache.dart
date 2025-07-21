@@ -22,13 +22,13 @@ class FoldersTagsCache {
 
   void _onFoldersUpdate(MapEventArgs args) {
     final data = args.item;
-    final cache = getFolderCache(data['library']);
-    data['folders'].forEach((e) => cache.put(LibraryFolder.fromMap(e)));
+    final cache = getFolderCache(data['libraryId']);
+    data['folders'].forEach((e) => {cache.put(LibraryFolder.fromMap(e))});
   }
 
   void _onTagsUpdate(MapEventArgs args) {
     final data = args.item;
-    final cache = getTagCache(data['library']);
+    final cache = getTagCache(data['libraryId']);
     data['tags'].forEach((e) => cache.put(LibraryTag.fromMap(e)));
   }
 
@@ -100,12 +100,12 @@ class FolderCache {
     return await cache.put(folder.id, folder);
   }
 
-  Future<LibraryFolder?> get(String name) async {
-    return await cache.get(name);
+  Future<LibraryFolder?> get(String folderId) async {
+    return await cache.get(folderId);
   }
 
-  Future<void> remove(String name) async {
-    return await cache.remove(name);
+  Future<void> remove(String folderId) async {
+    return await cache.remove(folderId);
   }
 
   Future<void> clear() async {

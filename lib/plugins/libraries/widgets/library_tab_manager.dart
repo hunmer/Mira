@@ -79,7 +79,6 @@ class LibraryTabManager {
 
   void closeAllTabs() {
     currentIndex.value = 0;
-    pageController.jumpToPage(currentIndex.value);
   }
 
   void dispose() {

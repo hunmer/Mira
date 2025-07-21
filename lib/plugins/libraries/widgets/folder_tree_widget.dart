@@ -1,6 +1,8 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
+import 'package:mira/core/event/event_args.dart';
+import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
@@ -61,6 +63,33 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
           return item.copyWith(isSelected: isSelected);
         }).toList();
     _selectedItems = widget.selected ?? {};
+    // 广播更新组件
+    if (widget.type == 'folders') {
+      EventManager.instance.subscribe(
+        'folders::update',
+        (EventArgs args) => _onItemsUpdate(args as MapEventArgs),
+      );
+    } else if (widget.type == 'tags') {
+      EventManager.instance.subscribe(
+        'tags::update',
+        (EventArgs args) => _onItemsUpdate(args as MapEventArgs),
+      );
+    }
+  }
+
+  void _onItemsUpdate(MapEventArgs args) {
+    final data = args.item;
+    final libraryId = data['libraryId'];
+    if (libraryId == widget.library.id) {
+      _items =
+          (data[widget.type] as List)
+              .map((item) {
+                final isSelected = _selectedItems.contains(item['id']);
+                return TreeItem.fromMap(item).copyWith(isSelected: isSelected);
+              })
+              .toList()
+              .cast<TreeItem>();
+    }
   }
 
   Future<void> _onAddNode(TreeItem node) async {

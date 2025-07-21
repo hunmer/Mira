@@ -46,7 +46,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     final message = {
       'action': action,
       'requestId': requestId,
-      'library': library.id,
+      'libraryId': library.id,
       'payload': {
         'type': type,
         if (data != null) 'data': data,
@@ -55,7 +55,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     };
 
     _channel.sink.add(jsonEncode(message));
-    debugPrint('Sending WebSocket message: ${jsonEncode(message)}');
+    // debugPrint('Sending WebSocket message: ${jsonEncode(message)}');
 
     try {
       return await completer.future.timeout(
@@ -99,25 +99,40 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
         final eventName = response['event'];
         final data = response['data'];
-        final library = data['library'];
+        final libraryId = data['libraryId'];
         switch (eventName) {
           case 'connected': // 初次连接
             EventManager.instance.broadcast(
               'tags::update',
-              MapEventArgs({'library': library, 'tags': data['tags']}),
+              MapEventArgs({'libraryId': libraryId, 'tags': data['tags']}),
             );
             EventManager.instance.broadcast(
               'folders::update',
-              MapEventArgs({'library': library, 'folders': data['folders']}),
+              MapEventArgs({
+                'libraryId': libraryId,
+                'folders': data['folders'],
+              }),
             );
             break;
           case 'tag::created': // 标签创建
-          case 'folder::created': // 文件夹创建
+            EventManager.instance.broadcast(
+              'tags::update',
+              MapEventArgs({'libraryId': libraryId, 'tags': data['tags']}),
+            );
+            break;
+          case 'folder::update': // 文件夹创建
+            EventManager.instance.broadcast(
+              'folders::update',
+              MapEventArgs({
+                'libraryId': libraryId,
+                'folders': data['folders'],
+              }),
+            );
           case 'thumbnail::generated': // 文件生成缩略图
           case 'file::uploaded': // 文件上传结果
             EventManager.instance.broadcast(
               eventName,
-              MapEventArgs({'data': data, 'library': library}),
+              MapEventArgs({'data': data, 'libraryId': libraryId}),
             );
             break;
         }

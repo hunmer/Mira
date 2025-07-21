@@ -68,8 +68,8 @@ class WebSocketServer {
           debugPrint('Incoming message: $message');
           final data = jsonDecode(message);
           await _handleMessage(channel, data);
-          if (data is Map && data.containsKey('library')) {
-            final libraryId = data['library'] as String;
+          if (data is Map && data.containsKey('libraryId')) {
+            final libraryId = data['libraryId'] as String;
             if (!_libraryClients.containsKey(libraryId)) {
               _libraryClients[libraryId] = [];
             }
@@ -104,7 +104,7 @@ class WebSocketServer {
     final payload = row['payload'] as Map<String, dynamic>;
     final action = row['action'] as String;
     final requestId = row['requestId'] as String;
-    final libraryId = row['library'] as String;
+    final libraryId = row['libraryId'] as String;
     final data = payload['data'] as Map<String, dynamic>? ?? {};
     final recordType = payload['type'] as String;
     final exists = libraryExists(libraryId);
@@ -117,7 +117,7 @@ class WebSocketServer {
             jsonEncode({
               'event': 'connected',
               'data': {
-                'library': dbService.getLibraryId(),
+                'libraryId': libraryId,
                 'tags': await dbService.getAllTags(),
                 'folders': await dbService.getAllFolders(),
               },
@@ -187,8 +187,12 @@ class WebSocketServer {
               id = await dbService.createFolder(data);
               final folders = await dbService.getAllFolders();
               dbService.getEventManager().broadcastToClients(
-                'folder::created',
-                serverEventArgs({'id': id, 'folders': folders}),
+                'folder::update',
+                serverEventArgs({
+                  'id': id,
+                  'folders': folders,
+                  'libraryId': libraryId,
+                }),
               );
               break;
             case 'tag':
@@ -196,7 +200,11 @@ class WebSocketServer {
               final tags = await dbService.getAllTags();
               dbService.getEventManager().broadcastToClients(
                 'tag::created',
-                serverEventArgs({'id': id, 'tags': tags}),
+                serverEventArgs({
+                  'id': id,
+                  'tags': tags,
+                  'libraryId': libraryId,
+                }),
               );
               break;
             default:
@@ -314,7 +322,7 @@ class WebSocketServer {
               success = await dbService.updateFolder(id, values);
               if (success) {
                 dbService.getEventManager().broadcastToClients(
-                  'folder_updated',
+                  'folder::updated',
                   serverEventArgs({'id': id}),
                 );
               }
@@ -323,7 +331,7 @@ class WebSocketServer {
               success = await dbService.updateTag(id, values);
               if (success) {
                 dbService.getEventManager().broadcastToClients(
-                  'tag_updated',
+                  'tag::updated',
                   serverEventArgs({'id': id}),
                 );
               }
