@@ -64,7 +64,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       });
     });
     EventManager.instance.subscribe(
-      'thumbnail_generated',
+      'thumbnail::generated',
       _onThumbnailGenerated,
     );
     EventManager.instance.subscribe('library::filter_updated', _onFilterUpdate);

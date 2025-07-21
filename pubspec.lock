@@ -484,6 +484,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.28"
+  flutter_queue_it:
+    dependency: "direct main"
+    description:
+      name: flutter_queue_it
+      sha256: bac5f2df4fa4259831b95e431cc2e9968821b304ef023518d94c8a94c9d5c812
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.9.0"
   flutter_shaders:
     dependency: transitive
     description:
@@ -990,14 +998,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "6.1.5"
-  queue:
+  queue_it:
     dependency: "direct main"
     description:
-      name: queue
-      sha256: "9bc29632072f4dac6cd0056acbb63361f654e2def9ceb4b08cfe0f9cf5618409"
+      name: queue_it
+      sha256: c4e136fb2566eee9ea820de4a2777e0f6ecada9da5734c12254962a0be76def9
       url: "https://pub.dev"
     source: hosted
-    version: "3.4.0"
+    version: "0.9.0"
   reorderable_grid_view:
     dependency: "direct main"
     description:

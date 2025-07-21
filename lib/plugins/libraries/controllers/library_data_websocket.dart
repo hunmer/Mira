@@ -81,6 +81,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       final response = jsonDecode(message);
 
       if (response.containsKey('requestId')) {
+        // 返回给函数的响应结果
         if (_responseHandlers.containsKey(response['requestId'])) {
           final completer = _responseHandlers.remove(response['requestId']);
           if (response['status'] == 'success') {
@@ -99,9 +100,8 @@ class LibraryDataWebSocket implements LibraryDataInterface {
         final eventName = response['event'];
         final data = response['data'];
         final library = data['library'];
-
         switch (eventName) {
-          case 'connected':
+          case 'connected': // 初次连接
             EventManager.instance.broadcast(
               'tags::update',
               MapEventArgs({'library': library, 'tags': data['tags']}),
@@ -111,8 +111,12 @@ class LibraryDataWebSocket implements LibraryDataInterface {
               MapEventArgs({'library': library, 'folders': data['folders']}),
             );
             break;
-          case 'thumbnail_generated':
-            EventManager.instance.broadcast(eventName, MapEventArgs(data));
+          case 'thumbnail::generated': // 文件生成缩略图
+          case 'file::uploaded': // 文件上传结果
+            EventManager.instance.broadcast(
+              eventName,
+              MapEventArgs({'data': data, 'library': library}),
+            );
             break;
         }
       }

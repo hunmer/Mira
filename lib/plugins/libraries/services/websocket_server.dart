@@ -170,13 +170,18 @@ class WebSocketServer {
                 });
               }
               id = item['id'];
+              // 通知所有客户端
               dbService.getEventManager().broadcastToClients(
                 'file_created',
                 serverEventArgs({'id': id}),
               );
+              // 通知所有插件
               dbService.getEventManager().broadcast(
-                'file_created',
+                'file::uploaded',
                 serverEventArgs(item),
+              );
+              channel.sink.add(
+                jsonEncode({'event': 'file::uploaded', 'data': item}),
               );
               break;
             case 'folder':

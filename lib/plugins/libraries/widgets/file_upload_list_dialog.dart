@@ -1,11 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:data_table_2/data_table_2.dart';
-import 'package:mira/core/utils/utils.dart';
-import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
-import 'package:path/path.dart' as path;
 import 'dart:io';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/file_drop_view.dart';
@@ -34,7 +30,9 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
   late TabController _tabController;
   final List<File> _receivedFiles = [];
   final List<File> _uploadList = [];
+  List<QueueTask> _queueTasks = [];
   StreamSubscription<int>? _progressSubscription;
+  StreamSubscription<QueueTask>? _taskStatusSubscription;
   double _uploadProgress = 0;
 
   @override
@@ -49,6 +47,17 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
         _uploadProgress = widget.uploadQueue.progress;
       });
     });
+    _taskStatusSubscription = widget.uploadQueue.taskStatusStream.listen((
+      task,
+    ) {
+      final taskId = task.id;
+      final status = task.status;
+      if (taskId != null && status != null) {
+        setState(() {
+          _queueTasks = widget.uploadQueue.pendingFileList;
+        });
+      }
+    });
   }
 
   @override
@@ -62,22 +71,27 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
     setState(() {
       _uploadList.addAll(files);
       _receivedFiles.clear();
+      _queueTasks = widget.uploadQueue.pendingFileList;
       _startUpload(); // 自动开始上传
     });
   }
 
   Future<void> _uploadFiles(List<File> filesToUpload) async {
     await widget.uploadQueue.addFiles(filesToUpload);
-    // await _uploadList.onComplete;
   }
 
   void _startUpload() {
+    // 重置所有任务状态为pending
     _uploadFiles(_uploadList); // 上传接收到的文件
   }
+
+  void _toggleUpload() {}
 
   void _clearQueue() {
     setState(() {
       _uploadList.clear();
+      widget.uploadQueue.clear();
+      _queueTasks = [];
     });
   }
 
@@ -106,11 +120,31 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
                   ),
                   // 上传队列Tab
                   UploadQueueView(
-                    uploadQueue:
-                        _uploadList
-                            .map((file) => UploadItem(file: file))
-                            .toList(),
-                    onClearQueue: _clearQueue,
+                    uploadQueue: _queueTasks,
+                    onClearQueue: () {
+                      showDialog(
+                        context: context,
+                        builder: (BuildContext context) {
+                          return AlertDialog(
+                            title: const Text('确认清空队列'),
+                            content: const Text('确定要清空上传队列吗？'),
+                            actions: [
+                              TextButton(
+                                onPressed: () => Navigator.pop(context),
+                                child: const Text('取消'),
+                              ),
+                              TextButton(
+                                onPressed: () {
+                                  _clearQueue();
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('确定'),
+                              ),
+                            ],
+                          );
+                        },
+                      );
+                    },
                     onStartUpload: _startUpload,
                     key: const PageStorageKey('uploadQueueView'), // 保持状态
                   ),
@@ -136,4 +170,8 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
   }
 
   // _getStatusText moved to upload_queue_view.dart
+}
+
+extension on QueueTask {
+  operator [](String other) {}
 }

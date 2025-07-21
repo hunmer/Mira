@@ -1,25 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:mira/core/utils/utils.dart';
+import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:path/path.dart' as path;
 import 'dart:io';
 
-enum UploadStatus { pending, uploading, completed, failed }
-
-class UploadItem {
-  final File file;
-  UploadStatus status;
-  double progress;
-
-  UploadItem({
-    required this.file,
-    this.status = UploadStatus.pending,
-    this.progress = 0.0,
-  });
-}
-
 class UploadQueueView extends StatefulWidget {
-  final List<UploadItem> uploadQueue;
+  final List<QueueTask> uploadQueue;
   final VoidCallback onClearQueue;
   final VoidCallback onStartUpload;
 
@@ -55,11 +42,13 @@ class _UploadQueueViewState extends State<UploadQueueView>
                   DataColumn2(label: Text('文件名')),
                   DataColumn2(label: Text('大小'), numeric: true),
                   DataColumn2(label: Text('状态')),
-                  DataColumn2(label: Text('进度')),
                 ],
                 rows:
                     widget.uploadQueue.map((item) {
                       return DataRow2(
+                        color: MaterialStateProperty.all(
+                          getStatusColor(item.status),
+                        ),
                         cells: [
                           DataCell(Text(path.basename(item.file.path))),
                           DataCell(
@@ -74,19 +63,6 @@ class _UploadQueueViewState extends State<UploadQueueView>
                             ),
                           ),
                           DataCell(Text(_getStatusText(item.status))),
-                          DataCell(
-                            LinearProgressIndicator(
-                              value: item.progress,
-                              backgroundColor: Colors.grey[200],
-                              valueColor: AlwaysStoppedAnimation<Color>(
-                                item.status == UploadStatus.completed
-                                    ? Colors.green
-                                    : item.status == UploadStatus.failed
-                                    ? Colors.red
-                                    : Colors.blue,
-                              ),
-                            ),
-                          ),
                         ],
                       );
                     }).toList(),
@@ -126,6 +102,20 @@ class _UploadQueueViewState extends State<UploadQueueView>
         return '已完成';
       case UploadStatus.failed:
         return '失败';
+    }
+  }
+
+  // getstatuscolor
+  Color getStatusColor(UploadStatus status) {
+    switch (status) {
+      case UploadStatus.pending:
+        return Colors.grey;
+      case UploadStatus.uploading:
+        return Colors.blue;
+      case UploadStatus.completed:
+        return Colors.green;
+      case UploadStatus.failed:
+        return Colors.red;
     }
   }
 }

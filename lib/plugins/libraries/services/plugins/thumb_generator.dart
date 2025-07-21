@@ -52,7 +52,7 @@ class ThumbGenerator {
       await _dbService.updateFile(args.item['id'], {'thumb': 1});
       // 通知客户端缩略图已生成
       _dbService.getEventManager().broadcastToClients(
-        'thumbnail_generated',
+        'thumbnail::generated',
         args,
       );
     } catch (e) {
