@@ -10,10 +10,8 @@ import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
-import 'package:mira/plugins/libraries/widgets/file_drop_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_preview_view.dart';
-import 'package:mira/plugins/libraries/widgets/upload_queue_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_body.dart';
@@ -114,7 +112,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     showDialog(
       context: context,
       builder:
-          (context) => FileDropDialog(
+          (context) => FileUploadListDialog(
             plugin: widget.plugin,
             onFilesSelected: (files) async {
               if (files.isNotEmpty) {
@@ -238,12 +236,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           });
         },
         onUpload: _showDropDialog,
-        onShowUploadQueue: () {
-          showModalBottomSheet(
-            context: context,
-            builder: (context) => UploadQueueDialog(uploadQueue: _uploadQueue),
-          );
-        },
         uploadProgress: _uploadProgress,
         displayFields: _displayFields,
         onDisplayFieldsChanged: (newFields) {

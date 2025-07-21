@@ -10,7 +10,6 @@ class LibraryGalleryAppBar extends StatelessWidget
   final VoidCallback onFilter;
   final VoidCallback onEnterSelection;
   final VoidCallback onUpload;
-  final VoidCallback onShowUploadQueue;
   final double uploadProgress;
   final Set<String> displayFields;
   final ValueChanged<Set<String>> onDisplayFieldsChanged;
@@ -26,7 +25,6 @@ class LibraryGalleryAppBar extends StatelessWidget
     required this.onFilter,
     required this.onEnterSelection,
     required this.onUpload,
-    required this.onShowUploadQueue,
     required this.uploadProgress,
     required this.displayFields,
     required this.onDisplayFieldsChanged,
@@ -72,17 +70,15 @@ class LibraryGalleryAppBar extends StatelessWidget
                   icon: const Icon(Icons.check_box),
                   onPressed: onEnterSelection,
                 ),
-                IconButton(icon: Icon(Icons.file_upload), onPressed: onUpload),
-                if (uploadProgress > 0)
-                  Stack(
-                    alignment: Alignment.center,
-                    children: [
-                      IconButton(
-                        icon: const Icon(Icons.cloud_upload),
-                        color: uploadProgress == 1 ? Colors.green : null,
-                        onPressed: onShowUploadQueue,
-                      ),
 
+                Stack(
+                  alignment: Alignment.center,
+                  children: [
+                    IconButton(
+                      icon: Icon(Icons.file_upload),
+                      onPressed: onUpload,
+                    ),
+                    if (uploadProgress > 0)
                       Positioned(
                         top: 0,
                         right: 0,
@@ -109,8 +105,8 @@ class LibraryGalleryAppBar extends StatelessWidget
                                   ),
                         ),
                       ),
-                    ],
-                  ),
+                  ],
+                ),
                 PopupMenuButton<int>(
                   icon: const Icon(Icons.grid_view),
                   itemBuilder:

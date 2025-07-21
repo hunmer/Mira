@@ -9,18 +9,18 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 
-class FileDropDialog extends StatefulWidget {
+class FileDropView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Function(List<File>) onFilesSelected;
 
-  const FileDropDialog({
+  const FileDropView({
     super.key,
     required this.plugin,
     required this.onFilesSelected,
   });
 
   @override
-  _FileDropDialogState createState() => _FileDropDialogState();
+  _FileDropViewState createState() => _FileDropViewState();
 }
 
 class FileDataSource extends AsyncDataTableSource {
@@ -69,7 +69,6 @@ class FileDataSource extends AsyncDataTableSource {
         ),
         DataCell(const Text('无')), // 标签 - 待实现
         DataCell(const Text('无')), // 文件夹 - 待实现
-        DataCell(const Text('待上传')), // 上传状态
       ],
     );
   }
@@ -107,7 +106,6 @@ class FileDataSource extends AsyncDataTableSource {
             ),
             DataCell(const Text('无')), // 标签 - 待实现
             DataCell(const Text('无')), // 文件夹 - 待实现
-            DataCell(const Text('待上传')), // 上传状态
           ],
         ),
       );
@@ -116,7 +114,7 @@ class FileDataSource extends AsyncDataTableSource {
   }
 }
 
-class _FileDropDialogState extends State<FileDropDialog> {
+class _FileDropViewState extends State<FileDropView> {
   final List<File> _selectedFiles = [];
   final List<bool> _selectedItems = [];
   late FileDataSource _fileDataSource;
@@ -229,175 +227,163 @@ class _FileDropDialogState extends State<FileDropDialog> {
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      insetPadding: EdgeInsets.all(MediaQuery.of(context).size.width * 0.05),
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: MediaQuery.of(context).size.height * 0.8,
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropRegion(
-                onPerformDrop: (event) async {
-                  for (final item in event.session.items) {
-                    final reader = item.dataReader!;
-                    if (reader.canProvide(Formats.fileUri)) {
-                      reader.getValue<Uri>(
-                        Formats.fileUri,
-                        (uri) async {
-                          if (uri != null) {
-                            final path =
-                                Platform.isWindows && uri.path.startsWith('/')
-                                    ? Uri.decodeFull(uri.path.substring(1))
-                                    : Uri.decodeFull(uri.path);
-                            // check if is dir
-                            final dir = Directory(path);
-                            if (await dir.exists()) {
-                              await _scanDir(path);
-                            } else {
-                              try {
-                                final file = File(path);
-                                if (await file.exists()) {
-                                  _selectedFiles.add(file);
-                                  _selectedItems.add(true);
-                                }
-                              } catch (e) {
-                                print('Error adding file: $e');
+    return SizedBox(
+      width: MediaQuery.of(context).size.width * 0.8,
+      height: MediaQuery.of(context).size.height * 0.8,
+      child: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            DropRegion(
+              onPerformDrop: (event) async {
+                for (final item in event.session.items) {
+                  final reader = item.dataReader!;
+                  if (reader.canProvide(Formats.fileUri)) {
+                    reader.getValue<Uri>(
+                      Formats.fileUri,
+                      (uri) async {
+                        if (uri != null) {
+                          final path =
+                              Platform.isWindows && uri.path.startsWith('/')
+                                  ? Uri.decodeFull(uri.path.substring(1))
+                                  : Uri.decodeFull(uri.path);
+                          // check if is dir
+                          final dir = Directory(path);
+                          if (await dir.exists()) {
+                            await _scanDir(path);
+                          } else {
+                            try {
+                              final file = File(path);
+                              if (await file.exists()) {
+                                _selectedFiles.add(file);
+                                _selectedItems.add(true);
                               }
+                            } catch (e) {
+                              print('Error adding file: $e');
                             }
                           }
-                        },
-                        onError: (error) {
-                          print('Error reading file URI: $error');
-                        },
-                      );
-                    }
+                        }
+                      },
+                      onError: (error) {
+                        print('Error reading file URI: $error');
+                      },
+                    );
                   }
-                },
-                onDropOver: (event) {
-                  setState(() {});
-                  return Future.value(DropOperation.copy);
-                },
-                formats: [],
-                child: Container(
-                  height: 150,
-                  decoration: BoxDecoration(
-                    border: Border.all(color: Colors.grey),
-                    borderRadius: BorderRadius.circular(8),
+                }
+              },
+              onDropOver: (event) {
+                setState(() {});
+                return Future.value(DropOperation.copy);
+              },
+              formats: [],
+              child: Container(
+                height: 150,
+                decoration: BoxDecoration(
+                  border: Border.all(color: Colors.grey),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.cloud_upload, size: 48),
+                      SizedBox(height: 8),
+                      Text('拖拽文件到此处或点击下方按钮添加'),
+                    ],
                   ),
-                  child: const Center(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        Icon(Icons.cloud_upload, size: 48),
-                        SizedBox(height: 8),
-                        Text('拖拽文件到此处或点击下方按钮添加'),
-                      ],
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: [
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.insert_drive_file),
+                  label: const Text('添加文件'),
+                  onPressed: _pickFiles,
+                ),
+                ElevatedButton.icon(
+                  icon: const Icon(Icons.folder),
+                  label: const Text('添加目录'),
+                  onPressed: _pickDirectory,
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
+            if (_selectedFiles.isNotEmpty) ...[
+              const Text('已选择文件:'),
+              const SizedBox(height: 8),
+              Expanded(
+                child: AsyncPaginatedDataTable2(
+                  columnSpacing: 12,
+                  horizontalMargin: 12,
+                  minWidth: 800,
+                  wrapInCard: false,
+                  header: const Text('已选择文件'),
+                  rowsPerPage: _rowsPerPage,
+                  initialFirstRowIndex: _initialRow,
+                  onPageChanged: (rowIndex) {
+                    _initialRow = rowIndex;
+                  },
+                  onRowsPerPageChanged: (value) {
+                    setState(() {
+                      _rowsPerPage = value ?? 10;
+                    });
+                  },
+                  columns: [
+                    DataColumn2(
+                      label: const Text('文件名'),
+                      onSort:
+                          (columnIndex, ascending) =>
+                              _sort(columnIndex, ascending),
                     ),
-                  ),
+                    DataColumn2(
+                      label: const Text('格式'),
+                      onSort:
+                          (columnIndex, ascending) =>
+                              _sort(columnIndex, ascending),
+                    ),
+                    DataColumn2(
+                      label: const Text('大小'),
+                      numeric: true,
+                      onSort:
+                          (columnIndex, ascending) =>
+                              _sort(columnIndex, ascending),
+                    ),
+                    DataColumn2(
+                      label: const Text('标签'),
+                      onSort:
+                          (columnIndex, ascending) =>
+                              _sort(columnIndex, ascending),
+                    ),
+                    DataColumn2(
+                      label: const Text('文件夹'),
+                      onSort:
+                          (columnIndex, ascending) =>
+                              _sort(columnIndex, ascending),
+                    ),
+                  ],
+                  sortColumnIndex: _sortColumnIndex,
+                  sortAscending: _sortAscending,
+                  source: _fileDataSource,
+                  controller: _paginatorController,
                 ),
               ),
               const SizedBox(height: 16),
               Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.insert_drive_file),
-                    label: const Text('添加文件'),
-                    onPressed: _pickFiles,
+                  Text(
+                    '共 ${_selectedFiles.length} 个文件',
+                    style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  ElevatedButton.icon(
-                    icon: const Icon(Icons.folder),
-                    label: const Text('添加目录'),
-                    onPressed: _pickDirectory,
-                  ),
+                  ElevatedButton(onPressed: _onDone, child: const Text('确认选择')),
                 ],
               ),
-              const SizedBox(height: 16),
-              if (_selectedFiles.isNotEmpty) ...[
-                const Text('已选择文件:'),
-                const SizedBox(height: 8),
-                Expanded(
-                  child: AsyncPaginatedDataTable2(
-                    columnSpacing: 12,
-                    horizontalMargin: 12,
-                    minWidth: 800,
-                    wrapInCard: false,
-                    header: const Text('已选择文件'),
-                    rowsPerPage: _rowsPerPage,
-                    initialFirstRowIndex: _initialRow,
-                    onPageChanged: (rowIndex) {
-                      _initialRow = rowIndex;
-                    },
-                    onRowsPerPageChanged: (value) {
-                      setState(() {
-                        _rowsPerPage = value ?? 10;
-                      });
-                    },
-                    columns: [
-                      DataColumn2(
-                        label: const Text('文件名'),
-                        onSort:
-                            (columnIndex, ascending) =>
-                                _sort(columnIndex, ascending),
-                      ),
-                      DataColumn2(
-                        label: const Text('格式'),
-                        onSort:
-                            (columnIndex, ascending) =>
-                                _sort(columnIndex, ascending),
-                      ),
-                      DataColumn2(
-                        label: const Text('大小'),
-                        numeric: true,
-                        onSort:
-                            (columnIndex, ascending) =>
-                                _sort(columnIndex, ascending),
-                      ),
-                      DataColumn2(
-                        label: const Text('标签'),
-                        onSort:
-                            (columnIndex, ascending) =>
-                                _sort(columnIndex, ascending),
-                      ),
-                      DataColumn2(
-                        label: const Text('文件夹'),
-                        onSort:
-                            (columnIndex, ascending) =>
-                                _sort(columnIndex, ascending),
-                      ),
-                      DataColumn2(
-                        label: const Text('上传状态'),
-                        onSort:
-                            (columnIndex, ascending) =>
-                                _sort(columnIndex, ascending),
-                      ),
-                    ],
-                    sortColumnIndex: _sortColumnIndex,
-                    sortAscending: _sortAscending,
-                    source: _fileDataSource,
-                    controller: _paginatorController,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      '共 ${_selectedFiles.length} 个文件',
-                      style: Theme.of(context).textTheme.bodySmall,
-                    ),
-                    ElevatedButton(
-                      onPressed: _onDone,
-                      child: const Text('确认选择'),
-                    ),
-                  ],
-                ),
-              ],
             ],
-          ),
+          ],
         ),
       ),
     );
