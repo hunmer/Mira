@@ -19,7 +19,7 @@ class ThumbGenerator {
   }
 
   Future<void> _onFileCreated(EventArgs args) async {
-    if (args is! ItemEventArgs) return;
+    if (args is! serverEventArgs) return;
 
     try {
       final file = await _dbService.getFile(args.item['id']);
@@ -61,7 +61,7 @@ class ThumbGenerator {
   }
 
   Future<void> _onFileDeleted(EventArgs args) async {
-    if (args is! ItemEventArgs) return;
+    if (args is! serverEventArgs) return;
 
     try {
       final thumbPath = '${_dbService.getItemPath(args.item)}preview.png';

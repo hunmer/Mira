@@ -1,5 +1,6 @@
 import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
+import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/websocket_server.dart';
 
 class ServerEventManager {
@@ -9,7 +10,7 @@ class ServerEventManager {
   ServerEventManager(this._server, this._db);
 
   /// 广播事件给所有连接的客户端
-  void broadcastToClients(String eventName, EventArgs args) {
+  void broadcastToClients(String eventName, serverEventArgs args) {
     _server.broadcastLibraryEvent(_db.getLibraryId(), eventName, args);
   }
 

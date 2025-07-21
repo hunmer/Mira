@@ -69,8 +69,6 @@ class WebSocketServer {
           debugPrint('Incoming message: $message');
           final data = jsonDecode(message);
           await _handleMessage(channel, data);
-
-          // 如果有libraryId，添加到_libraryClients
           if (data is Map && data.containsKey('library')) {
             final libraryId = data['library'] as String;
             if (!_libraryClients.containsKey(libraryId)) {
@@ -174,25 +172,25 @@ class WebSocketServer {
               id = item['id'];
               dbService.getEventManager().broadcastToClients(
                 'file_created',
-                ItemEventArgs({'id': id}),
+                serverEventArgs({'id': id}),
               );
               dbService.getEventManager().broadcast(
                 'file_created',
-                ItemEventArgs(item),
+                serverEventArgs(item),
               );
               break;
             case 'folder':
               id = await dbService.createFolder(data);
               dbService.getEventManager().broadcastToClients(
                 'folder_created',
-                ItemEventArgs({'id': id}),
+                serverEventArgs({'id': id}),
               );
               break;
             case 'tag':
               id = await dbService.createTag(data);
               dbService.getEventManager().broadcastToClients(
                 'tag_created',
-                ItemEventArgs({'id': id}),
+                serverEventArgs({'id': id}),
               );
               break;
             default:
@@ -261,9 +259,10 @@ class WebSocketServer {
                   filters: payload['query'] as Map<String, dynamic>?,
                 );
                 for (var record in result['result']) {
-                  if (record['thumb'] == 1) {
-                    record['thumb'] = await dbService.getItemThumbPath(record);
-                  }
+                  record['thumb'] =
+                      record['thumb'] == 1
+                          ? await dbService.getItemThumbPath(record)
+                          : '';
                 }
                 records = result;
                 break;
@@ -301,7 +300,7 @@ class WebSocketServer {
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'file_updated',
-                  ItemEventArgs({'id': id}),
+                  serverEventArgs({'id': id}),
                 );
               }
               break;
@@ -310,7 +309,7 @@ class WebSocketServer {
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'folder_updated',
-                  ItemEventArgs({'id': id}),
+                  serverEventArgs({'id': id}),
                 );
               }
               break;
@@ -319,7 +318,7 @@ class WebSocketServer {
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'tag_updated',
-                  ItemEventArgs({'id': id}),
+                  serverEventArgs({'id': id}),
                 );
               }
               break;
@@ -363,11 +362,11 @@ class WebSocketServer {
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'file_deleted',
-                  ItemEventArgs({'id': id}),
+                  serverEventArgs({'id': id}),
                 );
                 dbService.getEventManager().broadcast(
                   'file_deleted',
-                  ItemEventArgs({'id': id}),
+                  serverEventArgs({'id': id}),
                 );
               }
               break;
@@ -376,7 +375,7 @@ class WebSocketServer {
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'folder_deleted',
-                  ItemEventArgs({'id': id}),
+                  serverEventArgs({'id': id}),
                 );
               }
               break;
@@ -385,7 +384,7 @@ class WebSocketServer {
               if (success) {
                 dbService.getEventManager().broadcastToClients(
                   'tag_deleted',
-                  ItemEventArgs({'id': id}),
+                  serverEventArgs({'id': id}),
                 );
               }
               break;
@@ -426,7 +425,7 @@ class WebSocketServer {
   void broadcastLibraryEvent(
     String libraryId,
     String eventName,
-    EventArgs args,
+    serverEventArgs args,
   ) {
     final message = jsonEncode({'event': eventName, 'data': args});
 

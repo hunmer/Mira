@@ -100,8 +100,15 @@ class _FileDropDialogState extends State<FileDropDialog> {
                               if (await dir.exists()) {
                                 await _scanDir(path);
                               } else {
-                                _selectedFiles.add(File(path));
-                                _selectedItems.add(true);
+                                try {
+                                  final file = File(path);
+                                  if (await file.exists()) {
+                                    _selectedFiles.add(file);
+                                    _selectedItems.add(true);
+                                  }
+                                } catch (e) {
+                                  print('Error adding file: $e');
+                                }
                               }
                             });
                           }
@@ -173,8 +180,22 @@ class _FileDropDialogState extends State<FileDropDialog> {
                               .split('/')
                               .last,
                         ),
-                        subtitle: Text(
-                          formatFileSize((_selectedFiles[index].lengthSync())),
+                        subtitle: FutureBuilder<int>(
+                          future: () async {
+                            try {
+                              final length =
+                                  await _selectedFiles[index].length();
+                              return length;
+                            } catch (e) {
+                              return 0;
+                            }
+                          }(),
+                          builder: (context, snapshot) {
+                            if (snapshot.hasData) {
+                              return Text(formatFileSize(snapshot.data!));
+                            }
+                            return const Text('计算大小中...');
+                          },
                         ),
                       );
                     },

@@ -86,7 +86,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void _onThumbnailGenerated(EventArgs args) {
-    if (args is! ItemEventArgs) return;
+    if (args is! serverEventArgs) return;
     if (mounted) {
       setState(() {});
     }
