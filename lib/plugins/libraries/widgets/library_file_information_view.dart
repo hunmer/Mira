@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
@@ -54,14 +55,14 @@ class _LibraryFileInformationViewState
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(path.basename(widget.file.name)),
-        automaticallyImplyLeading: false,
-        actions: [
-          // IconButton(icon: const Icon(Icons.save), onPressed: _saveChanges),
-          IconButton(icon: const Icon(Icons.share), onPressed: () => {}),
-        ],
-      ),
+      // appBar: AppBar(
+      //   title: Text(path.basename(widget.file.name)),
+      //   automaticallyImplyLeading: false,
+      //   actions: [
+      //     // IconButton(icon: const Icon(Icons.save), onPressed: _saveChanges),
+      //     IconButton(icon: const Icon(Icons.share), onPressed: () => {}),
+      //   ],
+      // ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(

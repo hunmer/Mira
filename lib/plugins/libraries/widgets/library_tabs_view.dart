@@ -94,15 +94,21 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                 child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text(tabData['name'] ?? tabData['library'].name),
+                    Text(
+                      tabData['name'] ?? tabData['library'].name,
+                      style: TextStyle(fontSize: 18),
+                    ),
                     const SizedBox(width: 4),
                     GestureDetector(
                       behavior: HitTestBehavior.opaque,
-                      onTap:
-                          () => setState(() {
-                            _tabManager.closeTab(tabId);
-                          }),
-                      child: const Icon(Icons.close, size: 16),
+                      child: InkWell(
+                        borderRadius: BorderRadius.circular(12),
+                        onTap:
+                            () => setState(() {
+                              _tabManager.closeTab(tabId);
+                            }),
+                        child: const Icon(Icons.close, size: 20),
+                      ),
                     ),
                   ],
                 ),
@@ -129,6 +135,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
           ),
         ],
         title: const Text('素材管理器'),
+        backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       body: Row(
         children: [

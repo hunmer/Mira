@@ -42,17 +42,6 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
       color: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
-          ListTile(
-            leading: const Icon(Icons.favorite),
-            title: const Text('我的收藏'),
-            onTap: () => {},
-          ),
-          ListTile(
-            leading: const Icon(Icons.delete),
-            title: const Text('回收站'),
-            onTap: () => {},
-          ),
-          const Divider(),
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16),
             child: Text('标签目录', style: Theme.of(context).textTheme.titleMedium),

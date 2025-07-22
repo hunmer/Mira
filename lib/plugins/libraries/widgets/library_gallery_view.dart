@@ -49,7 +49,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   Map<String, dynamic> _filterOptions = {};
   Map<String, dynamic> _paginationOptions = {};
   final ValueNotifier<LibraryFile?> _selectedFileNotifier = ValueNotifier(null);
-  int _imagesPerRow = 3; // 默认每行显示3张图片
+  int _imagesPerRow = 0; // 每行显示图片自动调节
 
   @override
   void initState() {
@@ -252,9 +252,30 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       bottomSheet: LibraryGalleryBottomSheet(uploadProgress: _uploadProgress),
       body: Row(
         children: [
+          SizedBox(
+            width: 60,
+            child: Column(
+              children: [
+                // 收藏
+                Tooltip(
+                  message: '收藏',
+                  child: IconButton(
+                    icon: Icon(Icons.favorite),
+                    onPressed: () {},
+                  ),
+                ),
+                // 回收站
+                Tooltip(
+                  message: '回收站',
+                  child: IconButton(icon: Icon(Icons.delete), onPressed: () {}),
+                ),
+              ],
+            ),
+          ),
+          VerticalDivider(width: 1),
           if (_showSidebar) ...[
             Expanded(
-              flex: 1,
+              flex: 2,
               child: LibrarySidebarView(
                 plugin: widget.plugin,
                 library: widget.library,
@@ -262,8 +283,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             ),
             VerticalDivider(width: 1),
           ],
+
           Expanded(
-            flex: 4,
+            flex: 5,
             child: Column(
               children: [
                 Expanded(
@@ -306,7 +328,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               MediaQuery.of(context).size.width > 800) ...[
             VerticalDivider(width: 1),
             Expanded(
-              flex: 1,
+              flex: 2,
               child: ValueListenableBuilder<LibraryFile?>(
                 valueListenable: _selectedFileNotifier,
                 builder: (context, selectedFile, _) {

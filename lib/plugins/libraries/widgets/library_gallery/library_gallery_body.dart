@@ -69,6 +69,8 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
             mainAxisSpacing: spacing,
             childAspectRatio: 0.8,
           ),
+          padding: const EdgeInsets.all(8.0),
+
           itemCount: widget.items.value.length,
           itemBuilder: (context, index) {
             final file = widget.items.value[index];
