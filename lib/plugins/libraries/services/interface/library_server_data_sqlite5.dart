@@ -16,10 +16,13 @@ import 'library_server_data_interface.dart';
 class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Database? _db;
   bool _inTransaction = false;
+  late bool _enableHash;
   final WebSocketServer server;
   late final ServerEventManager eventManager;
   final Map<String, dynamic> config;
-  LibraryServerDataSQLite5(this.server, this.config);
+  LibraryServerDataSQLite5(this.server, this.config) {
+    _enableHash = config['customFields']['enableHash'] ?? false;
+  }
 
   @override
   Future<void> initialize() async {
@@ -468,10 +471,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     // 获取文件基础信息
     final stat = await file.stat();
-    final hash =
-        config['customFields']['enableHash']
-            ? await _calculateFileHash(file)
-            : '';
+    final hash = _enableHash ? await _calculateFileHash(file) : '';
 
     // 构建文件数据
     final fileData = {
@@ -602,12 +602,30 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
   @override
   Future<String> getItemPath(item) async {
-    return path.join((await getLibraryPath()), item['hash']);
+    final libraryPath = await getLibraryPath();
+    // if (_enableHash) {
+    //   return path.join(libraryPath, item['hash'], 'preview.png');
+    // }
+    final folderName = await getFolderName(item['folder_id']);
+    return path.join(libraryPath, folderName);
+  }
+
+  Future<String> getFolderName(folderId) async {
+    if (folderId is String && folderId.isNotEmpty) {
+      final stmt = _db!.prepare('SELECT name FROM folders WHERE id = ?');
+      final result = stmt.select([folderId]);
+      stmt.dispose();
+      if (result.isNotEmpty) return result.first[0] as String;
+    }
+    return '未分类';
   }
 
   @override
   Future<String> getItemThumbPath(item) async {
-    return path.join(await getItemPath(item), 'preview.png');
+    final libraryPath = await getLibraryPath();
+    final fileName =
+        item['hash'].isEmpty ? '${item['id']}.png' : '${item['hash']}.png';
+    return path.join(libraryPath, 'thumbs', fileName);
   }
 
   @override
