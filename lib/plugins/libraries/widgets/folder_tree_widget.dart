@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:checkable_treeview/checkable_treeview.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
@@ -34,7 +35,8 @@ class FolderTreeWidget extends StatefulWidget {
   });
 
   List<Map<String, dynamic>> getSelected(State<FolderTreeWidget> state) {
-    return (state as FolderTreeWidgetState).widget.items
+    return (state as FolderTreeWidgetState)
+        .getItems()
         .where((item) => item.isSelected)
         .map((item) => item.toMap())
         .toList();
@@ -102,14 +104,16 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
     }
   }
 
+  List<TreeItem> getItems() {
+    return widget.items.map((item) {
+      final isSelected = widget.selected?.contains(item.id) ?? false;
+      return item.copyWith(isSelected: isSelected);
+    }).toList();
+  }
+
   @override
   Widget build(BuildContext context) {
-    final mappedItems =
-        widget.items.map((item) {
-          final isSelected = widget.selected?.contains(item.id) ?? false;
-          return item.copyWith(isSelected: isSelected);
-        }).toList();
-
+    final mappedItems = getItems();
     return customTreeView(
       items: mappedItems,
       defaultIcon: _currentIcon,

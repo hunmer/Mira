@@ -28,7 +28,7 @@ class LibraryTabManager {
       'isPinned': false,
       'isRecycleBin': isRecycleBin,
       'create_date': DateTime.now(),
-      'pageOptions': {'page': 1, 'perPage': 20},
+      'pageOptions': {'page': 1, 'perPage': 100},
       'filter': {},
       'displayFields': <String>{
         'title',
