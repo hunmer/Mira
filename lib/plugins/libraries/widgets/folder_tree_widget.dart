@@ -1,8 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
 import 'package:flutter/material.dart';
-import 'package:mira/core/event/event_args.dart';
-import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
@@ -36,7 +34,7 @@ class FolderTreeWidget extends StatefulWidget {
   });
 
   List<Map<String, dynamic>> getSelected(State<FolderTreeWidget> state) {
-    return (state as FolderTreeWidgetState)._items
+    return (state as FolderTreeWidgetState).widget.items
         .where((item) => item.isSelected)
         .map((item) => item.toMap())
         .toList();
@@ -47,53 +45,24 @@ class FolderTreeWidget extends StatefulWidget {
 }
 
 class FolderTreeWidgetState extends State<FolderTreeWidget> {
-  late List<TreeItem> _items;
   late Set<String> _selectedItems;
   late IconData _currentIcon;
-
   @override
   void initState() {
     super.initState();
     _currentIcon =
         widget.defaultIcon ??
         (widget.type == 'folders' ? Icons.folder : Icons.tag);
-    _items =
-        widget.items.map((item) {
-          final isSelected = widget.selected?.contains(item.id) ?? false;
-          return item.copyWith(isSelected: isSelected);
-        }).toList();
     _selectedItems = widget.selected ?? {};
-    // 广播更新组件
-    if (widget.type == 'folders') {
-      EventManager.instance.subscribe(
-        'folders::update',
-        (EventArgs args) => _onItemsUpdate(args as MapEventArgs),
-      );
-    } else if (widget.type == 'tags') {
-      EventManager.instance.subscribe(
-        'tags::update',
-        (EventArgs args) => _onItemsUpdate(args as MapEventArgs),
-      );
-    }
   }
 
-  void _onItemsUpdate(MapEventArgs args) {
-    final data = args.item;
-    final libraryId = data['libraryId'];
-    if (libraryId == widget.library.id) {
-      _items =
-          (data[widget.type] as List)
-              .map((item) {
-                final isSelected = _selectedItems.contains(item['id']);
-                return TreeItem.fromMap(item).copyWith(isSelected: isSelected);
-              })
-              .toList()
-              .cast<TreeItem>();
-    }
+  // 屏蔽初始化监听，防止重复调用
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _onAddNode(TreeItem node) async {
-    print('添加文件夹：${node.id}');
     if (['folders', 'tags'].contains(widget.type)) {
       final plugin =
           PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
@@ -118,7 +87,6 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
   }
 
   Future<void> _onDeleteNode(TreeItem node) async {
-    print('删除文件夹：${node.id}');
     if (['folders', 'tags'].contains(widget.type)) {
       final plugin =
           PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
@@ -136,8 +104,14 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
 
   @override
   Widget build(BuildContext context) {
+    final mappedItems =
+        widget.items.map((item) {
+          final isSelected = widget.selected?.contains(item.id) ?? false;
+          return item.copyWith(isSelected: isSelected);
+        }).toList();
+
     return customTreeView(
-      items: _items,
+      items: mappedItems,
       defaultIcon: _currentIcon,
       title: '',
       showSelectAll: widget.showSelectAll ?? true,
@@ -155,6 +129,7 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
           widget.onDeleteNode!(node);
         }
       },
+      key: ValueKey(mappedItems), // 强制重建TreeView当items变化时
     );
   }
 }

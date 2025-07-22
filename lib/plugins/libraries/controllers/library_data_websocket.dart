@@ -120,14 +120,18 @@ class LibraryDataWebSocket implements LibraryDataInterface {
             );
             break;
           case 'tag::created': // 标签创建
+          case 'tag::delete': // 标签删除
+          case 'tag::updated': // 标签更新
             EventManager.instance.broadcast(
-              'tags::update',
+              'tags::updated',
               MapEventArgs({'libraryId': libraryId, 'tags': data['tags']}),
             );
             break;
-          case 'folder::update': // 文件夹创建
+          case 'folder::updated': // 文件夹创建
+          case 'folder::created': // 文件夹创建
+          case 'folder::deleted': // 文件夹删除
             EventManager.instance.broadcast(
-              'folders::update',
+              'folder::updated',
               MapEventArgs({
                 'libraryId': libraryId,
                 'folders': data['folders'],

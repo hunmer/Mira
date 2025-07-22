@@ -9,11 +9,15 @@ import '../models/library.dart';
 class LibrarySidebarView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Library library;
+  final List<LibraryTag> tags;
+  final List<LibraryFolder> folders;
 
   const LibrarySidebarView({
     super.key,
     required this.plugin,
     required this.library,
+    required this.tags,
+    required this.folders,
   });
 
   @override
@@ -29,12 +33,6 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
     _library = widget.plugin.tabManager.getCurrentLibrary();
   }
 
-  void setCurrentLibraray(Library library) {
-    setState(() {
-      _library = library;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -46,31 +44,18 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
             child: Text('标签目录', style: Theme.of(context).textTheme.titleMedium),
           ),
           Expanded(
-            child: FutureBuilder<List<LibraryTag?>>(
-              future:
-                  widget.plugin.foldersTagsController
-                      .getTagCache(_library!.id)
-                      .getAll(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return FolderTreeWidget(
-                    items:
-                        snapshot.data!
-                            .map(
-                              (tag) => TreeItem(id: tag!.id, title: tag.title),
-                            )
-                            .toList(),
-                    library: _library!,
-                    showSelectAll: false,
-                    onSelectionChanged:
-                        (ids) => widget.plugin.tabManager.updateCurrentFitler({
-                          'tags': ids,
-                        }),
-                    type: 'tags',
-                  );
-                }
-                return const Center(child: CircularProgressIndicator());
-              },
+            child: FolderTreeWidget(
+              items:
+                  widget.tags
+                      .map((tag) => TreeItem(id: tag.id, title: tag.title))
+                      .toList(),
+              library: _library!,
+              showSelectAll: false,
+              onSelectionChanged:
+                  (ids) => widget.plugin.tabManager.updateCurrentFitler({
+                    'tags': ids,
+                  }),
+              type: 'tags',
             ),
           ),
           const Divider(),
@@ -82,39 +67,26 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
             ),
           ),
           Expanded(
-            child: FutureBuilder<List<LibraryFolder?>>(
-              future:
-                  widget.plugin.foldersTagsController
-                      .getFolderCache(_library!.id)
-                      .getAll(),
-              builder: (context, snapshot) {
-                if (snapshot.hasData) {
-                  return FolderTreeWidget(
-                    items:
-                        snapshot.data!
-                            .map(
-                              (folder) =>
-                                  TreeItem(id: folder!.id, title: folder.title),
-                            )
-                            .toList(),
-                    library: _library!,
-                    showSelectAll: false,
-                    onSelectionChanged: (ids) {
-                      if (ids != null && ids.isNotEmpty) {
-                        widget.plugin.tabManager.updateCurrentFitler({
-                          'folder': ids.first,
-                        });
-                      } else {
-                        widget.plugin.tabManager.updateCurrentFitler({
-                          'folder': '',
-                        });
-                      }
-                    },
-                    type: 'folders',
-                  );
+            child: FolderTreeWidget(
+              items:
+                  widget.folders
+                      .map(
+                        (folder) =>
+                            TreeItem(id: folder.id, title: folder.title),
+                      )
+                      .toList(),
+              library: _library!,
+              showSelectAll: false,
+              onSelectionChanged: (ids) {
+                if (ids != null && ids.isNotEmpty) {
+                  widget.plugin.tabManager.updateCurrentFitler({
+                    'folder': ids.first,
+                  });
+                } else {
+                  widget.plugin.tabManager.updateCurrentFitler({'folder': ''});
                 }
-                return const Center(child: CircularProgressIndicator());
               },
+              type: 'folders',
             ),
           ),
         ],

@@ -78,25 +78,6 @@ class WebSocketServer {
     dbService.getEventManager().broadcast(eventName, serverEventArgs(data));
   }
 
-  void _handleRespnes(
-    String eventName,
-    Map<String, dynamic> data, {
-    WebSocketChannel? channel,
-    bool isPluginEvent = true,
-    bool isServerEvent = true,
-  }) {
-    if (channel != null) {
-      data['event'] = eventName;
-      sendToWebsocket(channel, data);
-    }
-    if (isPluginEvent) {
-      broadcastPluginEvent(eventName, data);
-    }
-    if (isServerEvent) {
-      broadcastToClients(eventName, data);
-    }
-  }
-
   void _handleConnection(WebSocketChannel channel) async {
     channel.stream.listen(
       (message) async {
@@ -219,19 +200,18 @@ class WebSocketServer {
               break;
             case 'folder':
               id = await dbService.createFolder(data);
-              final folders = await dbService.getAllFolders();
-              broadcastToClients('folder::update', ({
+              broadcastToClients('folder::created', {
                 'id': id,
-                'folders': folders,
+                'folders': await dbService.getAllFolders(),
                 'libraryId': libraryId,
-              }));
+              });
               break;
             case 'tag':
               id = await dbService.createTag(data);
               final tags = await dbService.getAllTags();
-              broadcastToClients('tag::created', {
+              broadcastToClients('folder::created', {
                 'id': id,
-                'tags': tags,
+                'folders': await dbService.getAllTags(),
                 'libraryId': libraryId,
               });
               break;
@@ -351,6 +331,7 @@ class WebSocketServer {
               if (success) {
                 broadcastToClients('folder::updated', {
                   'id': id,
+                  'folders': await dbService.getAllFolders(),
                   'libraryId': libraryId,
                 });
               }
@@ -358,8 +339,9 @@ class WebSocketServer {
             case 'tag':
               success = await dbService.updateTag(id, values);
               if (success) {
-                broadcastToClients('tag::updated', {
+                broadcastToClients('tags::updated', {
                   'id': id,
+                  'tags': await dbService.getAllTags(),
                   'libraryId': libraryId,
                 });
               }
@@ -367,20 +349,18 @@ class WebSocketServer {
             case 'file_folder':
               final folderId = values as String;
               success = await dbService.setFileFolders(id, folderId);
-              _handleRespnes('file::folder', channel: channel, {
-                'id': id,
-                'folderId': folderId,
-                'libraryId': libraryId,
-              });
+              final ret = {'id': id, 'libraryId': libraryId};
+              sendToWebsocket(channel, {'event': 'file::folder', 'data': ret});
+              broadcastToClients('file::folder', ret);
+              broadcastPluginEvent('file::folder', ret);
               break;
             case 'file_tag':
               final tagIds = values.cast<String>();
               success = await dbService.setFileTags(id, tagIds);
-              _handleRespnes('file::tags', channel: channel, {
-                'id': id,
-                'tagIds': tagIds,
-                'libraryId': libraryId,
-              });
+              final ret = {'id': id, 'libraryId': libraryId};
+              sendToWebsocket(channel, {'event': 'file::tags', 'data': ret});
+              broadcastToClients('file::tags', ret);
+              broadcastPluginEvent('file::tags', ret);
               break;
             default:
               throw ArgumentError('Invalid record type: $recordType');
@@ -429,8 +409,9 @@ class WebSocketServer {
             case 'folder':
               success = await dbService.deleteFolder(id);
               if (success) {
-                broadcastToClients('folder_deleted', {
+                broadcastToClients('folder::deleted', {
                   'id': id,
+                  'folders': await dbService.getAllFolders(),
                   'libraryId': libraryId,
                 });
               }
@@ -438,8 +419,9 @@ class WebSocketServer {
             case 'tag':
               success = await dbService.deleteTag(id);
               if (success) {
-                broadcastToClients('tag_deleted', {
+                broadcastToClients('folder::deleted', {
                   'id': id,
+                  'folders': await dbService.getAllTags(),
                   'libraryId': libraryId,
                 });
               }

@@ -1,10 +1,8 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:mira/core/event/event_debounce.dart';
-import 'package:mira/core/event/event_throttle.dart';
-import 'package:rxdart/rxdart.dart';
+import 'package:mira/plugins/libraries/models/folder.dart';
+import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
@@ -50,6 +48,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late bool _showSidebar = true;
   late bool _isLoading = true;
   late Map<String, dynamic>? _tabData;
+  late List<LibraryFolder> _folders = [];
+  late List<LibraryTag> _tags = [];
 
   late Set<String> _displayFields = {};
   Map<String, dynamic> _filterOptions = {};
@@ -67,38 +67,63 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     _filterOptions = _tabManager.getLibraryFilter(tabId);
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
     _tabData = _tabManager.getTabData(tabId);
+    initEvents();
+  }
+
+  void _updateFoldersTags() async {
+    // final tags =
+    //     (await widget.plugin.foldersTagsController
+    //             .getTagCache(widget.library.id)
+    //             .getAll())
+    //         .cast<LibraryTag>();
+    // final folders =
+    //     (await widget.plugin.foldersTagsController
+    //             .getFolderCache(widget.library.id)
+    //             .getAll())
+    //         .cast<LibraryFolder>();
+    final inst =
+        widget.plugin.libraryController.getLibraryInst(widget.library.id)!;
+    final tags =
+        (await inst.getTags()).map((item) => LibraryTag.fromMap(item)).toList();
+    final folders =
+        (await inst.getFolders())
+            .map((item) => LibraryFolder.fromMap(item))
+            .toList();
+    print('folders: ${folders.length}');
+    print('tags: ${tags.length}');
+    setState(() {
+      _tags = tags;
+      _folders = folders;
+    });
+  }
+
+  void initEvents() async {
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
       setState(() {
         _uploadProgress = _uploadQueue.progress;
       });
     });
-    final updateStream = EventThrottle(duration: Duration(seconds: 2));
-    updateStream.stream.listen((EventArgs args) {
-      //  服务器广播更新列表
-      if (args is MapEventArgs) {
-        final libraryId = args.item['libraryId'];
-        if (libraryId != widget.library.id) return;
-        final type = args.item['type'];
-        if (type == 'deleted') {
-          // 是否有在当前列表
-          final id = args.item['id'];
-          final file = _items.firstWhereOrNull((f) => f.id == id);
-          if (file == null) return;
-          _items.remove(file);
-        }
-        _loadFiles();
-      }
-    });
     EventManager.instance.subscribe(
       'thumbnail::generated',
       _onThumbnailGenerated,
     );
-    EventManager.instance.subscribe(
-      'file::changed',
-      (args) => updateStream.onCall(args),
-    );
+    EventManager.instance.subscribe('tab::doUpdate', (EventArgs args) {
+      if (args is MapEventArgs) {
+        if (args.item['tabId'] == widget.tabId) {
+          _refresh();
+          print('updated Tab ${widget.tabId}');
+        }
+      }
+    });
     EventManager.instance.subscribe('library::filter_updated', _onFilterUpdate);
-    _loadFiles();
+    _refresh();
+  }
+
+  void _refresh() {
+    if (mounted) {
+      _loadFiles();
+      _updateFoldersTags();
+    }
   }
 
   //  系统内广播更新过滤器
@@ -107,15 +132,15 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       final libraryId = args.item['libraryId'];
       if (libraryId != widget.library.id) return;
       _filterOptions = Map<String, dynamic>.from(args.item['filter']);
-      _loadFiles();
+      _refresh();
     }
   }
 
   void _onThumbnailGenerated(EventArgs args) {
     if (args is! serverEventArgs) return;
-    if (mounted) {
-      setState(() {});
-    }
+    // if (mounted) {
+    //   setState(() {});
+    // }
   }
 
   @override
@@ -181,23 +206,19 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       'limit': _paginationOptions['perPage'],
     };
 
-    final inst = await widget.plugin.libraryController.getLibraryInst(
-      widget.library,
-    );
+    final inst = widget.plugin.libraryController.getLibraryInst(widget.library);
     if (inst == null) return;
     final result = await inst.findFiles(query: query);
 
-    if (mounted) {
-      setState(() {
-        if (result == null || result.isEmpty) {
-          _items = [];
-        } else {
-          _items = result['results'] as List<LibraryFile>;
-          _totalItems = result['total'] as int;
-        }
-        _isLoading = false;
-      });
-    }
+    setState(() {
+      if (result == null || result.isEmpty) {
+        _items = [];
+      } else {
+        _items = result['results'] as List<LibraryFile>;
+        _totalItems = result['total'] as int;
+      }
+      _isLoading = false;
+    });
   }
 
   void _onFileSelected(LibraryFile file) {
@@ -284,7 +305,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             _imagesPerRow = count;
           });
         },
-        onRefresh: () => _loadFiles(),
+        onRefresh: _refresh,
       ),
       bottomSheet: LibraryGalleryBottomSheet(uploadProgress: _uploadProgress),
       body: Row(
@@ -323,6 +344,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               child: LibrarySidebarView(
                 plugin: widget.plugin,
                 library: widget.library,
+                tags: _tags,
+                folders: _folders,
               ),
             ),
             VerticalDivider(width: 1),

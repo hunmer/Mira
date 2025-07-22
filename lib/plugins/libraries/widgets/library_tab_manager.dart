@@ -13,7 +13,7 @@ class LibraryTabManager {
   final ValueNotifier<int> currentIndex;
   late final LibrariesPlugin plugin;
   // onTabUpdate stream
-  final StreamController<Map<String, dynamic>> onTabChangeStream =
+  final StreamController<Map<String, dynamic>> onTabEventStream =
       StreamController.broadcast();
   List<String> getTabIds() => tabDatas.keys.toList();
 
@@ -21,6 +21,7 @@ class LibraryTabManager {
     plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
   }
 
+  // 添加tab
   void addTab(Library library, {bool isRecycleBin = false}) {
     tabDatas[Uuid().v4()] = {
       'library': library,
@@ -40,29 +41,28 @@ class LibraryTabManager {
       },
     };
     currentIndex.value = tabDatas.length - 1;
-    onTabChange('add', currentIndex.value);
+    onTabEvent('add', currentIndex.value);
   }
 
   void closeTabIndex(int index) {
     final tabData = getTabIds()[index];
     tabDatas.remove(tabData);
-    onTabChange('close', index);
+    onTabEvent('close', index);
   }
 
-  void onTabChange(String reason, int index) {
-    onTabChangeStream.add({'event': reason, 'index': index});
-    final len = getTabIds().length;
+  void onTabEvent(String event, int index) {
+    final tabIds = getTabIds();
+    final len = tabIds.length;
+    final tabId = index >= 0 && index < tabIds.length ? tabIds[index] : null;
     int newIndex = -1;
-    switch (reason) {
+    switch (event) {
       case 'close':
         if (currentIndex.value == index) {
           newIndex = index == 0 ? len - 1 : index - 1;
         }
         break;
     }
-    if (newIndex != -1) {
-      currentIndex.value = len - 1;
-    }
+    onTabEventStream.add({'event': event, 'index': index, 'tabId': tabId});
   }
 
   void closeTab(String tabId) {
@@ -72,8 +72,35 @@ class LibraryTabManager {
     }
   }
 
-  Map<String, dynamic> map(Function callback) {
-    return tabDatas.map((key, value) => callback(key, value));
+  void setValue(String tabId, String key, dynamic value) {
+    final tabData = getTabData(tabId);
+    if (tabData != null) {
+      tabData[key] = value;
+    }
+  }
+
+  // updateTab
+  void updateTab(String tabId) {
+    print('update tabId $tabId');
+    EventManager.instance.broadcast(
+      'tab::doUpdate',
+      MapEventArgs({'tabId': tabId}),
+    );
+  }
+
+  void tryUpdate(String tabId) {
+    final tabData = getTabData(tabId) ?? {};
+    if (tabData.containsKey('needUpdate') && tabData['needUpdate']) {
+      updateTab(tabId);
+      tabData['needUpdate'] = false;
+    }
+  }
+
+  Map<String, dynamic> map(Function(String, Map<String, dynamic>) callback) {
+    return tabDatas.map((key, value) {
+      final result = callback(key, value);
+      return result ?? MapEntry(key, value);
+    });
   }
 
   void closeAllTabs() {
@@ -153,9 +180,13 @@ class LibraryTabManager {
   }
 
   setTabActive(String tabId) {
+    if (currentIndex.value != -1) {
+      onTabEvent('unactive', currentIndex.value);
+    }
     final index = getTabIds().indexOf(tabId);
     if (index != -1) {
       currentIndex.value = index;
+      onTabEvent('active', index);
     }
   }
 

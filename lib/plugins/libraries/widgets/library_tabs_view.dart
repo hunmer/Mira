@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:mira/core/event/event_args.dart';
+import 'package:mira/core/event/event_manager.dart';
+import 'package:mira/core/event/event_throttle.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/utils/utils.dart' as Utils;
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
@@ -8,7 +11,6 @@ import 'package:mira/plugins/libraries/widgets/library_tabs_context_menu.dart'
     // ignore: library_prefixes
     as LibraryContextMenu;
 import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:mira/views/library_tabs_empty_view.dart';
 import '../models/library.dart';
@@ -16,7 +18,6 @@ import 'package:dynamic_tabbar/dynamic_tabbar.dart';
 
 class LibraryTabsView extends StatefulWidget {
   final Library? library;
-
   const LibraryTabsView({super.key, this.library});
 
   @override
@@ -32,13 +33,55 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     super.initState();
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
     _tabManager = LibraryTabManager(ValueNotifier(-1));
-    _tabManager.onTabChangeStream.stream.listen((detail) {
-      // final event = detail['event'];
-      // final index = detail['index'];
-      setState(() {});
+    _plugin.setTabManager(_tabManager);
+    initEvents();
+  }
+
+  void initEvents() {
+    _tabManager.onTabEventStream.stream.listen((detail) {
+      final event = detail['event'];
+      final tabId = detail['tabId'];
+      print('tab event: $event, tabId: $tabId');
+      switch (event) {
+        case 'active':
+          _tabManager.tryUpdate(tabId);
+          break;
+        case 'close':
+        case 'add':
+          setState(() {});
+          break;
+      }
     });
 
-    _plugin.setTabManager(_tabManager);
+    final chanedStream = EventThrottle(duration: Duration(milliseconds: 1000));
+    chanedStream.stream.listen((EventArgs args) {
+      //  服务器广播文件更新
+      if (args is MapEventArgs) {
+        final libraryId = args.item['libraryId'];
+        final currentTab = _tabManager.getCurrentTabId();
+        _tabManager.map((tabId, tabData) {
+          final library = tabData['library'] as Library;
+          if (library.id == libraryId) {
+            _tabManager.setValue(tabId, 'needUpdate', true);
+            if (tabId == currentTab) {
+              _tabManager.tryUpdate(tabId);
+            }
+          }
+        });
+      }
+    });
+    EventManager.instance.subscribe(
+      'file::changed',
+      (args) => chanedStream.onCall(args),
+    );
+    EventManager.instance.subscribe(
+      'tags::updated',
+      (args) => chanedStream.onCall(args),
+    );
+    EventManager.instance.subscribe(
+      'folder::updated',
+      (args) => chanedStream.onCall(args),
+    );
   }
 
   @override
@@ -161,6 +204,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                         icon: const Icon(Icons.close),
                         onPressed: () => _tabManager.closeAllTabs(),
                       ),
+                      // 桌面端禁止手势滑动
                       physics:
                           isDesktop
                               ? const NeverScrollableScrollPhysics()
@@ -178,13 +222,13 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                         }
                       },
                       onTabControllerUpdated: (controller) {
-                        controller.addListener(() {
-                          final index = controller.index;
-                          final tabId = _tabManager.tabDatas.keys.elementAt(
-                            index,
-                          );
-                          _tabManager.setTabActive(tabId);
-                        });
+                        // controller.addListener(() {
+                        //   final index = controller.index;
+                        //   final tabId = _tabManager.tabDatas.keys.elementAt(
+                        //     index,
+                        //   );
+                        //   _tabManager.setTabActive(tabId);
+                        // });
                       },
                     ),
           ),
