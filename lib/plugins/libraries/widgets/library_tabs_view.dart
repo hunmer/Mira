@@ -9,6 +9,7 @@ import 'package:mira/plugins/libraries/widgets/library_tabs_context_menu.dart'
 import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
+import 'package:mira/views/library_tabs_empty_view.dart';
 import '../models/library.dart';
 import 'package:dynamic_tabbar/dynamic_tabbar.dart';
 
@@ -41,6 +42,36 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   }
 
   bool _showSidebar = false;
+
+  Future<void> _openLibrary() async {
+    final libraries = _plugin.dataController.libraries;
+    final itemCount = libraries.length;
+    if (itemCount == 1) {
+      setState(() {
+        _tabManager.addTab(libraries.first);
+      });
+      return;
+    }
+    final selectedLibrary = await showDialog<Library>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Select Library'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: LibraryListView(
+                onSelected: (library) {
+                  Navigator.pop(context, library);
+                },
+              ),
+            ),
+          ),
+    );
+    if (selectedLibrary != null) {
+      _tabManager.addTab(selectedLibrary);
+      setState(() {});
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -108,47 +139,14 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
           Expanded(
             child:
                 tabs.isEmpty
-                    ? const Center(
-                      child: Text(
-                        'No libraries available',
-                        style: TextStyle(fontSize: 18),
-                      ),
-                    )
+                    ? LibraryTabsEmptyView(onAddTab: () => _openLibrary())
                     : DynamicTabBarWidget(
                       dynamicTabs: tabs,
                       showBackIcon: true,
                       showNextIcon: true,
                       trailing: IconButton(
                         icon: const Icon(Icons.add),
-                        onPressed: () async {
-                          final libraries = _plugin.dataController.libraries;
-                          final itemCount = libraries.length;
-                          if (itemCount == 1) {
-                            setState(() {
-                              _tabManager.addTab(libraries.first);
-                            });
-                            return;
-                          }
-                          final selectedLibrary = await showDialog<Library>(
-                            context: context,
-                            builder:
-                                (context) => AlertDialog(
-                                  title: const Text('Select Library'),
-                                  content: SizedBox(
-                                    width: double.maxFinite,
-                                    child: LibraryListView(
-                                      onSelected: (library) {
-                                        Navigator.pop(context, library);
-                                      },
-                                    ),
-                                  ),
-                                ),
-                          );
-                          if (selectedLibrary != null) {
-                            _tabManager.addTab(selectedLibrary);
-                            setState(() {});
-                          }
-                        },
+                        onPressed: () => _openLibrary(),
                       ),
                       leading: IconButton(
                         icon: const Icon(Icons.close),

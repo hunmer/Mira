@@ -49,11 +49,11 @@ class _LibraryListViewState extends State<LibraryListView> {
           final width = constraints.maxWidth;
           final crossAxisCount =
               width > 1200
-                  ? 6
+                  ? 8
                   : width > 800
-                  ? 4
+                  ? 6
                   : width > 500
-                  ? 3
+                  ? 4
                   : 2;
 
           return GridView.builder(
