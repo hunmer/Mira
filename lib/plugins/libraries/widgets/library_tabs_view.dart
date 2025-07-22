@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tabs_context_menu.dart'
     // ignore: library_prefixes
@@ -28,7 +29,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   void initState() {
     super.initState();
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
-    _tabManager = LibraryTabManager();
+    _tabManager = LibraryTabManager(ValueNotifier(-1));
     _plugin.setTabManager(_tabManager);
   }
 
@@ -96,15 +97,14 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
         ],
-        title: const SizedBox.shrink(),
+        title: const Text('素材管理器'),
       ),
       body: Row(
         children: [
-          if (_showSidebar)
-            LibrarySidebarView(
-              plugin: _plugin,
-              onHideSidebar: () => setState(() => _showSidebar = false),
-            ),
+          if (_showSidebar) ...[
+            AppSidebarView(),
+            const VerticalDivider(width: 1),
+          ],
           Expanded(
             child:
                 tabs.isEmpty
@@ -158,10 +158,12 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                             }),
                       ),
                       onTabChanged: (index) {
-                        final tabId = _tabManager.tabDatas.keys.elementAt(
-                          index!,
-                        );
-                        _tabManager.setTabActive(tabId);
+                        if (index != null) {
+                          final tabId = _tabManager.tabDatas.keys.elementAt(
+                            index,
+                          );
+                          _tabManager.setTabActive(tabId);
+                        }
                       },
                       onTabControllerUpdated: (controller) {
                         controller.addListener(() {

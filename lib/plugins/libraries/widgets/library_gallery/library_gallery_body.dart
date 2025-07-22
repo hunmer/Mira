@@ -17,6 +17,7 @@ class LibraryGalleryBody extends StatefulWidget {
   final Library library;
   final ValueNotifier<List<LibraryFile>> items;
   final bool isSelectionMode;
+  final bool isRecycleBin;
   final Set<int> selectedFileIds;
   final Set<String> displayFields;
   final Function(LibraryFile) onFileSelected;
@@ -24,6 +25,7 @@ class LibraryGalleryBody extends StatefulWidget {
   final int imagesPerRow;
 
   const LibraryGalleryBody({
+    required this.isRecycleBin,
     required this.plugin,
     required this.displayFields,
     required this.library,
@@ -105,7 +107,11 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                   file: file,
                   library: widget.library,
                   position: details.globalPosition,
-                  onDelete: () => _libraryController.deleteFile(file.id),
+                  onDelete:
+                      () => _libraryController.deleteFile(
+                        file.id,
+                        moveToRecycleBin: widget.isRecycleBin,
+                      ),
                   onShowInfo:
                       () => showModalBottomSheet(
                         context: context,

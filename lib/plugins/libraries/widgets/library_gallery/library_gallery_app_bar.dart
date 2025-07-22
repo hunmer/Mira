@@ -4,6 +4,7 @@ import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
 
 class LibraryGalleryAppBar extends StatefulWidget
     implements PreferredSizeWidget {
+  final String title;
   final bool isSelectionMode;
   final bool isRecycleBin;
   final int selectedCount;
@@ -18,8 +19,10 @@ class LibraryGalleryAppBar extends StatefulWidget
   final int imagesPerRow;
   final ValueChanged<int> onImagesPerRowChanged;
   final VoidCallback onRefresh;
+  final VoidCallback toggleSidebar;
 
   const LibraryGalleryAppBar({
+    required this.title,
     required this.isSelectionMode,
     required this.selectedCount,
     required this.isRecycleBin,
@@ -34,6 +37,7 @@ class LibraryGalleryAppBar extends StatefulWidget
     required this.imagesPerRow,
     required this.onImagesPerRowChanged,
     required this.onRefresh,
+    required this.toggleSidebar,
     super.key,
   });
 
@@ -74,9 +78,15 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
       builder: (context, imageRows, _) {
         return AppBar(
           title: Text(
-            widget.isSelectionMode ? '已选择 ${widget.selectedCount} 项' : '',
+            widget.isSelectionMode
+                ? '已选择 ${widget.selectedCount} 项'
+                : widget.title,
           ),
           automaticallyImplyLeading: false,
+          leading: IconButton(
+            icon: const Icon(Icons.menu),
+            onPressed: widget.toggleSidebar,
+          ),
           actions:
               widget.isSelectionMode
                   ? [

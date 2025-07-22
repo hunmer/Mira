@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:number_pagination/number_pagination.dart';
 import 'package:mira/core/event/event.dart';
@@ -42,6 +43,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late int _totalItems = 0;
   late List<LibraryFile> _items = [];
   late LibraryTabManager _tabManager;
+  late bool _showSidebar = true;
 
   late Set<String> _displayFields = {};
   Map<String, dynamic> _filterOptions = {};
@@ -193,17 +195,26 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     }
   }
 
+  void _toggleSidebar() {
+    setState(() {
+      _showSidebar = !_showSidebar;
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final tabData = _tabManager.getTabData(widget.tabId);
+    final isRecycleBin = tabData?['isRecycleBin'];
     final totalPages = (_totalItems / _paginationOptions['perPage']).ceil();
     return Scaffold(
       appBar: LibraryGalleryAppBar(
-        isRecycleBin: tabData?['isRecycleBin'],
+        title: widget.library.name,
+        isRecycleBin: isRecycleBin,
         isSelectionMode: _isSelectionMode,
         selectedCount: _selectedFileIds.length,
         onSelectAll: _toggleSelectAll,
         onExitSelection: _exitSelectionMode,
+        toggleSidebar: _toggleSidebar,
         onFilter: () async {
           final filterOptions = await showDialog<Map<String, dynamic>>(
             context: context,
@@ -241,6 +252,16 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       bottomSheet: LibraryGalleryBottomSheet(uploadProgress: _uploadProgress),
       body: Row(
         children: [
+          if (_showSidebar) ...[
+            Expanded(
+              flex: 1,
+              child: LibrarySidebarView(
+                plugin: widget.plugin,
+                library: widget.library,
+              ),
+            ),
+            VerticalDivider(width: 1),
+          ],
           Expanded(
             flex: 4,
             child: Column(
@@ -249,6 +270,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                   child: LibraryGalleryBody(
                     plugin: widget.plugin,
                     library: widget.library,
+                    isRecycleBin: isRecycleBin,
                     displayFields: _displayFields,
                     items: ValueNotifier(_items),
                     isSelectionMode: _isSelectionMode,

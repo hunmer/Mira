@@ -5,6 +5,7 @@ import 'package:mira/plugins/libraries/controllers/folders_tags_cache.dart';
 import 'package:mira/plugins/libraries/controllers/libraray_local_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
+import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'services/websocket_server.dart';
 
@@ -33,6 +34,7 @@ class LibrariesPlugin extends PluginBase {
   late final WebSocketServer server; // 后端服务器
   late final LibraryTabManager tabManager; // 标签视图管理器
   late final FoldersTagsCache foldersTagsController; // 文件夹标签缓存
+  late final LibrarySidebarView sidebarController;
 
   @override
   Future<void> registerToApp(

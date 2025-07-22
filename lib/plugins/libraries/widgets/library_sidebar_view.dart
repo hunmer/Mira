@@ -8,12 +8,12 @@ import '../models/library.dart';
 
 class LibrarySidebarView extends StatefulWidget {
   final LibrariesPlugin plugin;
-  final VoidCallback onHideSidebar;
+  final Library library;
 
   const LibrarySidebarView({
     super.key,
     required this.plugin,
-    required this.onHideSidebar,
+    required this.library,
   });
 
   @override
@@ -29,7 +29,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
     _library = widget.plugin.tabManager.getCurrentLibrary();
   }
 
-  void setCurrentLibrary(Library library) {
+  void setCurrentLibraray(Library library) {
     setState(() {
       _library = library;
     });
@@ -37,125 +37,100 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
 
   @override
   Widget build(BuildContext context) {
-    if (_library != null) {
-      return Container(
-        width: 300,
-        color: Theme.of(context).colorScheme.surface,
-        child: Column(
-          children: [
-            const SizedBox(height: 16),
-            ListTile(
-              leading: const Icon(Icons.all_inbox),
-              title: const Text('所有素材库'),
-              onTap: () => Navigator.pushNamed(context, '/libraries'),
-            ),
-            ListTile(
-              leading: const Icon(Icons.favorite),
-              title: const Text('我的收藏'),
-              onTap: widget.onHideSidebar,
-            ),
-            ListTile(
-              leading: const Icon(Icons.delete),
-              title: const Text('回收站'),
-              onTap: widget.onHideSidebar,
-            ),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                '标签目录',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            Expanded(
-              child: FutureBuilder<List<LibraryTag?>>(
-                future:
-                    widget.plugin.foldersTagsController
-                        .getTagCache(_library!.id)
-                        .getAll(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return FolderTreeWidget(
-                      items:
-                          snapshot.data!
-                              .map(
-                                (tag) =>
-                                    TreeItem(id: tag!.id, title: tag.title),
-                              )
-                              .toList(),
-                      library: _library!,
-                      showSelectAll: false,
-                      onSelectionChanged:
-                          (ids) => widget.plugin.tabManager.updateCurrentFitler(
-                            {'tags': ids},
-                          ),
-                      type: 'tags',
-                    );
-                  }
-                  return const Center(child: CircularProgressIndicator());
-                },
-              ),
-            ),
-            const Divider(),
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              child: Text(
-                '文件夹目录',
-                style: Theme.of(context).textTheme.titleMedium,
-              ),
-            ),
-            Expanded(
-              child: FutureBuilder<List<LibraryFolder?>>(
-                future:
-                    widget.plugin.foldersTagsController
-                        .getFolderCache(_library!.id)
-                        .getAll(),
-                builder: (context, snapshot) {
-                  if (snapshot.hasData) {
-                    return FolderTreeWidget(
-                      items:
-                          snapshot.data!
-                              .map(
-                                (folder) => TreeItem(
-                                  id: folder!.id,
-                                  title: folder.title,
-                                ),
-                              )
-                              .toList(),
-                      library: _library!,
-                      showSelectAll: false,
-                      onSelectionChanged: (ids) {
-                        if (ids != null && ids.isNotEmpty) {
-                          widget.plugin.tabManager.updateCurrentFitler({
-                            'folder': ids.first,
-                          });
-                        } else {
-                          widget.plugin.tabManager.updateCurrentFitler({
-                            'folder': '',
-                          });
-                        }
-                      },
-                      type: 'folders',
-                    );
-                  }
-                  return const Center(child: CircularProgressIndicator());
-                },
-              ),
-            ),
-          ],
-        ),
-      );
-    } else {
-      return Container(
-        width: 300,
-        color: Theme.of(context).colorScheme.surface,
-        child: Center(
-          child: Text(
-            '请选择一个标签页',
-            style: Theme.of(context).textTheme.titleMedium,
+    return Container(
+      width: 300,
+      color: Theme.of(context).colorScheme.surface,
+      child: Column(
+        children: [
+          ListTile(
+            leading: const Icon(Icons.favorite),
+            title: const Text('我的收藏'),
+            onTap: () => {},
           ),
-        ),
-      );
-    }
+          ListTile(
+            leading: const Icon(Icons.delete),
+            title: const Text('回收站'),
+            onTap: () => {},
+          ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text('标签目录', style: Theme.of(context).textTheme.titleMedium),
+          ),
+          Expanded(
+            child: FutureBuilder<List<LibraryTag?>>(
+              future:
+                  widget.plugin.foldersTagsController
+                      .getTagCache(_library!.id)
+                      .getAll(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return FolderTreeWidget(
+                    items:
+                        snapshot.data!
+                            .map(
+                              (tag) => TreeItem(id: tag!.id, title: tag.title),
+                            )
+                            .toList(),
+                    library: _library!,
+                    showSelectAll: false,
+                    onSelectionChanged:
+                        (ids) => widget.plugin.tabManager.updateCurrentFitler({
+                          'tags': ids,
+                        }),
+                    type: 'tags',
+                  );
+                }
+                return const Center(child: CircularProgressIndicator());
+              },
+            ),
+          ),
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            child: Text(
+              '文件夹目录',
+              style: Theme.of(context).textTheme.titleMedium,
+            ),
+          ),
+          Expanded(
+            child: FutureBuilder<List<LibraryFolder?>>(
+              future:
+                  widget.plugin.foldersTagsController
+                      .getFolderCache(_library!.id)
+                      .getAll(),
+              builder: (context, snapshot) {
+                if (snapshot.hasData) {
+                  return FolderTreeWidget(
+                    items:
+                        snapshot.data!
+                            .map(
+                              (folder) =>
+                                  TreeItem(id: folder!.id, title: folder.title),
+                            )
+                            .toList(),
+                    library: _library!,
+                    showSelectAll: false,
+                    onSelectionChanged: (ids) {
+                      if (ids != null && ids.isNotEmpty) {
+                        widget.plugin.tabManager.updateCurrentFitler({
+                          'folder': ids.first,
+                        });
+                      } else {
+                        widget.plugin.tabManager.updateCurrentFitler({
+                          'folder': '',
+                        });
+                      }
+                    },
+                    type: 'folders',
+                  );
+                }
+                return const Center(child: CircularProgressIndicator());
+              },
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }

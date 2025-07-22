@@ -1,18 +1,18 @@
 import 'package:flutter/material.dart';
 import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_manager.dart';
+import 'package:mira/core/plugin_manager.dart';
+import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:uuid/uuid.dart';
 import '../models/library.dart';
 
 class LibraryTabManager {
-  final PageController pageController;
   final Map<String, dynamic> tabDatas = {};
   final ValueNotifier<int> currentIndex;
+  late final LibrariesPlugin plugin;
 
-  LibraryTabManager()
-    : pageController = PageController(initialPage: 0),
-      currentIndex = ValueNotifier(0) {
-    pageController.addListener(_handlePageChange);
+  LibraryTabManager(this.currentIndex) {
+    plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
   }
 
   void _handlePageChange() {
@@ -38,9 +38,6 @@ class LibraryTabManager {
       },
     };
     currentIndex.value = tabDatas.length - 1;
-    if (pageController.hasClients) {
-      pageController.jumpToPage(currentIndex.value);
-    }
   }
 
   void closeTabIndex(int index) {
@@ -61,7 +58,6 @@ class LibraryTabManager {
     }
     if (newIndex != -1) {
       currentIndex.value = len - 1;
-      pageController.jumpToPage(newIndex);
     }
   }
 
@@ -82,8 +78,6 @@ class LibraryTabManager {
   }
 
   void dispose() {
-    pageController.removeListener(_handlePageChange);
-    pageController.dispose();
     currentIndex.dispose();
   }
 

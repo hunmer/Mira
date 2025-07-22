@@ -3,7 +3,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tabs_view.dart';
-import 'package:mira/screens/home_page.dart';
 import 'package:mira/screens/settings_screen/settings_screen.dart';
 
 class AppRoutes extends NavigatorObserver {
@@ -33,8 +32,6 @@ class AppRoutes extends NavigatorObserver {
 
   static Route<dynamic> generateRoute(RouteSettings route) {
     switch (route.name) {
-      case home:
-        return _createRoute(const HomePage());
       case LibraryTabs:
         return _createRoute(const LibraryTabsView());
       case libraries:
@@ -51,7 +48,6 @@ class AppRoutes extends NavigatorObserver {
   }
 
   static Map<String, WidgetBuilder> get routes => {
-    home: (context) => const HomePage(),
     libraries: (context) => const LibraryListView(),
     LibraryTabs: (context) => const LibraryTabsView(),
     settings: (context) => const SettingsScreen(),
