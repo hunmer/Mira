@@ -26,12 +26,12 @@ class _LibraryListViewState extends State<LibraryListView> {
     _libraries = _plugin.dataController.libraries;
   }
 
-  void _onLibrarySelected(Library library) {
+  Future<void> _onLibrarySelected(Library library) async {
     final newTabView = widget.onSelected == null;
     if (!newTabView) {
       widget.onSelected?.call(library);
     }
-    _plugin.libraryController.openLibrary(
+    await _plugin.libraryController.openLibrary(
       library,
       context,
       newTabView: newTabView,

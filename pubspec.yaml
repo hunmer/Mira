@@ -75,6 +75,7 @@ dependencies:
   queue_it: ^0.9.0
   flutter_queue_it: ^0.9.0
   flutter_xlider: ^3.5.0
+  dynamic_tabbar: ^1.0.9
 
 dev_dependencies:
   flutter_test:

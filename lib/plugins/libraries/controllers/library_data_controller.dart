@@ -11,7 +11,7 @@ class LibraryDataController {
   final Map<String, LibraryDataInterface> dataInterfaces = {};
   LibraryDataController({required this.plugin});
 
-  openLibrary(
+  Future<void> openLibrary(
     Library library,
     BuildContext context, {
     bool newTabView = true,

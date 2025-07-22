@@ -152,7 +152,8 @@ class LibraryTabManager {
   }
 
   String? getCurrentTabId() {
-    return getTabIds()[currentIndex.value];
+    final tabIds = getTabIds();
+    return tabIds.isNotEmpty ? tabIds[currentIndex.value] : null;
   }
 
   setTabActive(String tabId) {
