@@ -105,18 +105,6 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
                 ],
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(16.0),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    '共 ${_uploadList.length} 个文件待上传',
-                    style: Theme.of(context).textTheme.bodySmall,
-                  ),
-                ],
-              ),
-            ),
           ],
         ),
       ),

@@ -174,12 +174,9 @@ class WebSocketServer {
                   fileMeta,
                 );
               } else {
-                item = await dbService.createFile({
-                  'reference': data['reference'],
-                  'path': data['path'],
-                  ...data,
-                });
+                // TODO 二进制上传
               }
+
               id = item['id'];
               sendToWebsocket(channel, {
                 'event': 'file::uploaded',

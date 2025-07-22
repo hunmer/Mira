@@ -462,8 +462,9 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   @override
   Future<Map<String, dynamic>> createFileFromPath(
     String filePath,
-    Map<String, dynamic> fileMeta,
-  ) async {
+    Map<String, dynamic> fileMeta, {
+    String importType = 'copy',
+  }) async {
     final file = File(filePath);
     if (!await file.exists()) {
       throw Exception('File does not exist: $filePath');
@@ -484,8 +485,42 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       ...fileMeta, // 合并传入的元数据
     };
 
+    _handleFile(file, fileData, importType);
+
     // 使用现有的createFile方法插入记录
     return createFile(fileData);
+  }
+
+  Future<void> _handleFile(
+    File file,
+    Map<String, dynamic> fileData,
+    String importType,
+  ) async {
+    // 根据导入类型处理文件
+    switch (importType) {
+      case 'link':
+        // 保持原文件位置不变，只创建引用
+        break;
+      case 'copy':
+        final destPath = path.join(
+          await getItemPath(fileData),
+          fileData['name'],
+        );
+        await file.copy(destPath);
+        fileData['path'] = destPath;
+        break;
+      case 'move':
+        // 移动文件到库目录
+        final destPath = path.join(
+          await getItemPath(fileData),
+          fileData['name'],
+        );
+        await file.rename(destPath);
+        fileData['path'] = destPath;
+        break;
+      default:
+        throw Exception('Unknown import type: $importType');
+    }
   }
 
   // 计算文件哈希值 (使用XXH3算法)
@@ -547,6 +582,10 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       stmt.dispose();
 
       await commitTransaction();
+
+      // TODO 更新文件的位置(需要添加一个importType记录)
+      // _handleFile(file, fileData, 'move');
+
       return _db!.updatedRows > 0;
     } catch (e) {
       await rollbackTransaction();

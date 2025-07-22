@@ -310,15 +310,12 @@ class _FileDropViewState extends State<FileDropView>
             ),
             const SizedBox(height: 16),
             if (_selectedFiles.isNotEmpty) ...[
-              const Text('已选择文件:'),
-              const SizedBox(height: 8),
               Expanded(
                 child: AsyncPaginatedDataTable2(
                   columnSpacing: 12,
                   horizontalMargin: 12,
                   minWidth: 800,
                   wrapInCard: false,
-                  header: const Text('已选择文件'),
                   rowsPerPage: _rowsPerPage,
                   initialFirstRowIndex: _initialRow,
                   onPageChanged: (rowIndex) {
