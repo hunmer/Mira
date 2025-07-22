@@ -67,10 +67,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       _onThumbnailGenerated,
     );
     EventManager.instance.subscribe('library::filter_updated', _onFilterUpdate);
-    _loadFiles();
+    // TODO 收到服务器数据后才进行请求更新
+    Future.delayed(const Duration(seconds: 1), _loadFiles);
   }
 
-  //  使用广播更新
+  //  使用广播更新过滤器
   void _onFilterUpdate(EventArgs args) {
     if (args is! MapEventArgs) return;
     final library = args.item['libraryId'];

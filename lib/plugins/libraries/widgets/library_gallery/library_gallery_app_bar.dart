@@ -167,7 +167,7 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
                                             : imageRows.toDouble(),
                                       ],
                                       max: 20,
-                                      min: 1,
+                                      min: 0,
                                       onDragging: (
                                         handlerIndex,
                                         lowerValue,

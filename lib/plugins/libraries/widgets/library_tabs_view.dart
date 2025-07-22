@@ -9,6 +9,7 @@ import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import '../models/library.dart';
+import 'package:dynamic_tabbar/dynamic_tabbar.dart';
 
 class LibraryTabsView extends StatefulWidget {
   final Library? library;
@@ -42,57 +43,46 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
   @override
   Widget build(BuildContext context) {
-    final tabsTab = <Widget>[];
-    final tabsContents = <Widget>[];
-    _tabManager.tabDatas.forEach((tabId, tabData) {
-      tabsContents.add(
-        LibraryContentView(plugin: _plugin, tabId: tabId, tabData: tabData),
-      );
-      tabsTab.add(
-        GestureDetector(
-          onTap:
-              () => setState(() {
-                _tabManager.setTabActive(tabId);
-              }),
-          onSecondaryTapDown:
-              (details) => _showContextMenu(
-                context,
-                details.globalPosition,
-                tabData['library'],
-                tabId,
-              ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-            decoration: BoxDecoration(
-              border: Border(
-                bottom: BorderSide(
-                  color:
-                      _tabManager.getCurrentTabId() == tabId
-                          ? Theme.of(context).colorScheme.primary
-                          : Colors.transparent,
-                  width: 2,
+    final tabs =
+        _tabManager.tabDatas.entries.map((entry) {
+          final tabId = entry.key;
+          final tabData = entry.value;
+          return TabData(
+            index: tabId.hashCode,
+
+            title: Tab(
+              child: GestureDetector(
+                onSecondaryTapDown:
+                    (details) => _showContextMenu(
+                      context,
+                      details.globalPosition,
+                      tabData['library'],
+                      tabId,
+                    ),
+                child: Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(tabData['name'] ?? tabData['library'].name),
+                    const SizedBox(width: 4),
+                    GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap:
+                          () => setState(() {
+                            _tabManager.closeTab(tabId);
+                          }),
+                      child: const Icon(Icons.close, size: 16),
+                    ),
+                  ],
                 ),
               ),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Text(tabData['name'] ?? tabData['library'].name),
-                const SizedBox(width: 4),
-                GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap:
-                      () => setState(() {
-                        _tabManager.closeTab(tabId);
-                      }),
-                  child: const Icon(Icons.close, size: 16),
-                ),
-              ],
+            content: LibraryContentView(
+              plugin: _plugin,
+              tabId: tabId,
+              tabData: tabData,
             ),
-          ),
-        ),
-      );
-    });
+          );
+        }).toList();
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
@@ -100,50 +90,13 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
           onPressed: () => setState(() => _showSidebar = !_showSidebar),
         ),
         actions: [
+          // settings
           IconButton(
-            icon: const Icon(Icons.add),
-            onPressed: () async {
-              final libraries = _plugin.dataController.libraries;
-              final itemCount = libraries.length;
-              if (itemCount == 1) {
-                setState(() {
-                  _tabManager.addTab(libraries.first);
-                });
-                return;
-              }
-              final selectedLibrary = await showDialog<Library>(
-                context: context,
-                builder:
-                    (context) => AlertDialog(
-                      title: const Text('Select Library'),
-                      content: SizedBox(
-                        width: double.maxFinite,
-                        child: LibraryListView(
-                          onSelected: (library) {
-                            Navigator.pop(context, library);
-                          },
-                        ),
-                      ),
-                    ),
-              );
-              if (selectedLibrary != null) {
-                _tabManager.addTab(selectedLibrary);
-                setState(() {});
-              }
-            },
-          ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            onPressed:
-                () => setState(() {
-                  _tabManager.closeAllTabs();
-                }),
+            icon: const Icon(Icons.settings),
+            onPressed: () => Navigator.pushNamed(context, '/settings'),
           ),
         ],
-        title: SingleChildScrollView(
-          scrollDirection: Axis.horizontal,
-          child: Row(children: tabsTab),
-        ),
+        title: const SizedBox.shrink(),
       ),
       body: Row(
         children: [
@@ -153,22 +106,73 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
               onHideSidebar: () => setState(() => _showSidebar = false),
             ),
           Expanded(
-            child: ValueListenableBuilder<int>(
-              valueListenable: _tabManager.currentIndex,
-              builder: (context, currentIndex, _) {
-                return tabsContents.isEmpty
+            child:
+                tabs.isEmpty
                     ? const Center(
                       child: Text(
                         'No libraries available',
                         style: TextStyle(fontSize: 18),
                       ),
                     )
-                    : IndexedStack(
-                      index: _tabManager.currentIndex.value,
-                      children: tabsContents,
-                    );
-              },
-            ),
+                    : DynamicTabBarWidget(
+                      dynamicTabs: tabs,
+                      showBackIcon: true,
+                      showNextIcon: true,
+                      trailing: IconButton(
+                        icon: const Icon(Icons.add),
+                        onPressed: () async {
+                          final libraries = _plugin.dataController.libraries;
+                          final itemCount = libraries.length;
+                          if (itemCount == 1) {
+                            setState(() {
+                              _tabManager.addTab(libraries.first);
+                            });
+                            return;
+                          }
+                          final selectedLibrary = await showDialog<Library>(
+                            context: context,
+                            builder:
+                                (context) => AlertDialog(
+                                  title: const Text('Select Library'),
+                                  content: SizedBox(
+                                    width: double.maxFinite,
+                                    child: LibraryListView(
+                                      onSelected: (library) {
+                                        Navigator.pop(context, library);
+                                      },
+                                    ),
+                                  ),
+                                ),
+                          );
+                          if (selectedLibrary != null) {
+                            _tabManager.addTab(selectedLibrary);
+                            setState(() {});
+                          }
+                        },
+                      ),
+                      leading: IconButton(
+                        icon: const Icon(Icons.close),
+                        onPressed:
+                            () => setState(() {
+                              _tabManager.closeAllTabs();
+                            }),
+                      ),
+                      onTabChanged: (index) {
+                        final tabId = _tabManager.tabDatas.keys.elementAt(
+                          index!,
+                        );
+                        _tabManager.setTabActive(tabId);
+                      },
+                      onTabControllerUpdated: (controller) {
+                        controller.addListener(() {
+                          final index = controller.index;
+                          final tabId = _tabManager.tabDatas.keys.elementAt(
+                            index,
+                          );
+                          _tabManager.setTabActive(tabId);
+                        });
+                      },
+                    ),
           ),
         ],
       ),
