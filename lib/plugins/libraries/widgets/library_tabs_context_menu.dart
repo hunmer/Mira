@@ -6,21 +6,15 @@ void show({
   required BuildContext context,
   required Offset position,
   required Library library,
-  required List<Library> initialLibraries,
+  required bool isPinned,
+  required Function(bool) togglePin,
   required VoidCallback onCloseTab,
 }) {
-  final isPinned = initialLibraries.contains(library);
   final entries = <ContextMenuEntry>[
     MenuItem(
       label: isPinned ? '取消固定' : '固定',
       icon: isPinned ? Icons.push_pin_outlined : Icons.push_pin,
-      onSelected: () {
-        if (isPinned) {
-          initialLibraries.remove(library);
-        } else {
-          initialLibraries.add(library);
-        }
-      },
+      onSelected: () => togglePin(!isPinned),
     ),
     MenuItem(label: '关闭', icon: Icons.close, onSelected: onCloseTab),
   ];

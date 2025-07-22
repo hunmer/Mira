@@ -11,7 +11,11 @@ class LibraryDataController {
   final Map<String, LibraryDataInterface> dataInterfaces = {};
   LibraryDataController({required this.plugin});
 
-  openLibrary(Library library, BuildContext context) async {
+  openLibrary(
+    Library library,
+    BuildContext context, {
+    bool newView = true,
+  }) async {
     final libraryId = library.id;
     print('Opening library ${library.name}...');
     await plugin.foldersTagsController.createFolderCache(library.id);
@@ -26,17 +30,15 @@ class LibraryDataController {
     final channel = WebSocketChannel.connect(Uri.parse(url));
     await channel.ready;
     dataInterfaces[libraryId] = LibraryDataWebSocket(channel, library);
-    Navigator.push(
-      context,
-      MaterialPageRoute(
-        builder:
-            (context) => LibraryTabsView(
-              plugin: plugin,
-              library: library,
-              initialLibraries: [library],
-            ),
-      ),
-    );
+    if (newView) {
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder:
+              (context) => LibraryTabsView(plugin: plugin, library: library),
+        ),
+      );
+    }
   }
 
   LibraryDataInterface? getLibraryInst(libraryId) {

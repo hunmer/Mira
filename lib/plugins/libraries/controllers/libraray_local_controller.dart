@@ -3,12 +3,16 @@ import 'package:mira/plugins/libraries/models/library.dart';
 
 class LibraryLocalDataController {
   final LibrariesPlugin plugin;
+  late List<Library> libraries = [];
 
   LibraryLocalDataController(this.plugin);
 
+  Future<void> init() async {
+    libraries = await listLibraries();
+  }
+
   /// 添加库记录
   Future<void> addLibrary(Library library) async {
-    final libraries = await listLibraries();
     libraries.add(library);
     await plugin.storage.writeJson(
       'libraries',
@@ -18,7 +22,6 @@ class LibraryLocalDataController {
 
   /// 删除库记录
   Future<void> deleteLibrary(String libraryId) async {
-    final libraries = await listLibraries();
     libraries.removeWhere((lib) => lib.id == libraryId);
     await plugin.storage.writeJson(
       'libraries',
@@ -28,13 +31,7 @@ class LibraryLocalDataController {
 
   /// 查找库记录
   Future<Library?> findLibrary(String libraryId) async {
-    final libraries = await listLibraries();
     return libraries.firstWhere((lib) => lib.id == libraryId);
-  }
-
-  /// 查找所有库记录
-  Future<List<Library>> findLibraries() async {
-    return listLibraries();
   }
 
   /// 列举所有库记录
@@ -54,7 +51,6 @@ class LibraryLocalDataController {
 
   /// 更新库记录
   Future<void> updateLibrary(Library library) async {
-    final libraries = await listLibraries();
     final index = libraries.indexWhere((lib) => lib.id == library.id);
     if (index != -1) {
       libraries[index] = library;

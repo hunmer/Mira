@@ -6,12 +6,10 @@ import '../models/library.dart';
 
 class LibraryTabManager {
   final PageController pageController;
-  final List<Library> libraries;
   final Map<String, dynamic> tabDatas = {};
-  final List<Library> initialLibraries;
   final ValueNotifier<int> currentIndex;
 
-  LibraryTabManager({required this.libraries, required this.initialLibraries})
+  LibraryTabManager()
     : pageController = PageController(initialPage: 0),
       currentIndex = ValueNotifier(0) {
     pageController.addListener(_handlePageChange);
@@ -78,6 +76,7 @@ class LibraryTabManager {
   }
 
   void closeAllTabs() {
+    tabDatas.clear();
     currentIndex.value = 0;
   }
 

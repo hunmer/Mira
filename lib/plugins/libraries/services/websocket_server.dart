@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:image/image.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_sqlite5.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
@@ -42,14 +43,9 @@ class WebSocketServer {
   Future<void> start(String basePath) async {
     try {
       _server = await shelf_io.serve(
-        webSocketHandler(
-          (WebSocketChannel channel, String? protocol) {
-            _handleConnection(channel);
-          },
-          // protocols: ['library-protocol-v1'],
-          // allowedOrigins: ['http://localhost:8080'],
-          pingInterval: Duration(seconds: 30),
-        ),
+        webSocketHandler((WebSocketChannel channel, String? protocol) {
+          _handleConnection(channel);
+        }, pingInterval: Duration(seconds: 30)),
         InternetAddress.anyIPv6,
         port,
       );
@@ -59,6 +55,27 @@ class WebSocketServer {
     }
 
     print('Serving at ws://${_server?.address.host}:${_server?.port}');
+  }
+
+  void broadcastToClients(String eventName, Map<String, dynamic> eventData) {
+    final dbService = _libraryServices.firstWhere(
+      (library) => library.getLibraryId() == eventData['libraryId'],
+    );
+    dbService.getEventManager().broadcastToClients(
+      eventName,
+      serverEventArgs(eventData),
+    );
+  }
+
+  void sendToWebsocket(WebSocketChannel channel, Map<String, dynamic> data) {
+    channel.sink.add(jsonEncode(data));
+  }
+
+  void broadcastPluginEvent(String eventName, Map<String, dynamic> data) {
+    final dbService = _libraryServices.firstWhere(
+      (library) => library.getLibraryId() == data['libraryId'],
+    );
+    dbService.getEventManager().broadcast(eventName, serverEventArgs(data));
   }
 
   void _handleConnection(WebSocketChannel channel) async {
@@ -78,12 +95,10 @@ class WebSocketServer {
             }
           }
         } catch (e) {
-          channel.sink.add(
-            jsonEncode({
-              'error': 'Invalid message format',
-              'details': e.toString(),
-            }),
-          );
+          sendToWebsocket(channel, {
+            'error': 'Invalid message format',
+            'details': e.toString(),
+          });
         }
       },
       onDone: () {
@@ -113,31 +128,28 @@ class WebSocketServer {
         final library = data['library'];
         try {
           final dbService = await loadLibrary(library);
-          channel.sink.add(
-            jsonEncode({
-              'event': 'connected',
-              'data': {
-                'libraryId': libraryId,
-                'tags': await dbService.getAllTags(),
-                'folders': await dbService.getAllFolders(),
-              },
-            }),
-          );
+          sendToWebsocket(channel, {
+            'event': 'connected',
+            'data': {
+              'libraryId': libraryId,
+              'tags': await dbService.getAllTags(),
+              'folders': await dbService.getAllFolders(),
+            },
+          });
         } catch (err) {
-          channel.sink.add(
-            jsonEncode({
-              'status': 'error',
-              'msg': 'Library load error: ${err.toString()}',
-            }),
-          );
+          sendToWebsocket(channel, {
+            'status': 'error',
+            'msg': 'Library load error: ${err.toString()}',
+          });
         }
       }
       return;
     }
     if (!exists) {
-      channel.sink.add(
-        jsonEncode({'status': 'error', 'msg': 'Library not founded!'}),
-      );
+      sendToWebsocket(channel, {
+        'status': 'error',
+        'msg': 'Library not founded!',
+      });
       return;
     }
     final dbService = _libraryServices.firstWhere(
@@ -169,50 +181,45 @@ class WebSocketServer {
                 });
               }
               id = item['id'];
-              // 通知所有客户端
-              dbService.getEventManager().broadcastToClients(
-                'file::uploaded',
-                serverEventArgs({'id': id}),
-              );
-              // 通知所有插件
-              dbService.getEventManager().broadcast(
-                'file::created',
-                serverEventArgs(item),
-              );
-              channel.sink.add(
-                jsonEncode({'event': 'file::uploaded', 'data': item}),
-              );
+              broadcastToClients('file::uploaded', {
+                'id': id,
+                'libraryId': libraryId,
+              });
+              broadcastPluginEvent('file::created', {
+                ...item,
+                'libraryId': libraryId,
+              });
+              sendToWebsocket(channel, {
+                'event': 'file::uploaded',
+                'data': item,
+              });
               break;
             case 'folder':
               id = await dbService.createFolder(data);
               final folders = await dbService.getAllFolders();
-              dbService.getEventManager().broadcastToClients(
-                'folder::update',
-                serverEventArgs({
-                  'id': id,
-                  'folders': folders,
-                  'libraryId': libraryId,
-                }),
-              );
+              broadcastToClients('folder::update', ({
+                'id': id,
+                'folders': folders,
+                'libraryId': libraryId,
+              }));
               break;
             case 'tag':
               id = await dbService.createTag(data);
               final tags = await dbService.getAllTags();
-              dbService.getEventManager().broadcastToClients(
-                'tag::created',
-                serverEventArgs({
-                  'id': id,
-                  'tags': tags,
-                  'libraryId': libraryId,
-                }),
-              );
+              broadcastToClients('tag::created', {
+                'id': id,
+                'tags': tags,
+                'libraryId': libraryId,
+              });
               break;
             default:
               throw ArgumentError('Invalid record type: $recordType');
           }
-          channel.sink.add(
-            jsonEncode({'status': 'success', 'id': id, 'requestId': requestId}),
-          );
+          sendToWebsocket(channel, {
+            'status': 'success',
+            'id': id,
+            'requestId': requestId,
+          });
           break;
         case 'read':
           if (payload.containsKey('id')) {
@@ -236,34 +243,28 @@ class WebSocketServer {
                 break;
               case 'file_folder':
                 final folders = await dbService.getFileFolders(id);
-                channel.sink.add(
-                  jsonEncode({
-                    'status': 'success',
-                    'data': folders,
-                    'requestId': requestId,
-                  }),
-                );
+                sendToWebsocket(channel, {
+                  'status': 'success',
+                  'data': folders,
+                  'requestId': requestId,
+                });
                 break;
               case 'file_tag':
                 final tags = await dbService.getFileTags(id);
-                channel.sink.add(
-                  jsonEncode({
-                    'status': 'success',
-                    'data': tags,
-                    'requestId': requestId,
-                  }),
-                );
+                sendToWebsocket(channel, {
+                  'status': 'success',
+                  'data': tags,
+                  'requestId': requestId,
+                });
                 break;
               default:
                 throw ArgumentError('Invalid record type: $recordType');
             }
-            channel.sink.add(
-              jsonEncode({
-                'status': 'success',
-                'data': record,
-                'requestId': requestId,
-              }),
-            );
+            sendToWebsocket(channel, {
+              'status': 'success',
+              'data': record,
+              'requestId': requestId,
+            });
           } else {
             var records;
             switch (recordType) {
@@ -295,13 +296,11 @@ class WebSocketServer {
               default:
                 throw ArgumentError('Invalid record type: $recordType');
             }
-            channel.sink.add(
-              jsonEncode({
-                'status': 'success',
-                'data': records,
-                'requestId': requestId,
-              }),
-            );
+            sendToWebsocket(channel, {
+              'status': 'success',
+              'data': records,
+              'requestId': requestId,
+            });
           }
           break;
         case 'update':
@@ -312,60 +311,54 @@ class WebSocketServer {
             case 'file':
               success = await dbService.updateFile(id, values);
               if (success) {
-                dbService.getEventManager().broadcastToClients(
-                  'file::updated',
-                  serverEventArgs({'id': id}),
-                );
+                broadcastToClients('file::updated', {
+                  'id': id,
+                  'libraryId': libraryId,
+                });
               }
               break;
             case 'folder':
               success = await dbService.updateFolder(id, values);
               if (success) {
-                dbService.getEventManager().broadcastToClients(
-                  'folder::updated',
-                  serverEventArgs({'id': id}),
-                );
+                broadcastToClients('folder::updated', {
+                  'id': id,
+                  'libraryId': libraryId,
+                });
               }
               break;
             case 'tag':
               success = await dbService.updateTag(id, values);
               if (success) {
-                dbService.getEventManager().broadcastToClients(
-                  'tag::updated',
-                  serverEventArgs({'id': id}),
-                );
+                broadcastToClients('tag::updated', {
+                  'id': id,
+                  'libraryId': libraryId,
+                });
               }
               break;
             case 'file_folder':
               success = await dbService.setFileFolders(id, values as String);
-              channel.sink.add(
-                jsonEncode({
-                  'status': success ? 'success' : 'failed',
-                  'message': success ? 'File folders updated' : 'Update failed',
-                  'requestId': requestId,
-                }),
-              );
+              sendToWebsocket(channel, {
+                'status': success ? 'success' : 'failed',
+                'message': success ? 'File folders updated' : 'Update failed',
+                'requestId': requestId,
+              });
               break;
             case 'file_tag':
               success = await dbService.setFileTags(id, values.cast<String>());
-              channel.sink.add(
-                jsonEncode({
-                  'status': success ? 'success' : 'failed',
-                  'message': success ? 'File tags updated' : 'Update failed',
-                  'requestId': requestId,
-                }),
-              );
+              sendToWebsocket(channel, {
+                'status': success ? 'success' : 'failed',
+                'message': success ? 'File tags updated' : 'Update failed',
+                'requestId': requestId,
+              });
               break;
             default:
               throw ArgumentError('Invalid record type: $recordType');
           }
-          channel.sink.add(
-            jsonEncode({
-              'status': success ? 'success' : 'failed',
-              'message': success ? 'Record updated' : 'Update failed',
-              'requestId': requestId,
-            }),
-          );
+          sendToWebsocket(channel, {
+            'status': success ? 'success' : 'failed',
+            'message': success ? 'Record updated' : 'Update failed',
+            'requestId': requestId,
+          });
           break;
         case 'delete':
           final id = data['payload']['data']['id'];
@@ -374,64 +367,58 @@ class WebSocketServer {
             case 'file':
               success = await dbService.deleteFile(id);
               if (success) {
-                dbService.getEventManager().broadcastToClients(
-                  'file::deleted',
-                  serverEventArgs({'id': id}),
-                );
-                dbService.getEventManager().broadcast(
-                  'file::deleted',
-                  serverEventArgs({'id': id}),
-                );
+                broadcastToClients('file::deleted', {
+                  'id': id,
+                  'libraryId': libraryId,
+                });
+                broadcastPluginEvent('file::deleted', {
+                  'id': id,
+                  'libraryId': libraryId,
+                });
               }
               break;
             case 'folder':
               success = await dbService.deleteFolder(id);
               if (success) {
-                dbService.getEventManager().broadcastToClients(
-                  'folder_deleted',
-                  serverEventArgs({'id': id}),
-                );
+                broadcastToClients('folder_deleted', {
+                  'id': id,
+                  'libraryId': libraryId,
+                });
               }
               break;
             case 'tag':
               success = await dbService.deleteTag(id);
               if (success) {
-                dbService.getEventManager().broadcastToClients(
-                  'tag_deleted',
-                  serverEventArgs({'id': id}),
-                );
+                broadcastToClients('tag_deleted', {
+                  'id': id,
+                  'libraryId': libraryId,
+                });
               }
               break;
             default:
               throw ArgumentError('Invalid record type: $recordType');
           }
-          channel.sink.add(
-            jsonEncode({
-              'status': success ? 'success' : 'failed',
-              'message': success ? 'Record deleted' : 'Delete failed',
-              'requestId': requestId,
-            }),
-          );
+          sendToWebsocket(channel, {
+            'status': success ? 'success' : 'failed',
+            'message': success ? 'Record deleted' : 'Delete failed',
+            'requestId': requestId,
+          });
           break;
 
         default:
-          channel.sink.add(
-            jsonEncode({
-              'status': 'error',
-              'message': 'Unknown action',
-              'requestId': requestId,
-            }),
-          );
+          sendToWebsocket(channel, {
+            'status': 'error',
+            'message': 'Unknown action',
+            'requestId': requestId,
+          });
       }
     } catch (e) {
-      channel.sink.add(
-        jsonEncode({
-          'status': 'error',
-          'message': 'Operation failed',
-          'details': e.toString(),
-          'requestId': requestId,
-        }),
-      );
+      sendToWebsocket(channel, {
+        'status': 'error',
+        'message': 'Operation failed',
+        'details': e.toString(),
+        'requestId': requestId,
+      });
     }
   }
 

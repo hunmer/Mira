@@ -2,7 +2,7 @@ import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/controllers/folders_tags_cache.dart';
-import 'package:mira/plugins/libraries/controllers/libraray_controller.dart';
+import 'package:mira/plugins/libraries/controllers/libraray_local_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
@@ -47,6 +47,7 @@ class LibrariesPlugin extends PluginBase {
   Future<void> initialize() async {
     libraryUIController = LibraryUIController(this);
     dataController = LibraryLocalDataController(this);
+    await dataController.init();
     foldersTagsController = FoldersTagsCache();
     await foldersTagsController.init();
     libraryController = LibraryDataController(plugin: this);

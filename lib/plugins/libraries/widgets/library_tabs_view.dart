@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tabs_context_menu.dart'
     // ignore: library_prefixes
     as LibraryContextMenu;
@@ -12,13 +13,11 @@ import '../models/library.dart';
 class LibraryTabsView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Library library;
-  final List<Library> initialLibraries;
 
   const LibraryTabsView({
     super.key,
     required this.plugin,
     required this.library,
-    required this.initialLibraries,
   });
 
   @override
@@ -32,10 +31,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   @override
   void initState() {
     super.initState();
-    _tabManager = LibraryTabManager(
-      libraries: List.from(widget.initialLibraries),
-      initialLibraries: widget.initialLibraries,
-    );
+    _tabManager = LibraryTabManager();
     widget.plugin.setTabManager(_tabManager);
   }
 
@@ -115,10 +111,12 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () async {
-              final itemCount = widget.initialLibraries.length;
+              final libraries = widget.plugin.dataController.libraries;
+              final itemCount = libraries.length;
               if (itemCount == 1) {
-                _tabManager.addTab(widget.initialLibraries[0]);
-                setState(() {});
+                setState(() {
+                  _tabManager.addTab(libraries.first);
+                });
                 return;
               }
               final selectedLibrary = await showDialog<Library>(
@@ -126,39 +124,12 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                 builder:
                     (context) => AlertDialog(
                       title: const Text('Select Library'),
-                      actions: [
-                        IconButton(
-                          icon: const Icon(Icons.add),
-                          onPressed: () async {
-                            final newLibrary = await Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                builder: (context) => LibraryEditView(),
-                              ),
-                            );
-                            if (newLibrary != null) {
-                              Navigator.pop(context, newLibrary);
-                            }
-                          },
-                        ),
-                      ],
                       content: SizedBox(
-                        width: double.minPositive,
-                        child: ListView.builder(
-                          shrinkWrap: true,
-                          itemCount: itemCount,
-                          itemBuilder:
-                              (context, index) => ListTile(
-                                title: Text(
-                                  widget.initialLibraries[index].name,
-                                ),
-                                onTap: () {
-                                  Navigator.pop(
-                                    context,
-                                    widget.initialLibraries[index],
-                                  );
-                                },
-                              ),
+                        width: double.maxFinite,
+                        child: LibraryListView(
+                          onSelected: (library) {
+                            Navigator.pop(context, library);
+                          },
                         ),
                       ),
                     ),
@@ -194,7 +165,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             child: ValueListenableBuilder<int>(
               valueListenable: _tabManager.currentIndex,
               builder: (context, currentIndex, _) {
-                return _tabManager.libraries.isEmpty
+                return tabsContents.isEmpty
                     ? const Center(
                       child: Text(
                         'No libraries available',
@@ -223,7 +194,8 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
       context: context,
       library: library,
       position: position,
-      initialLibraries: widget.initialLibraries,
+      isPinned: false,
+      togglePin: (pin) {},
       onCloseTab:
           () => setState(() {
             _tabManager.closeTab(tabId);
