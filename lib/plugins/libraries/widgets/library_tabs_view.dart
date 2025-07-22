@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
+import 'package:mira/core/utils/utils.dart' as Utils;
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
@@ -78,6 +79,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
   @override
   Widget build(BuildContext context) {
+    final isDesktop = Utils.isDesktop();
     final tabs =
         _tabManager.tabDatas.entries.map((entry) {
           final tabId = entry.key;
@@ -159,6 +161,14 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                         icon: const Icon(Icons.close),
                         onPressed: () => _tabManager.closeAllTabs(),
                       ),
+                      physics:
+                          isDesktop
+                              ? const NeverScrollableScrollPhysics()
+                              : null,
+                      physicsTabBarView:
+                          isDesktop
+                              ? const NeverScrollableScrollPhysics()
+                              : null,
                       onTabChanged: (index) {
                         if (index != null) {
                           final tabId = _tabManager.tabDatas.keys.elementAt(

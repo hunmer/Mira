@@ -2,6 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:mira/core/event/event_stream_controller.dart';
+import 'package:rxdart/rxdart.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
@@ -69,30 +71,33 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         _uploadProgress = _uploadQueue.progress;
       });
     });
+    final updateStream = EventStreamController(duration: Duration(seconds: 2));
+    updateStream.stream.listen((EventArgs args) {
+      //  服务器广播更新列表
+      if (args is MapEventArgs) {
+        final libraryId = args.item['libraryId'];
+        if (libraryId != widget.library.id) return;
+        final type = args.item['type'];
+        if (type == 'deleted') {
+          // 是否有在当前列表
+          final id = args.item['id'];
+          final file = _items.firstWhereOrNull((f) => f.id == id);
+          if (file == null) return;
+          _items.remove(file);
+        }
+        _loadFiles();
+      }
+    });
     EventManager.instance.subscribe(
       'thumbnail::generated',
       _onThumbnailGenerated,
     );
-    EventManager.instance.subscribe('file::changed', _onFileChanged);
+    EventManager.instance.subscribe(
+      'file::changed',
+      (args) => updateStream.onCall(args),
+    );
     EventManager.instance.subscribe('library::filter_updated', _onFilterUpdate);
     _loadFiles();
-  }
-
-  //  服务器广播更新列表
-  void _onFileChanged(EventArgs args) {
-    if (args is MapEventArgs) {
-      final libraryId = args.item['libraryId'];
-      if (libraryId != widget.library.id) return;
-      final type = args.item['type'];
-      if (type == 'deleted') {
-        // 是否有在当前列表
-        final id = args.item['id'];
-        final file = _items.firstWhereOrNull((f) => f.id == id);
-        if (file == null) return;
-        _items.remove(file);
-      }
-      setState(() {});
-    }
   }
 
   //  系统内广播更新过滤器
@@ -175,9 +180,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       'limit': _paginationOptions['perPage'],
     };
 
-    final result = await widget.plugin.libraryController
-        .getLibraryInst(widget.library)!
-        .findFiles(query: query);
+    final inst = await widget.plugin.libraryController.getLibraryInst(
+      widget.library,
+    );
+    if (inst == null) return;
+    final result = await inst.findFiles(query: query);
 
     if (mounted) {
       setState(() {

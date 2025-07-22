@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 bool isValidPhoneNumber(String phone) {
@@ -42,6 +43,12 @@ Widget buildImageFromUrl(String url) {
             (context, error, stackTrace) =>
                 Icon(Icons.insert_drive_file, size: 48),
       );
+}
+
+// isDesktop
+bool isDesktop() {
+  return !kIsWeb &&
+      (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 }
 
 String getFileType(String filename) {

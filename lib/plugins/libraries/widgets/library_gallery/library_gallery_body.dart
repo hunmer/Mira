@@ -1,7 +1,9 @@
 import 'dart:io';
+import 'dart:ui';
 
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
+import 'package:mira/core/utils/utils.dart' as Utils;
 import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
@@ -54,7 +56,7 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
 
   @override
   Widget build(BuildContext context) {
-    final isMobile = Platform.isAndroid || Platform.isIOS;
+    final isDesktop = Utils.isDesktop();
     return LayoutBuilder(
       builder: (context, constraints) {
         final spacing = 8.0;
@@ -63,91 +65,103 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                 ? widget.imagesPerRow
                 : (constraints.maxWidth / 150).floor();
 
-        return GridView.builder(
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount > 0 ? crossAxisCount : 1,
-            crossAxisSpacing: spacing,
-            mainAxisSpacing: spacing,
-            childAspectRatio: 0.8,
+        return ScrollConfiguration(
+          behavior:
+              isDesktop
+                  ? const MaterialScrollBehavior().copyWith(
+                    dragDevices: {
+                      PointerDeviceKind.touch,
+                      PointerDeviceKind.stylus,
+                      PointerDeviceKind.invertedStylus,
+                    },
+                  )
+                  : const ScrollBehavior(),
+          child: GridView.builder(
+            gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: crossAxisCount > 0 ? crossAxisCount : 1,
+              crossAxisSpacing: spacing,
+              mainAxisSpacing: spacing,
+              childAspectRatio: 0.8,
+            ),
+            padding: const EdgeInsets.all(8.0),
+            itemCount: widget.items.value.length,
+            itemBuilder: (context, index) {
+              final file = widget.items.value[index];
+              return LibraryItem(
+                file: file,
+                getTagTilte:
+                    (tagId) => widget.plugin.foldersTagsController
+                        .getTagTitleById(widget.library.id, tagId),
+                getFolderTitle:
+                    (folderId) => widget.plugin.foldersTagsController
+                        .getFolderTitleById(widget.library.id, folderId),
+                isSelected:
+                    widget.isSelectionMode &&
+                    widget.selectedFileIds.contains(file.id),
+                useThumbnail:
+                    file.thumb != null ||
+                    ['audio', 'video'].contains(getFileType(file.name)),
+                displayFields: widget.displayFields,
+                onTap: () {
+                  final file = widget.items.value[index];
+                  isDesktop
+                      ? widget.onFileSelected(file)
+                      : widget.onFileOpen(file);
+                },
+                onDoubleTap: () {
+                  final file = widget.items.value[index];
+                  isDesktop
+                      ? widget.onFileOpen(file)
+                      : widget.onFileSelected(file);
+                },
+                onLongPress: (details) {
+                  final file = widget.items.value[index];
+                  LibraryFileContextMenu.show(
+                    context: context,
+                    plugin: widget.plugin,
+                    file: file,
+                    library: widget.library,
+                    isRecycleBin: widget.isRecycleBin,
+                    position: details.globalPosition,
+                    onDelete:
+                        () => _libraryController!.deleteFile(
+                          file.id,
+                          moveToRecycleBin: !widget.isRecycleBin,
+                        ),
+                    onRecover: () => _libraryController!.recoverFile(file.id),
+                    onShowInfo:
+                        () => showModalBottomSheet(
+                          context: context,
+                          builder:
+                              (context) =>
+                                  LibraryFileInformationView(file: file),
+                        ),
+                    onSelectFolder: () async {
+                      final result = await widget.plugin.libraryUIController
+                          .showFolderSelector(widget.library, context);
+                      if (result != null && result.isNotEmpty) {
+                        await widget.plugin.libraryController
+                            .getLibraryInst(widget.library)!
+                            .setFileFolders(file.id, result.first.id);
+                      }
+                    },
+                    onSelectTag: () async {
+                      final result = await widget.plugin.libraryUIController
+                          .showTagSelector(widget.library, context);
+                      if (result != null && result.isNotEmpty) {
+                        await widget.plugin.libraryController
+                            .getLibraryInst(widget.library)!
+                            .setFileTags(
+                              file.id,
+                              result.map((item) => item.id).toList(),
+                            );
+                      }
+                    },
+                  );
+                },
+              );
+            },
           ),
-          padding: const EdgeInsets.all(8.0),
-
-          itemCount: widget.items.value.length,
-          itemBuilder: (context, index) {
-            final file = widget.items.value[index];
-            return LibraryItem(
-              file: file,
-              getTagTilte:
-                  (tagId) => widget.plugin.foldersTagsController
-                      .getTagTitleById(widget.library.id, tagId),
-              getFolderTitle:
-                  (folderId) => widget.plugin.foldersTagsController
-                      .getFolderTitleById(widget.library.id, folderId),
-              isSelected:
-                  widget.isSelectionMode &&
-                  widget.selectedFileIds.contains(file.id),
-              useThumbnail:
-                  file.thumb != null ||
-                  ['audio', 'video'].contains(getFileType(file.name)),
-              displayFields: widget.displayFields,
-              onTap: () {
-                final file = widget.items.value[index];
-                isMobile
-                    ? widget.onFileOpen(file)
-                    : widget.onFileSelected(file);
-              },
-              onDoubleTap: () {
-                final file = widget.items.value[index];
-                isMobile
-                    ? widget.onFileSelected(file)
-                    : widget.onFileOpen(file);
-              },
-              onLongPress: (details) {
-                final file = widget.items.value[index];
-                LibraryFileContextMenu.show(
-                  context: context,
-                  plugin: widget.plugin,
-                  file: file,
-                  library: widget.library,
-                  isRecycleBin: widget.isRecycleBin,
-                  position: details.globalPosition,
-                  onDelete:
-                      () => _libraryController!.deleteFile(
-                        file.id,
-                        moveToRecycleBin: !widget.isRecycleBin,
-                      ),
-                  onRecover: () => _libraryController!.recoverFile(file.id),
-                  onShowInfo:
-                      () => showModalBottomSheet(
-                        context: context,
-                        builder:
-                            (context) => LibraryFileInformationView(file: file),
-                      ),
-                  onSelectFolder: () async {
-                    final result = await widget.plugin.libraryUIController
-                        .showFolderSelector(widget.library, context);
-                    if (result != null && result.isNotEmpty) {
-                      await widget.plugin.libraryController
-                          .getLibraryInst(widget.library)!
-                          .setFileFolders(file.id, result.first.id);
-                    }
-                  },
-                  onSelectTag: () async {
-                    final result = await widget.plugin.libraryUIController
-                        .showTagSelector(widget.library, context);
-                    if (result != null && result.isNotEmpty) {
-                      await widget.plugin.libraryController
-                          .getLibraryInst(widget.library)!
-                          .setFileTags(
-                            file.id,
-                            result.map((item) => item.id).toList(),
-                          );
-                    }
-                  },
-                );
-              },
-            );
-          },
         );
       },
     );

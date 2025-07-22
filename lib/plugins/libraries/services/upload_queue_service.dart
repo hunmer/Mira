@@ -67,9 +67,7 @@ class UploadQueueService {
 
   void _onFileUploaded(EventArgs args) {
     if (args is! MapEventArgs) return;
-    final item = args.item['data'];
-    if (item is! Map) return;
-    final filePath = item['path'];
+    final filePath = args.item['path'];
     for (final item in queue.items()) {
       final task = item.data;
       if (task.file.path == filePath) {
@@ -102,6 +100,7 @@ class UploadQueueService {
     for (final task in tasks) {
       queue.add(task, id: task.id);
     }
+    queue.start(); // 自动开始
     return tasks;
   }
 

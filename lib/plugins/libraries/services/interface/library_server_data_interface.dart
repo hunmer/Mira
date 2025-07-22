@@ -12,7 +12,7 @@ abstract class LibraryServerDataInterface {
   Future<String> getItemPath(item);
 
   /// 获取项目缩略图路径
-  Future<String> getItemThumbPath(item);
+  Future<String> getItemThumbPath(item, {bool checkExists = false});
 
   /// 初始化数据库连接
   Future<void> initialize();

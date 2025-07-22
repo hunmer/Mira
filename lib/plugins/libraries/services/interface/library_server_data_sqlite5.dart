@@ -621,11 +621,15 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   }
 
   @override
-  Future<String> getItemThumbPath(item) async {
+  Future<String> getItemThumbPath(item, {bool checkExists = false}) async {
     final libraryPath = await getLibraryPath();
     final fileName =
         item['hash'].isEmpty ? '${item['id']}.png' : '${item['hash']}.png';
-    return path.join(libraryPath, 'thumbs', fileName);
+    final thumbFile = path.join(libraryPath, 'thumbs', fileName);
+    if (checkExists) {
+      return File(thumbFile).existsSync() ? thumbFile : '';
+    }
+    return thumbFile;
   }
 
   @override

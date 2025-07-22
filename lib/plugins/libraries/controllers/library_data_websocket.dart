@@ -135,10 +135,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
             );
           case 'thumbnail::generated': // 文件生成缩略图
           case 'file::uploaded': // 文件上传结果
-            EventManager.instance.broadcast(
-              eventName,
-              MapEventArgs({'data': data, 'libraryId': libraryId}),
-            );
+            EventManager.instance.broadcast(eventName, MapEventArgs(data));
             break;
 
           case 'file::created': // 文件添加

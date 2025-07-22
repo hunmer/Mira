@@ -164,18 +164,18 @@ class WebSocketServer {
               var item;
               if (data.containsKey('path')) {
                 // 处理从文件路径添加的情况
-                final filePath = data['path'] as String;
                 final fileMeta = {
                   'reference': data['reference'],
-                  'url': data['url'],
                   'path': data['path'],
                   ...data,
                 };
-                item = await dbService.createFileFromPath(filePath, fileMeta);
+                item = await dbService.createFileFromPath(
+                  data['path'],
+                  fileMeta,
+                );
               } else {
                 item = await dbService.createFile({
                   'reference': data['reference'],
-                  'url': data['url'],
                   'path': data['path'],
                   ...data,
                 });
@@ -183,9 +183,13 @@ class WebSocketServer {
               id = item['id'];
               sendToWebsocket(channel, {
                 'event': 'file::uploaded',
-                'data': {'id': id, 'libraryId': libraryId},
+                'data': {
+                  'id': id,
+                  'libraryId': libraryId,
+                  'path': data['path'],
+                },
               });
-              broadcastToClients('folder::created', ({
+              broadcastToClients('file::created', ({
                 'id': id,
                 'libraryId': libraryId,
               }));
@@ -231,7 +235,10 @@ class WebSocketServer {
                 if (record != null) {
                   record['thumb'] =
                       record['thumb'] == 1
-                          ? await dbService.getItemThumbPath(record)
+                          ? await dbService.getItemThumbPath(
+                            record,
+                            checkExists: true,
+                          )
                           : '';
                 }
                 break;
@@ -276,7 +283,10 @@ class WebSocketServer {
                 for (var record in result['result']) {
                   record['thumb'] =
                       record['thumb'] == 1
-                          ? await dbService.getItemThumbPath(record)
+                          ? await dbService.getItemThumbPath(
+                            record,
+                            checkExists: true,
+                          )
                           : '';
                 }
                 records = result;
