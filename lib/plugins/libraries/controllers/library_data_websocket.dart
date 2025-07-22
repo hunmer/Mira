@@ -99,9 +99,14 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
         final eventName = response['event'];
         final data = response['data'];
+        final id = data['id'];
         final libraryId = data['libraryId'];
         switch (eventName) {
           case 'connected': // 初次连接
+            EventManager.instance.broadcast(
+              'library::connected',
+              MapEventArgs({'libraryId': libraryId}),
+            );
             EventManager.instance.broadcast(
               'tags::update',
               MapEventArgs({'libraryId': libraryId, 'tags': data['tags']}),
@@ -133,6 +138,17 @@ class LibraryDataWebSocket implements LibraryDataInterface {
             EventManager.instance.broadcast(
               eventName,
               MapEventArgs({'data': data, 'libraryId': libraryId}),
+            );
+            break;
+
+          case 'file::created': // 文件添加
+          case 'file::deleted': // 文件删除
+            EventManager.instance.broadcast(
+              'file::changed',
+              MapEventArgs({
+                ...data,
+                ...{'type': eventName.split('::').last},
+              }),
             );
             break;
         }
@@ -194,6 +210,11 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       type: 'file',
       data: {'id': id, 'moveToRecycleBin': moveToRecycleBin},
     );
+  }
+
+  @override
+  Future<void> recoverFile(int id) async {
+    await _sendRequest(action: 'recover', type: 'file', data: {'id': id});
   }
 
   @override

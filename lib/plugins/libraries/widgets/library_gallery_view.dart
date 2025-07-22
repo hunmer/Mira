@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
@@ -44,6 +45,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late List<LibraryFile> _items = [];
   late LibraryTabManager _tabManager;
   late bool _showSidebar = true;
+  late bool _isLoading = true;
+  late Map<String, dynamic>? _tabData;
 
   late Set<String> _displayFields = {};
   Map<String, dynamic> _filterOptions = {};
@@ -54,11 +57,13 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   @override
   void initState() {
     super.initState();
+    final tabId = widget.tabId;
     _tabManager = widget.plugin.tabManager;
-    _paginationOptions = _tabManager.getPageOptions(widget.tabId);
-    _displayFields = _tabManager.getLibraryDisplayFields(widget.tabId);
-    _filterOptions = _tabManager.getLibraryFilter(widget.tabId);
+    _paginationOptions = _tabManager.getPageOptions(tabId);
+    _displayFields = _tabManager.getLibraryDisplayFields(tabId);
+    _filterOptions = _tabManager.getLibraryFilter(tabId);
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
+    _tabData = _tabManager.getTabData(tabId);
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
       setState(() {
         _uploadProgress = _uploadQueue.progress;
@@ -68,20 +73,36 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       'thumbnail::generated',
       _onThumbnailGenerated,
     );
+    EventManager.instance.subscribe('file::changed', _onFileChanged);
     EventManager.instance.subscribe('library::filter_updated', _onFilterUpdate);
-    // TODO 收到服务器数据后才进行请求更新
-    Future.delayed(const Duration(seconds: 1), _loadFiles);
+    _loadFiles();
   }
 
-  //  使用广播更新过滤器
+  //  服务器广播更新列表
+  void _onFileChanged(EventArgs args) {
+    if (args is MapEventArgs) {
+      final libraryId = args.item['libraryId'];
+      if (libraryId != widget.library.id) return;
+      final type = args.item['type'];
+      if (type == 'deleted') {
+        // 是否有在当前列表
+        final id = args.item['id'];
+        final file = _items.firstWhereOrNull((f) => f.id == id);
+        if (file == null) return;
+        _items.remove(file);
+      }
+      setState(() {});
+    }
+  }
+
+  //  系统内广播更新过滤器
   void _onFilterUpdate(EventArgs args) {
-    if (args is! MapEventArgs) return;
-    final library = args.item['libraryId'];
-    if (library == null || library.id != widget.library.id) return;
-    setState(() {
+    if (args is MapEventArgs) {
+      final libraryId = args.item['libraryId'];
+      if (libraryId != widget.library.id) return;
       _filterOptions = Map<String, dynamic>.from(args.item['filter']);
       _loadFiles();
-    });
+    }
   }
 
   void _onThumbnailGenerated(EventArgs args) {
@@ -137,7 +158,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   Future<void> _loadFiles() async {
+    // todo 完善更多过滤器
     final query = {
+      'recycled': _tabData?['isRecycleBin'],
       'name': _filterOptions['name'] ?? '',
       'tags': _filterOptions['tags'] ?? [],
       'folder': _filterOptions['folder'] ?? '',
@@ -156,14 +179,17 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         .getLibraryInst(widget.library)!
         .findFiles(query: query);
 
-    setState(() {
-      if (result == null || result.isEmpty) {
-        _items = [];
-      } else {
-        _items = result['results'] as List<LibraryFile>;
-        _totalItems = result['total'] as int;
-      }
-    });
+    if (mounted) {
+      setState(() {
+        if (result == null || result.isEmpty) {
+          _items = [];
+        } else {
+          _items = result['results'] as List<LibraryFile>;
+          _totalItems = result['total'] as int;
+        }
+        _isLoading = false;
+      });
+    }
   }
 
   void _onFileSelected(LibraryFile file) {
@@ -203,10 +229,12 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   @override
   Widget build(BuildContext context) {
-    final tabData = _tabManager.getTabData(widget.tabId);
-    final isRecycleBin = tabData?['isRecycleBin'];
-    final isMobile = MediaQuery.of(context).size.width < 500;
+    final isRecycleBin = _tabData?['isRecycleBin'];
+    final screenWidth = MediaQuery.of(context).size.width;
     final totalPages = (_totalItems / _paginationOptions['perPage']).ceil();
+    if (_isLoading) {
+      return const Center(child: CircularProgressIndicator());
+    }
     return Scaffold(
       appBar: LibraryGalleryAppBar(
         title: widget.library.name,
@@ -268,7 +296,14 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                 // 回收站
                 Tooltip(
                   message: '回收站',
-                  child: IconButton(icon: Icon(Icons.delete), onPressed: () {}),
+                  child: IconButton(
+                    icon: Icon(Icons.delete),
+                    onPressed: () {
+                      setState(() {
+                        _tabManager.addTab(widget.library, isRecycleBin: true);
+                      });
+                    },
+                  ),
                 ),
               ],
             ),
@@ -276,7 +311,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           VerticalDivider(width: 1),
           if (_showSidebar) ...[
             Expanded(
-              flex: isMobile ? 8 : 2,
+              flex: screenWidth < 600 ? 6 : (screenWidth > 1300 ? 1 : 2),
               child: LibrarySidebarView(
                 plugin: widget.plugin,
                 library: widget.library,
@@ -286,7 +321,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           ],
 
           Expanded(
-            flex: 5,
+            flex: 4,
             child: Column(
               children: [
                 Expanded(
@@ -324,12 +359,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               ],
             ),
           ),
-          if (!Platform.isAndroid &&
-              !Platform.isIOS &&
-              MediaQuery.of(context).size.width > 800) ...[
+          if (screenWidth > 800) ...[
             VerticalDivider(width: 1),
             Expanded(
-              flex: 2,
+              flex: 1,
               child: ValueListenableBuilder<LibraryFile?>(
                 valueListenable: _selectedFileNotifier,
                 builder: (context, selectedFile, _) {

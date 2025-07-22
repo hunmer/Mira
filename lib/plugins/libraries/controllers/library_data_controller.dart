@@ -28,8 +28,8 @@ class LibraryDataController {
     }
     await plugin.server.start(path);
     final channel = WebSocketChannel.connect(Uri.parse(url));
-    await channel.ready;
     dataInterfaces[libraryId] = LibraryDataWebSocket(channel, library);
+    await channel.ready;
     if (newTabView) {
       // 打开一个新的tabs页面
       Navigator.push(

@@ -77,10 +77,15 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
       valueListenable: _imageRows,
       builder: (context, imageRows, _) {
         return AppBar(
-          title: Text(
-            widget.isSelectionMode
-                ? '已选择 ${widget.selectedCount} 项'
-                : widget.title,
+          title: Row(
+            children: [
+              if (widget.isRecycleBin) const Icon(Icons.delete),
+              Text(
+                widget.isSelectionMode
+                    ? '已选择 ${widget.selectedCount} 项'
+                    : widget.title,
+              ),
+            ],
           ),
           automaticallyImplyLeading: false,
           leading: IconButton(

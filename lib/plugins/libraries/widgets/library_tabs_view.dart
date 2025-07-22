@@ -31,6 +31,12 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     super.initState();
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
     _tabManager = LibraryTabManager(ValueNotifier(-1));
+    _tabManager.onTabChangeStream.stream.listen((detail) {
+      // final event = detail['event'];
+      // final index = detail['index'];
+      setState(() {});
+    });
+
     _plugin.setTabManager(_tabManager);
   }
 
@@ -47,9 +53,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     final libraries = _plugin.dataController.libraries;
     final itemCount = libraries.length;
     if (itemCount == 1) {
-      setState(() {
-        _tabManager.addTab(libraries.first);
-      });
+      _tabManager.addTab(libraries.first);
       return;
     }
     final selectedLibrary = await showDialog<Library>(
@@ -69,7 +73,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     );
     if (selectedLibrary != null) {
       _tabManager.addTab(selectedLibrary);
-      setState(() {});
     }
   }
 
@@ -103,10 +106,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                       behavior: HitTestBehavior.opaque,
                       child: InkWell(
                         borderRadius: BorderRadius.circular(12),
-                        onTap:
-                            () => setState(() {
-                              _tabManager.closeTab(tabId);
-                            }),
+                        onTap: () => _tabManager.closeTab(tabId),
                         child: const Icon(Icons.close, size: 20),
                       ),
                     ),
@@ -157,10 +157,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                       ),
                       leading: IconButton(
                         icon: const Icon(Icons.close),
-                        onPressed:
-                            () => setState(() {
-                              _tabManager.closeAllTabs();
-                            }),
+                        onPressed: () => _tabManager.closeAllTabs(),
                       ),
                       onTabChanged: (index) {
                         if (index != null) {
@@ -198,10 +195,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
       position: position,
       isPinned: false,
       togglePin: (pin) {},
-      onCloseTab:
-          () => setState(() {
-            _tabManager.closeTab(tabId);
-          }),
+      onCloseTab: () => _tabManager.closeTab(tabId),
     );
   }
 }

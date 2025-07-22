@@ -181,17 +181,17 @@ class WebSocketServer {
                 });
               }
               id = item['id'];
-              broadcastToClients('file::uploaded', {
+              sendToWebsocket(channel, {
+                'event': 'file::uploaded',
+                'data': {'id': id, 'libraryId': libraryId},
+              });
+              broadcastToClients('folder::created', ({
                 'id': id,
                 'libraryId': libraryId,
-              });
+              }));
               broadcastPluginEvent('file::created', {
                 ...item,
                 'libraryId': libraryId,
-              });
-              sendToWebsocket(channel, {
-                'event': 'file::uploaded',
-                'data': item,
               });
               break;
             case 'folder':
@@ -359,6 +359,22 @@ class WebSocketServer {
             'message': success ? 'Record updated' : 'Update failed',
             'requestId': requestId,
           });
+          break;
+
+        case 'recover':
+          final id = data['id'];
+          bool success;
+          switch (recordType) {
+            case 'file':
+              success = await dbService.recoverFile(id);
+              if (success) {
+                broadcastToClients('file::recover', {
+                  'id': id,
+                  'libraryId': libraryId,
+                });
+              }
+              break;
+          }
           break;
         case 'delete':
           final id = data['id'];

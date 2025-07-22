@@ -10,7 +10,9 @@ void show({
   required LibraryFile file,
   required Library library,
   required Offset position,
+  required bool isRecycleBin,
   required VoidCallback onDelete,
+  required VoidCallback onRecover,
   required VoidCallback onSelectTag,
   required VoidCallback onSelectFolder,
   required VoidCallback onShowInfo,
@@ -19,7 +21,13 @@ void show({
     MenuItem(label: '设置标签', icon: Icons.tag, onSelected: onSelectTag),
     MenuItem(label: '选择文件夹', icon: Icons.folder, onSelected: onSelectFolder),
     MenuItem(label: '文件信息', icon: Icons.info, onSelected: onShowInfo),
-    MenuItem(label: '删除', icon: Icons.delete, onSelected: onDelete),
+    MenuItem(
+      label: isRecycleBin ? '彻底删除' : '删除',
+      icon: Icons.delete,
+      onSelected: onDelete,
+    ),
+    if (isRecycleBin)
+      MenuItem(label: '还原', icon: Icons.restore, onSelected: onRecover),
   ];
   final menu = ContextMenu(
     entries: entries,

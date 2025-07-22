@@ -42,7 +42,6 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
         stars INTEGER DEFAULT 0,
         folder_id INTEGER,
         reference TEXT,
-        url TEXT,
         path TEXT,
         thumb INTEGER DEFAULT 0,
         recycled  INTEGER DEFAULT 0,
@@ -83,8 +82,8 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       INSERT INTO files(
         name, created_at, imported_at, size, hash, 
         custom_fields, notes, stars, folder_id,
-        reference, url, path, thumb, recycled, tags
-      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        reference, path, thumb, recycled, tags
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''');
     stmt.execute([
       fileData['name'],
@@ -97,7 +96,6 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       fileData['stars'] ?? 0,
       fileData['folder_id'],
       fileData['reference'],
-      fileData['url'],
       fileData['path'],
       fileData['thumb'] ?? 0,
       fileData['recycled'] ?? 0,
@@ -130,7 +128,6 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     addField('tags', fileData['tags']);
     addField('folder_id', fileData['folder_id']);
     addField('reference', fileData['reference']);
-    addField('url', fileData['url']);
     addField('path', fileData['path']);
     addField('thumb', fileData['thumb'] ?? 0);
     addField('recycled', fileData['recycled'] ?? 0);
@@ -191,6 +188,11 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     // 处理文件过滤条件
     if (filters != null) {
+      if (filters['recycled'] != null) {
+        whereClauses.add('recycled = ?');
+        params.add(filters['recycled'] ? 1 : 0);
+      }
+
       if (filters['star'] != null) {
         whereClauses.add('stars >= ?');
         params.add(filters['star']);
@@ -466,7 +468,10 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
 
     // 获取文件基础信息
     final stat = await file.stat();
-    final hash = await _calculateFileHash(file);
+    final hash =
+        config['customFields']['enableHash']
+            ? await _calculateFileHash(file)
+            : '';
 
     // 构建文件数据
     final fileData = {

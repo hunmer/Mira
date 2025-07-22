@@ -43,12 +43,13 @@ class LibraryGalleryBody extends StatefulWidget {
 }
 
 class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
-  late LibraryDataInterface _libraryController;
+  late LibraryDataInterface? _libraryController;
   @override
   void initState() {
     super.initState();
-    _libraryController =
-        widget.plugin.libraryController.getLibraryInst(widget.library)!;
+    _libraryController = widget.plugin.libraryController.getLibraryInst(
+      widget.library,
+    );
   }
 
   @override
@@ -108,12 +109,14 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                   plugin: widget.plugin,
                   file: file,
                   library: widget.library,
+                  isRecycleBin: widget.isRecycleBin,
                   position: details.globalPosition,
                   onDelete:
-                      () => _libraryController.deleteFile(
+                      () => _libraryController!.deleteFile(
                         file.id,
-                        moveToRecycleBin: widget.isRecycleBin,
+                        moveToRecycleBin: !widget.isRecycleBin,
                       ),
+                  onRecover: () => _libraryController!.recoverFile(file.id),
                   onShowInfo:
                       () => showModalBottomSheet(
                         context: context,

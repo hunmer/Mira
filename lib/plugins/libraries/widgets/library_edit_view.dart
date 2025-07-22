@@ -20,6 +20,7 @@ class _LibraryEditViewState extends State<LibraryEditView> {
   late final TextEditingController _usernameController;
   late final TextEditingController _passwordController;
   late String _localPath;
+  late bool _enableHash = false;
 
   @override
   void initState() {
@@ -43,6 +44,7 @@ class _LibraryEditViewState extends State<LibraryEditView> {
         _usernameController.text = library.customFields['username'] ?? '';
         _passwordController.text = library.customFields['password'] ?? '';
       }
+      _enableHash = widget.library?.customFields['enableHash'];
     } else {
       _selectedType = LibraryType.local;
     }
@@ -85,6 +87,7 @@ class _LibraryEditViewState extends State<LibraryEditView> {
         type: _selectedType == LibraryType.local ? 'local' : 'network',
         customFields: {
           if (_selectedType == LibraryType.local) 'path': _localPath,
+          if (_selectedType == LibraryType.local) 'enableHash': _enableHash,
           if (_selectedType == LibraryType.network)
             'server': _serverController.text,
           if (_selectedType == LibraryType.network)
@@ -154,6 +157,16 @@ class _LibraryEditViewState extends State<LibraryEditView> {
               ),
               SizedBox(height: 16),
               if (_selectedType == LibraryType.local) ...[
+                // 是否启用hash
+                CheckboxListTile(
+                  title: Text('开启文件唯一hash效验'),
+                  value: _enableHash,
+                  onChanged: (bool? value) {
+                    setState(() {
+                      _enableHash = value!;
+                    });
+                  },
+                ),
                 OutlinedButton(
                   onPressed: _pickFolder,
                   child: Text(

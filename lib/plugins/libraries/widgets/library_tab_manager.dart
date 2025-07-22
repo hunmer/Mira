@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_manager.dart';
@@ -10,13 +12,13 @@ class LibraryTabManager {
   final Map<String, dynamic> tabDatas = {};
   final ValueNotifier<int> currentIndex;
   late final LibrariesPlugin plugin;
+  // onTabUpdate stream
+  final StreamController<Map<String, dynamic>> onTabChangeStream =
+      StreamController.broadcast();
+  List<String> getTabIds() => tabDatas.keys.toList();
 
   LibraryTabManager(this.currentIndex) {
     plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
-  }
-
-  void _handlePageChange() {
-    // 保留方法但不再使用，因为我们现在使用IndexedStack
   }
 
   void addTab(Library library, {bool isRecycleBin = false}) {
@@ -38,15 +40,17 @@ class LibraryTabManager {
       },
     };
     currentIndex.value = tabDatas.length - 1;
+    onTabChange('add', currentIndex.value);
   }
 
   void closeTabIndex(int index) {
     final tabData = getTabIds()[index];
     tabDatas.remove(tabData);
-    onPageChange('close', index);
+    onTabChange('close', index);
   }
 
-  void onPageChange(String reason, int index) {
+  void onTabChange(String reason, int index) {
+    onTabChangeStream.add({'event': reason, 'index': index});
     final len = getTabIds().length;
     int newIndex = -1;
     switch (reason) {
@@ -107,10 +111,6 @@ class LibraryTabManager {
     }
   }
 
-  List<String> getTabIds() {
-    return tabDatas.keys.toList();
-  }
-
   Map<String, dynamic>? getTabData(String tabId) {
     final tabData = tabDatas[tabId];
     if (tabData != null) {
@@ -147,7 +147,9 @@ class LibraryTabManager {
 
   String? getCurrentTabId() {
     final tabIds = getTabIds();
-    return tabIds.isNotEmpty ? tabIds[currentIndex.value] : null;
+    return tabIds.isNotEmpty && currentIndex.value < tabIds.length
+        ? tabIds[currentIndex.value]
+        : null;
   }
 
   setTabActive(String tabId) {

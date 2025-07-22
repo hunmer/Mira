@@ -38,7 +38,6 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 300,
       color: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
