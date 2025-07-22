@@ -16,7 +16,6 @@ import 'package:mira/plugins/libraries/widgets/library_file_preview_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_body.dart';
-import '../l10n/libraries_localizations.dart';
 
 class LibraryGalleryView extends StatefulWidget {
   final LibrariesPlugin plugin;
@@ -195,9 +194,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   @override
   Widget build(BuildContext context) {
+    final tabData = _tabManager.getTabData(widget.tabId);
     final totalPages = (_totalItems / _paginationOptions['perPage']).ceil();
     return Scaffold(
       appBar: LibraryGalleryAppBar(
+        isRecycleBin: tabData?['isRecycleBin'],
         isSelectionMode: _isSelectionMode,
         selectedCount: _selectedFileIds.length,
         onSelectAll: _toggleSelectAll,

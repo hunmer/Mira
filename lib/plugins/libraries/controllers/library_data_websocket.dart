@@ -188,8 +188,12 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
-  Future<void> deleteFile(int id) async {
-    await _sendRequest(action: 'delete', type: 'file', data: {'id': id});
+  Future<void> deleteFile(int id, {bool moveToRecycleBin = false}) async {
+    await _sendRequest(
+      action: 'delete',
+      type: 'file',
+      data: {'id': id, 'moveToRecycleBin': moveToRecycleBin},
+    );
   }
 
   @override

@@ -5,6 +5,7 @@ import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
 class LibraryGalleryAppBar extends StatefulWidget
     implements PreferredSizeWidget {
   final bool isSelectionMode;
+  final bool isRecycleBin;
   final int selectedCount;
   final VoidCallback onSelectAll;
   final VoidCallback onExitSelection;
@@ -21,6 +22,7 @@ class LibraryGalleryAppBar extends StatefulWidget
   const LibraryGalleryAppBar({
     required this.isSelectionMode,
     required this.selectedCount,
+    required this.isRecycleBin,
     required this.onSelectAll,
     required this.onExitSelection,
     required this.onFilter,
@@ -100,41 +102,42 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
                       icon: const Icon(Icons.check_box),
                       onPressed: widget.onEnterSelection,
                     ),
-                    Stack(
-                      children: [
-                        IconButton(
-                          icon: Icon(Icons.file_upload),
-                          onPressed: widget.onUpload,
-                        ),
-                        if (widget.uploadProgress > 0)
-                          Positioned(
-                            top: 0,
-                            right: 0,
-                            child: Container(
-                              padding: const EdgeInsets.all(2),
-                              constraints: const BoxConstraints(
-                                minWidth: 16,
-                                minHeight: 16,
-                              ),
-                              child:
-                                  widget.uploadProgress == 1
-                                      ? const Icon(
-                                        Icons.check,
-                                        size: 12,
-                                        color: Colors.green,
-                                      )
-                                      : Text(
-                                        '${widget.uploadProgress * 100}%',
-                                        style: const TextStyle(
-                                          color: Colors.blue,
-                                          fontSize: 10,
-                                        ),
-                                        textAlign: TextAlign.center,
-                                      ),
-                            ),
+                    if (!widget.isRecycleBin)
+                      Stack(
+                        children: [
+                          IconButton(
+                            icon: Icon(Icons.file_upload),
+                            onPressed: widget.onUpload,
                           ),
-                      ],
-                    ),
+                          if (widget.uploadProgress > 0)
+                            Positioned(
+                              top: 0,
+                              right: 0,
+                              child: Container(
+                                padding: const EdgeInsets.all(2),
+                                constraints: const BoxConstraints(
+                                  minWidth: 16,
+                                  minHeight: 16,
+                                ),
+                                child:
+                                    widget.uploadProgress == 1
+                                        ? const Icon(
+                                          Icons.check,
+                                          size: 12,
+                                          color: Colors.green,
+                                        )
+                                        : Text(
+                                          '${widget.uploadProgress * 100}%',
+                                          style: const TextStyle(
+                                            color: Colors.blue,
+                                            fontSize: 10,
+                                          ),
+                                          textAlign: TextAlign.center,
+                                        ),
+                              ),
+                            ),
+                        ],
+                      ),
                     IconButton(
                       icon: const Icon(Icons.grid_view),
                       onPressed: () {

@@ -19,10 +19,11 @@ class LibraryTabManager {
     // 保留方法但不再使用，因为我们现在使用IndexedStack
   }
 
-  void addTab(Library library) {
+  void addTab(Library library, {bool isRecycleBin = false}) {
     tabDatas[Uuid().v4()] = {
       'library': library,
       'isPinned': false,
+      'isRecycleBin': isRecycleBin,
       'create_date': DateTime.now(),
       'pageOptions': {'page': 1, 'perPage': 20},
       'filter': {},
@@ -116,6 +117,15 @@ class LibraryTabManager {
     return tabDatas.keys.toList();
   }
 
+  Map<String, dynamic>? getTabData(String tabId) {
+    final tabData = tabDatas[tabId];
+    if (tabData != null) {
+      return tabData;
+    } else {
+      return null;
+    }
+  }
+
   Set<String> getLibraryDisplayFields(String tabId) {
     final tabData = tabDatas[tabId];
     if (tabData != null) {
@@ -154,5 +164,12 @@ class LibraryTabManager {
 
   dynamic getCurrentData() {
     return tabDatas[getCurrentTabId()];
+  }
+
+  Library? getCurrentLibrary() {
+    final data = getCurrentData();
+    if (data != null) {
+      return data['library'];
+    }
   }
 }

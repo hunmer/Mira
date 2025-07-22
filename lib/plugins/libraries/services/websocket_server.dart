@@ -361,11 +361,14 @@ class WebSocketServer {
           });
           break;
         case 'delete':
-          final id = data['payload']['data']['id'];
+          final id = data['id'];
           bool success;
           switch (recordType) {
             case 'file':
-              success = await dbService.deleteFile(id);
+              success = await dbService.deleteFile(
+                id,
+                moveToRecycleBin: data['moveToRecycleBin'],
+              );
               if (success) {
                 broadcastToClients('file::deleted', {
                   'id': id,

@@ -45,6 +45,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
         url TEXT,
         path TEXT,
         thumb INTEGER DEFAULT 0,
+        recycled  INTEGER DEFAULT 0,
         tags TEXT,
         FOREIGN KEY(folder_id) REFERENCES folders(id)
       )
@@ -82,7 +83,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       INSERT INTO files(
         name, created_at, imported_at, size, hash, 
         custom_fields, notes, stars, folder_id,
-        reference, url, path, thumb
+        reference, url, path, thumb, recycled, tags
       ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
     ''');
     stmt.execute([
@@ -99,6 +100,8 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
       fileData['url'],
       fileData['path'],
       fileData['thumb'] ?? 0,
+      fileData['recycled'] ?? 0,
+      fileData['tags'],
     ]);
     stmt.dispose();
     return {'id': _db!.lastInsertRowId, ...fileData};
@@ -124,11 +127,13 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
     addField('custom_fields', fileData['custom_fields']);
     addField('notes', fileData['notes']);
     addField('stars', fileData['stars'] ?? 0);
+    addField('tags', fileData['tags']);
     addField('folder_id', fileData['folder_id']);
     addField('reference', fileData['reference']);
     addField('url', fileData['url']);
     addField('path', fileData['path']);
     addField('thumb', fileData['thumb'] ?? 0);
+    addField('recycled', fileData['recycled'] ?? 0);
 
     if (fields.isEmpty) return false;
 
@@ -142,9 +147,22 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   }
 
   @override
-  Future<bool> deleteFile(int id) async {
-    // 直接删除文件记录
-    final stmt = _db!.prepare('DELETE FROM files WHERE id = ?');
+  Future<bool> deleteFile(int id, {bool moveToRecycleBin = false}) async {
+    if (moveToRecycleBin) {
+      final stmt = _db!.prepare('UPDATE files SET recycled = 1 WHERE id = ?');
+      stmt.execute([id]);
+      stmt.dispose();
+    } else {
+      final stmt = _db!.prepare('DELETE FROM files WHERE id = ?');
+      stmt.execute([id]);
+      stmt.dispose();
+    }
+    return _db!.updatedRows > 0;
+  }
+
+  @override
+  Future<bool> recoverFile(int id) async {
+    final stmt = _db!.prepare('UPDATE files SET recycled = 0 WHERE id = ?');
     stmt.execute([id]);
     stmt.dispose();
     return _db!.updatedRows > 0;

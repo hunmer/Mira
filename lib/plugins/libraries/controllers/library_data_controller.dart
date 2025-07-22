@@ -14,7 +14,7 @@ class LibraryDataController {
   openLibrary(
     Library library,
     BuildContext context, {
-    bool newView = true,
+    bool newTabView = true,
   }) async {
     final libraryId = library.id;
     print('Opening library ${library.name}...');
@@ -30,12 +30,12 @@ class LibraryDataController {
     final channel = WebSocketChannel.connect(Uri.parse(url));
     await channel.ready;
     dataInterfaces[libraryId] = LibraryDataWebSocket(channel, library);
-    if (newView) {
+    if (newTabView) {
+      // 打开一个新的tabs页面
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder:
-              (context) => LibraryTabsView(plugin: plugin, library: library),
+          builder: (context) => LibraryTabsView(library: library),
         ),
       );
     }

@@ -24,7 +24,8 @@ abstract class LibraryServerDataInterface {
     Map<String, dynamic> fileMeta,
   );
   Future<bool> updateFile(int id, Map<String, dynamic> fileData);
-  Future<bool> deleteFile(int id);
+  Future<bool> deleteFile(int id, {bool moveToRecycleBin = false});
+  Future<bool> recoverFile(int id);
   Future<Map<String, dynamic>?> getFile(int id);
   Future<dynamic> getFiles({
     String? select = '*',

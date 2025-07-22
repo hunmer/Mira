@@ -1,24 +1,19 @@
 import 'package:flutter/material.dart';
+import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tabs_context_menu.dart'
     // ignore: library_prefixes
     as LibraryContextMenu;
-import 'package:mira/plugins/libraries/widgets/library_edit_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import '../models/library.dart';
 
 class LibraryTabsView extends StatefulWidget {
-  final LibrariesPlugin plugin;
-  final Library library;
+  final Library? library;
 
-  const LibraryTabsView({
-    super.key,
-    required this.plugin,
-    required this.library,
-  });
+  const LibraryTabsView({super.key, this.library});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -27,19 +22,20 @@ class LibraryTabsView extends StatefulWidget {
 
 class _LibraryTabsViewState extends State<LibraryTabsView> {
   late final LibraryTabManager _tabManager;
-
+  late LibrariesPlugin _plugin;
   @override
   void initState() {
     super.initState();
+    _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
     _tabManager = LibraryTabManager();
-    widget.plugin.setTabManager(_tabManager);
+    _plugin.setTabManager(_tabManager);
   }
 
   @override
   void dispose() {
-    _tabManager.dispose();
     super.dispose();
-    widget.plugin.server.stop();
+    _tabManager.dispose();
+    _plugin.server.stop();
   }
 
   bool _showSidebar = false;
@@ -50,11 +46,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     final tabsContents = <Widget>[];
     _tabManager.tabDatas.forEach((tabId, tabData) {
       tabsContents.add(
-        LibraryContentView(
-          plugin: widget.plugin,
-          tabId: tabId,
-          tabData: tabData,
-        ),
+        LibraryContentView(plugin: _plugin, tabId: tabId, tabData: tabData),
       );
       tabsTab.add(
         GestureDetector(
@@ -111,7 +103,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
           IconButton(
             icon: const Icon(Icons.add),
             onPressed: () async {
-              final libraries = widget.plugin.dataController.libraries;
+              final libraries = _plugin.dataController.libraries;
               final itemCount = libraries.length;
               if (itemCount == 1) {
                 setState(() {
@@ -157,8 +149,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
         children: [
           if (_showSidebar)
             LibrarySidebarView(
-              plugin: widget.plugin,
-              library: widget.library,
+              plugin: _plugin,
               onHideSidebar: () => setState(() => _showSidebar = false),
             ),
           Expanded(

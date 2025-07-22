@@ -27,11 +27,15 @@ class _LibraryListViewState extends State<LibraryListView> {
   }
 
   void _onLibrarySelected(Library library) {
-    final newView = widget.onSelected == null;
-    if (!newView) {
+    final newTabView = widget.onSelected == null;
+    if (!newTabView) {
       widget.onSelected?.call(library);
     }
-    _plugin.libraryController.openLibrary(library, context, newView: newView);
+    _plugin.libraryController.openLibrary(
+      library,
+      context,
+      newTabView: newTabView,
+    );
   }
 
   @override
