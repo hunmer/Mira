@@ -2,7 +2,8 @@ import 'dart:async';
 import 'dart:io';
 import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
-import 'package:mira/core/event/event_stream_controller.dart';
+import 'package:mira/core/event/event_debounce.dart';
+import 'package:mira/core/event/event_throttle.dart';
 import 'package:rxdart/rxdart.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
@@ -71,7 +72,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         _uploadProgress = _uploadQueue.progress;
       });
     });
-    final updateStream = EventStreamController(duration: Duration(seconds: 2));
+    final updateStream = EventThrottle(duration: Duration(seconds: 2));
     updateStream.stream.listen((EventArgs args) {
       //  服务器广播更新列表
       if (args is MapEventArgs) {

@@ -140,6 +140,8 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
           case 'file::created': // 文件添加
           case 'file::deleted': // 文件删除
+          case 'file::folder': // 设置文件文件夹
+          case 'file::tags': // 设置文件标签
             EventManager.instance.broadcast(
               'file::changed',
               MapEventArgs({

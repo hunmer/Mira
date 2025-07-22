@@ -78,6 +78,25 @@ class WebSocketServer {
     dbService.getEventManager().broadcast(eventName, serverEventArgs(data));
   }
 
+  void _handleRespnes(
+    String eventName,
+    Map<String, dynamic> data, {
+    WebSocketChannel? channel,
+    bool isPluginEvent = true,
+    bool isServerEvent = true,
+  }) {
+    if (channel != null) {
+      data['event'] = eventName;
+      sendToWebsocket(channel, data);
+    }
+    if (isPluginEvent) {
+      broadcastPluginEvent(eventName, data);
+    }
+    if (isServerEvent) {
+      broadcastToClients(eventName, data);
+    }
+  }
+
   void _handleConnection(WebSocketChannel channel) async {
     channel.stream.listen(
       (message) async {
@@ -346,19 +365,21 @@ class WebSocketServer {
               }
               break;
             case 'file_folder':
-              success = await dbService.setFileFolders(id, values as String);
-              sendToWebsocket(channel, {
-                'status': success ? 'success' : 'failed',
-                'message': success ? 'File folders updated' : 'Update failed',
-                'requestId': requestId,
+              final folderId = values as String;
+              success = await dbService.setFileFolders(id, folderId);
+              _handleRespnes('file::folder', channel: channel, {
+                'id': id,
+                'folderId': folderId,
+                'libraryId': libraryId,
               });
               break;
             case 'file_tag':
-              success = await dbService.setFileTags(id, values.cast<String>());
-              sendToWebsocket(channel, {
-                'status': success ? 'success' : 'failed',
-                'message': success ? 'File tags updated' : 'Update failed',
-                'requestId': requestId,
+              final tagIds = values.cast<String>();
+              success = await dbService.setFileTags(id, tagIds);
+              _handleRespnes('file::tags', channel: channel, {
+                'id': id,
+                'tagIds': tagIds,
+                'libraryId': libraryId,
               });
               break;
             default:
@@ -366,7 +387,6 @@ class WebSocketServer {
           }
           sendToWebsocket(channel, {
             'status': success ? 'success' : 'failed',
-            'message': success ? 'Record updated' : 'Update failed',
             'requestId': requestId,
           });
           break;

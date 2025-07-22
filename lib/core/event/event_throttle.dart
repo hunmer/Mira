@@ -2,15 +2,15 @@ import 'package:mira/core/event/event.dart';
 import 'package:rxdart/rxdart.dart';
 import 'dart:async';
 
-class EventStreamController {
+class EventThrottle {
   final _streamController = StreamController<EventArgs>();
   late final Duration _duration;
-  EventStreamController({Duration? duration})
+  EventThrottle({Duration? duration})
     : _duration = duration ?? const Duration(milliseconds: 500);
 
-  // 输出流经过 debounceTime 防抖
+  // 输出流经过 debounceTime 节流
   Stream<EventArgs> get stream =>
-      _streamController.stream.debounceTime(_duration);
+      _streamController.stream.throttleTime(_duration);
 
   void onCall(EventArgs event) {
     _streamController.sink.add(event);
