@@ -205,6 +205,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   Widget build(BuildContext context) {
     final tabData = _tabManager.getTabData(widget.tabId);
     final isRecycleBin = tabData?['isRecycleBin'];
+    final isMobile = MediaQuery.of(context).size.width < 500;
     final totalPages = (_totalItems / _paginationOptions['perPage']).ceil();
     return Scaffold(
       appBar: LibraryGalleryAppBar(
@@ -275,7 +276,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           VerticalDivider(width: 1),
           if (_showSidebar) ...[
             Expanded(
-              flex: 2,
+              flex: isMobile ? 8 : 2,
               child: LibrarySidebarView(
                 plugin: widget.plugin,
                 library: widget.library,
