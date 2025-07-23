@@ -245,10 +245,7 @@ class WebSocketServer {
                 if (record != null) {
                   record['thumb'] =
                       record['thumb'] == 1
-                          ? await dbService.getItemThumbPath(
-                            record,
-                            checkExists: true,
-                          )
+                          ? await dbService.getItemThumbPath(record)
                           : '';
                 }
                 break;
@@ -291,13 +288,11 @@ class WebSocketServer {
                   filters: payload['query'] as Map<String, dynamic>?,
                 );
                 for (var record in result['result']) {
-                  record['thumb'] =
-                      record['thumb'] == 1
-                          ? await dbService.getItemThumbPath(
-                            record,
-                            checkExists: true,
-                          )
-                          : '';
+                  record['thumb'] = await dbService.getItemThumbPath(record);
+                  // record['thumb'] =
+                  //     record['thumb'] == 1
+                  //         ? await dbService.getItemThumbPath(record)
+                  //         : '';
                 }
                 records = result;
                 break;

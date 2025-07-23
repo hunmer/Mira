@@ -73,3 +73,4 @@ app.*.map.json
 sdk/typescript/node_modules/
 sdk/typescript/src/examples/
 sdk/typescript/src/test/
+sdk/typescript/src/testlib3/

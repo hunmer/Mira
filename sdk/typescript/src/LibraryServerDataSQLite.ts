@@ -70,6 +70,9 @@ export class LibraryServerDataSQLite implements ILibraryServerData {
 
   // 文件操作方法实现
   async createFile(fileData: Record<string, any>): Promise<Record<string, any>> {
+    
+
+
     const result = await this.runSql(
       `INSERT INTO files(
         name, created_at, imported_at, size, hash, 
@@ -93,6 +96,7 @@ export class LibraryServerDataSQLite implements ILibraryServerData {
         fileData.tags,
       ]
     );
+
 
     return { id: result.lastID, ...fileData };
   }
@@ -551,7 +555,6 @@ export class LibraryServerDataSQLite implements ILibraryServerData {
     importType: string
   ): Promise<void> {
     const destPath = path.join(await this.getItemPath(fileData), fileData.name);
-
     switch (importType) {
       case 'link':
         // 保持原文件位置不变

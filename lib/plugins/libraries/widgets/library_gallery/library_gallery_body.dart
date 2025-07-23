@@ -98,10 +98,8 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                 isSelected:
                     widget.isSelectionMode &&
                     widget.selectedFileIds.contains(file.id),
-                useThumbnail: false,
-                // useThumbnail:
-                //     file.thumb != null ||
-                //     ['audio', 'video'].contains(getFileType(file.name)),
+                // useThumbnail: false,
+                useThumbnail: file.thumb != null,
                 displayFields: widget.displayFields,
                 onTap: () {
                   final file = widget.items.value[index];

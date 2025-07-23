@@ -64,7 +64,7 @@ export class LibraryDataConverter {
     descMeta: DescMeta[];
     foldersMeta: FolderMeta[];
     tagsMeta: TagMeta[];
-  }, options: { maxItems?: number } = {}) {
+  }, options: { maxItems?: number, sourceDbPath: string, targetDir: string, importType?: string }) {
     try {
       const maxItems = options.maxItems || Infinity;
       let processed = 0;
@@ -76,7 +76,6 @@ export class LibraryDataConverter {
       // 转换并插入文件夹数据
       const folderMap = new Map<number, number>();
       for (const folder of data.folders) {
-        if (processed >= maxItems) break;
         const existingFolder = await this.libraryData.getFolder(folder.id);
         if (existingFolder) {
           await this.libraryData.updateFolder(folder.id, {
@@ -92,14 +91,12 @@ export class LibraryDataConverter {
           });
           folderMap.set(folder.id, newFolderId);
         }
-        processed++;
         this.showProgress(processed, totalItems, 'folders');
       }
 
       // 转换并插入标签数据
       const tagMap = new Map<number, number>();
       for (const tag of data.tags) {
-        if (processed >= maxItems) break;
         const existingTag = await this.libraryData.getTag(tag.id);
         if (existingTag) {
           await this.libraryData.updateTag(tag.id, {
@@ -115,18 +112,25 @@ export class LibraryDataConverter {
           });
           tagMap.set(tag.id, newTagId);
         }
-        processed++;
         this.showProgress(processed, totalItems, 'tags');
       }
 
       // 转换并插入文件数据
       const fileMap = new Map<number, number>();
+      const _getSourcePath = (md5: string, title: string) => {
+        return  path.join(path.dirname(options.sourceDbPath), '/files/', `${md5.substring(0, 2)}/${md5.substring(2, 4)}/${md5}/`, title);
+      }
+      fs.mkdirSync(path.join(options.targetDir, 'thumbs'));
       for (const file of data.files) {
         if (processed >= maxItems) break;
+        const extName = path.extname(file.title).toLocaleLowerCase();
+        if(['.rar', '.zip'].includes(extName)) continue;
         const urlMeta = data.urlMeta.find(m => m.fid === file.id);
         const descMeta = data.descMeta.find(m => m.fid === file.id);
         const tags = this.getTagIdsForFile(file.id, data.tagsMeta, tagMap);
-        const newFileId = await this.libraryData.createFile({
+        const filePath = this.generateFilePath(file.title, file.link, folderMap);
+        const sourcePath = filePath != null && filePath != '' ? filePath : _getSourcePath(file.md5, file.title);
+        const itemData = {
           name: file.title,
           created_at: file.birthtime || file.date,
           imported_at: Date.now(),
@@ -135,12 +139,59 @@ export class LibraryDataConverter {
           notes: descMeta?.desc,
           folder_id: this.getFolderIdsForFile(file.id, data.foldersMeta, folderMap),
           reference: urlMeta?.url,
-          path: this.generateFilePath(file.title, file.link, folderMap),
+          path: filePath,
           tags: tags != null && tags.length ? JSON.stringify(tags) : null,
-        });
+        };
+        try {
+          if (options.importType) {
+            // 复制文件
+            if(fs.existsSync(sourcePath)){
+              let savePath = path.join(await this.libraryData.getItemPath(itemData), itemData.name);
+              let counter = 1;
+              const originalName = itemData.name;
+              const extension = path.extname(originalName);
+              const basename = path.basename(originalName, extension);
+              
+              while (fs.existsSync(savePath)) {
+                itemData.name = `${basename} (${counter})${extension}`;
+                savePath = path.join(await this.libraryData.getItemPath(itemData), itemData.name);
+                counter++;
+              }
+              const saveDir = path.dirname(savePath);
+              if (!fs.existsSync(saveDir)) {
+                fs.mkdirSync(saveDir, { recursive: true });
+              }
+              if(options.importType == 'copy'){
+                fs.copyFileSync(sourcePath, savePath);
+              }else
+              if(options.importType == 'move'){
+                fs.renameSync(sourcePath, savePath);
+              }
+            }
+          }
+        } catch(err){
+          console.error(err);
+        }
 
-        if (typeof newFileId === 'number') {
-          fileMap.set(file.id, newFileId);
+        const fileData = await this.libraryData.createFile(itemData);
+        // 复制封面图
+        const coverFile = _getSourcePath(file.md5, 'cover.jpg');
+        try {
+           if(fs.existsSync(coverFile)){
+            let savePath = await this.libraryData.getItemThumbPath(fileData);
+            if(options.importType == 'copy'){
+              fs.copyFileSync(coverFile, savePath);
+            }else
+            if(options.importType == 'move'){
+              fs.renameSync(coverFile, savePath);
+            }
+          }
+        } catch(err){
+          console.error(err);
+        }
+       
+        if (typeof fileData === 'number') {
+          fileMap.set(file.id, fileData);
         }
         processed++;
         this.showProgress(processed, totalItems, 'files');
@@ -151,26 +202,6 @@ export class LibraryDataConverter {
       console.error('Error during data conversion:', error);
       throw error;
     }
-  }
-
-  private extractColorFromMeta(meta: string): number | null {
-    if (!meta) return null;
-    try {
-      const metaObj = JSON.parse(meta);
-      return metaObj.color || null;
-    } catch {
-      return null;
-    }
-  }
-
-  private extractFolderIdFromLink(link: string, folderMap: Map<number, number>): number | null {
-    // 假设link格式为"folder:123"或类似
-    const match = link.match(/folder:(\d+)/);
-    if (match && match[1]) {
-      const sourceFolderId = parseInt(match[1]);
-      return folderMap.get(sourceFolderId) || null;
-    }
-    return null;
   }
 
   private generateFilePath(title: string, link: string, folderMap: Map<number, number>): string | null {
@@ -211,7 +242,7 @@ export class LibraryDataConverter {
   }
 
   // 从SQLite源数据库读取数据的函数
-  public async readFromSourceDb(dbPath: string): Promise<{
+  public async readFromSourceDb(sourcePath: string): Promise<{
     files: SourceFile[];
     folders: SourceFolder[];
     tags: SourceTag[];
@@ -220,7 +251,7 @@ export class LibraryDataConverter {
     foldersMeta: FolderMeta[];
     tagsMeta: TagMeta[];
   }> {
-    const db = new Database(dbPath);
+    const db = new Database(sourcePath);
     
     const [files, folders, tags, urlMeta, descMeta, foldersMeta, tagsMeta] = await Promise.all([
       this.queryAll<SourceFile>(db, 'SELECT * FROM files'),
@@ -288,7 +319,7 @@ async function main(sourceDbPath: string, targetDir: string) {
     
     console.log(`Found ${sourceData.files.length} files, ${sourceData.folders.length} folders, ${sourceData.tags.length} tags`);
     console.log('Converting and inserting data...');
-    await converter.convertAndInsertData(sourceData, { maxItems: undefined }); // 测试时可限制最大转换条数
+    await converter.convertAndInsertData(sourceData, { maxItems: undefined, sourceDbPath: sourceDbPath, targetDir: targetDir, importType: 'move'}); // 测试时可限制最大转换条数
     console.log(`Data conversion completed successfully. Database saved to: ${targetDir}`);
   } catch (error) {
     console.error('Data conversion failed:', error);
