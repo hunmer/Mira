@@ -43,7 +43,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
       switch (event) {
         case 'active':
           // 保证tab所属的library进行初始化连接
-
           _tabManager.tryUpdate(tabId);
           break;
         case 'close':
@@ -134,7 +133,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             if (snapshot.hasError) {
               return Text('加载数据出错: ${snapshot.error}');
             }
-
             final isDesktop = Utils.isDesktop();
             final tabs =
                 _tabManager.tabDatas.toList().map((tabData) {

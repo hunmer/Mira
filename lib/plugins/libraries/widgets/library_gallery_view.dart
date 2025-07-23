@@ -137,9 +137,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   void _onThumbnailGenerated(EventArgs args) {
     if (args is! serverEventArgs) return;
-    // if (mounted) {
-    //   setState(() {});
-    // }
   }
 
   @override
@@ -177,12 +174,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void _exitSelectionMode() {
-    if (_selectedFileIds.isNotEmpty) {
-      setState(() {
-        _selectedFileIds.clear();
-      });
-    }
     setState(() {
+      if (_selectedFileIds.isNotEmpty) {
+        _selectedFileIds.clear();
+      }
       _isSelectionMode = false;
     });
   }
@@ -288,7 +283,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             if (snapshot.hasError) {
               return Text('加载数据出错: ${snapshot.error}');
             }
-            // snapshot.data
             return buildContent();
         }
       },

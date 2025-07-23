@@ -232,7 +232,7 @@ class LibraryTabManager {
 
   void tryUpdate(String tabId) {
     final tabData = getTabData(tabId);
-    if (tabData != null) {
+    if (tabData != null && tabData.needUpdate) {
       updateTab(tabId);
       setValue(tabId, 'needUpdate', false);
     }

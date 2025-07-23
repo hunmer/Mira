@@ -25,8 +25,6 @@ class LibrarySidebarView extends StatefulWidget {
 }
 
 class _LibrarySidebarViewState extends State<LibrarySidebarView> {
-  late Library? _library;
-
   @override
   void initState() {
     super.initState();
