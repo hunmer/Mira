@@ -16,7 +16,9 @@ class LibraryUIController {
     BuildContext context,
   ) async {
     final folders =
-        await _plugin.libraryController.getLibraryInst(library)!.getFolders();
+        await _plugin.libraryController
+            .getLibraryInst(library.id)!
+            .getFolders();
     final result = await showDialog<List<TreeItem>>(
       context: context,
       builder:
@@ -37,7 +39,7 @@ class LibraryUIController {
     BuildContext context,
   ) async {
     final tags =
-        await _plugin.libraryController.getLibraryInst(library)!.getTags();
+        await _plugin.libraryController.getLibraryInst(library.id)!.getTags();
     final result = await showDialog<List<TreeItem>>(
       context: context,
       builder:

@@ -27,11 +27,14 @@ class LibraryTabsView extends StatefulWidget {
 class _LibraryTabsViewState extends State<LibraryTabsView> {
   late LibrariesPlugin _plugin;
   late LibraryTabManager _tabManager;
+  List<LibraryTabData> _tabDatas = [];
+
   @override
   void initState() {
     super.initState();
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
     _tabManager = _plugin.tabManager;
+    _loadTabDatas();
     init();
   }
 
@@ -47,7 +50,9 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
           break;
         case 'close':
         case 'add':
-          setState(() {});
+          setState(() {
+            _loadTabDatas();
+          });
           break;
       }
     });
@@ -81,6 +86,10 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
       'folder::updated',
       (args) => chanedStream.onCall(args),
     );
+  }
+
+  void _loadTabDatas() {
+    _tabDatas = _tabManager.tabDatas.toList();
   }
 
   @override
@@ -135,7 +144,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             }
             final isDesktop = Utils.isDesktop();
             final tabs =
-                _tabManager.tabDatas.toList().map((tabData) {
+                _tabDatas.map((tabData) {
                   return TabData(
                     index: tabData.id.hashCode,
                     title: Tab(
@@ -207,6 +216,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                               dynamicTabs: tabs,
                               showBackIcon: true,
                               showNextIcon: true,
+                              isScrollable: true,
                               trailing: IconButton(
                                 icon: const Icon(Icons.add),
                                 onPressed: () => _openLibrary(),
@@ -229,15 +239,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                                   _tabManager.setActive(index);
                                 }
                               },
-                              onTabControllerUpdated: (controller) {
-                                // controller.addListener(() {
-                                //   final index = controller.index;
-                                //   final tabId = _tabManager.tabDatas.keys.elementAt(
-                                //     index,
-                                //   );
-                                //   _tabManager.setTabActive(tabId);
-                                // });
-                              },
+                              onTabControllerUpdated: (controller) {},
                             ),
                   ),
                 ],

@@ -161,19 +161,13 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void _toggleSelectAll() {
-    widget.plugin.libraryController
-        .getLibraryInst(widget.library)!
-        .getFiles()
-        .then((fileList) {
-          setState(() {
-            final allFileIds = fileList.map((f) => f.id).toSet();
-            if (_selectedFileIds.length == allFileIds.length) {
-              _selectedFileIds.clear();
-            } else {
-              _selectedFileIds = allFileIds;
-            }
-          });
-        });
+    setState(() {
+      if (_selectedFileIds.isEmpty) {
+        _selectedFileIds = _items.map((f) => f.id).toSet();
+      } else {
+        _selectedFileIds.clear();
+      }
+    });
   }
 
   void _exitSelectionMode() {
@@ -206,7 +200,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
     try {
       final inst = widget.plugin.libraryController.getLibraryInst(
-        widget.library,
+        widget.library.id,
       );
       if (inst != null) {
         final result = await inst.findFiles(query: query);

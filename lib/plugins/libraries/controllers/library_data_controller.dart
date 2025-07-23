@@ -12,31 +12,33 @@ class LibraryDataController {
   LibraryDataController({required this.plugin});
 
   Future<LibraryDataInterface?> loadLibrary(Library library) async {
-    final libraryId = library.id;
-    print('loading library ${library.name}...');
-    await plugin.foldersTagsController.createFolderCache(library.id);
-    await plugin.foldersTagsController.createTagCache(library.id);
+    if (!library.isLoading) {
+      // 避免反复触发
+      library.isLoading = true;
+      final libraryId = library.id;
+      print('loading library ${library.name}...');
+      await plugin.foldersTagsController.createFolderCache(library.id);
+      await plugin.foldersTagsController.createTagCache(library.id);
 
-    final path = library.customFields['path'];
-    if (library.isLocal && !plugin.server.connecting) {
-      await plugin.server.start(path);
+      final path = library.customFields['path'];
+      if (library.isLocal && !plugin.server.connecting) {
+        await plugin.server.start(path);
+      }
+
+      final channel = WebSocketChannel.connect(Uri.parse(library.url));
+      dataInterfaces[libraryId] = LibraryDataWebSocket(channel, library);
+      await channel.ready;
+      return dataInterfaces[libraryId];
     }
-
-    final channel = WebSocketChannel.connect(Uri.parse(library.url));
-    dataInterfaces[libraryId] = LibraryDataWebSocket(channel, library);
-    await channel.ready;
-    return dataInterfaces[libraryId];
+    return null;
   }
 
-  LibraryDataInterface? getLibraryInst(libraryId) {
-    if (libraryId is Library) {
-      libraryId = libraryId.id;
-    }
+  LibraryDataInterface? getLibraryInst(String libraryId) {
     return dataInterfaces[libraryId];
   }
 
   Future<LibraryDataInterface?> loadLibraryInst(Library library) async {
-    if (getLibraryInst(Library) == null) {
+    if (getLibraryInst(library.id) == null) {
       return await loadLibrary(library);
     }
     return null;

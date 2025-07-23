@@ -170,16 +170,15 @@ class LibraryTabManager {
     onTabEvent('add', currentIndex.value);
   }
 
-  void trySaveTabs() {
+  Future<void> trySaveTabs() async {
     if (autoSave) {
-      savetoJson();
+      await savetoJson();
     }
   }
 
-  void closeTabIndex(int index) {
-    final tabData = getTabIds()[index];
-    tabDatas.remove(tabData);
-    trySaveTabs();
+  Future<void> closeTabIndex(int index) async {
+    tabDatas.removeAt(index);
+    await trySaveTabs();
     onTabEvent('close', index);
   }
 

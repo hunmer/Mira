@@ -3,6 +3,7 @@ class Library {
   String name;
   String icon;
   String type;
+  bool isLoading = false;
   Map<String, dynamic> customFields;
   final DateTime createdAt;
 
@@ -13,6 +14,7 @@ class Library {
     required this.type,
     required this.customFields,
     required this.createdAt,
+    this.isLoading = false, // 缓存用
   });
 
   // 从Map转换

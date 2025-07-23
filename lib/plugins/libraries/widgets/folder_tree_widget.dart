@@ -61,7 +61,7 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
       final plugin =
           PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
       if (widget.type == 'folders') {
-        plugin.libraryController.getLibraryInst(widget.library)!.addFolder({
+        plugin.libraryController.getLibraryInst(widget.library.id)!.addFolder({
           'id': node.id,
           'title': node.title,
           'parent_id': node.parentId,
@@ -69,7 +69,7 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
           'icon': node.icon?.codePoint,
         });
       } else if (widget.type == 'tags') {
-        plugin.libraryController.getLibraryInst(widget.library)!.addTag({
+        plugin.libraryController.getLibraryInst(widget.library.id)!.addTag({
           'id': node.id,
           'title': node.title,
           'parent_id': node.parentId,
@@ -86,11 +86,11 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
           PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
       if (widget.type == 'folders') {
         plugin.libraryController
-            .getLibraryInst(widget.library)!
+            .getLibraryInst(widget.library.id)!
             .deleteFolder(node.id);
       } else if (widget.type == 'tags') {
         plugin.libraryController
-            .getLibraryInst(widget.library)!
+            .getLibraryInst(widget.library.id)!
             .deleteTag(node.id);
       }
     }

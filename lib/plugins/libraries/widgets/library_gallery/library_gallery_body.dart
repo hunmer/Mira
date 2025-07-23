@@ -50,7 +50,7 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
   void initState() {
     super.initState();
     _libraryController = widget.plugin.libraryController.getLibraryInst(
-      widget.library,
+      widget.library.id,
     );
   }
 
@@ -141,7 +141,7 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                           .showFolderSelector(widget.library, context);
                       if (result != null && result.isNotEmpty) {
                         await widget.plugin.libraryController
-                            .getLibraryInst(widget.library)!
+                            .getLibraryInst(widget.library.id)!
                             .setFileFolders(file.id, result.first.id);
                       }
                     },
@@ -150,7 +150,7 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                           .showTagSelector(widget.library, context);
                       if (result != null && result.isNotEmpty) {
                         await widget.plugin.libraryController
-                            .getLibraryInst(widget.library)!
+                            .getLibraryInst(widget.library.id)!
                             .setFileTags(
                               file.id,
                               result.map((item) => item.id).toList(),
