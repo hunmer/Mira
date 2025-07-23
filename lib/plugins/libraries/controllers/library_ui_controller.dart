@@ -17,7 +17,7 @@ class LibraryUIController {
   ) async {
     final folders =
         await _plugin.libraryController.getLibraryInst(library)!.getFolders();
-    final result = await showDialog<List<Map<String, dynamic>>>(
+    final result = await showDialog<List<TreeItem>>(
       context: context,
       builder:
           (context) => AsyncTreeViewDialog(
@@ -25,12 +25,11 @@ class LibraryUIController {
             library: library,
             selected: null,
             type: 'folders',
-            onSelectionChanged: (ids) => {},
             items: folders.map((f) => TreeItem.fromMap(f)).toList(),
           ),
     );
     if (result == null) return [];
-    return result.map((item) => LibraryFolder.fromMap(item)).toList();
+    return result.map((item) => LibraryFolder.fromMap(item.toMap())).toList();
   }
 
   Future<List<LibraryTag>> showTagSelector(
@@ -39,7 +38,7 @@ class LibraryUIController {
   ) async {
     final tags =
         await _plugin.libraryController.getLibraryInst(library)!.getTags();
-    final result = await showDialog<List<Map<String, dynamic>>>(
+    final result = await showDialog<List<TreeItem>>(
       context: context,
       builder:
           (context) => AsyncTreeViewDialog(
@@ -47,11 +46,10 @@ class LibraryUIController {
             library: library,
             selected: null,
             type: 'tags',
-            onSelectionChanged: (ids) => {},
             items: tags.map((f) => TreeItem.fromMap(f)).toList(),
           ),
     );
     if (result == null) return [];
-    return result.map((item) => LibraryTag.fromMap(item)).toList();
+    return result.map((item) => LibraryTag.fromMap(item.toMap())).toList();
   }
 }

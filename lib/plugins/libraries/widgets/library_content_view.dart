@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 
 class LibraryContentView extends StatefulWidget {
   final LibrariesPlugin plugin;
-  final Map<String, dynamic> tabData;
+  final LibraryTabData tabData;
   final String tabId;
 
   const LibraryContentView({
@@ -29,7 +30,7 @@ class _LibraryContentViewState extends State<LibraryContentView>
     return LibraryGalleryView(
       plugin: widget.plugin,
       tabId: widget.tabId,
-      library: widget.tabData['library'],
+      library: widget.tabData.library,
     );
   }
 }

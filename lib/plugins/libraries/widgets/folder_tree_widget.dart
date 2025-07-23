@@ -34,14 +34,6 @@ class FolderTreeWidget extends StatefulWidget {
     super.key,
   });
 
-  List<Map<String, dynamic>> getSelected(State<FolderTreeWidget> state) {
-    return (state as FolderTreeWidgetState)
-        .getItems()
-        .where((item) => item.isSelected)
-        .map((item) => item.toMap())
-        .toList();
-  }
-
   @override
   State<FolderTreeWidget> createState() => FolderTreeWidgetState();
 }
@@ -109,6 +101,13 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
       final isSelected = widget.selected?.contains(item.id) ?? false;
       return item.copyWith(isSelected: isSelected);
     }).toList();
+  }
+
+  List<Map<String, dynamic>> getSelected() {
+    return getItems()
+        .where((item) => item.isSelected)
+        .map((item) => item.toMap())
+        .toList();
   }
 
   @override

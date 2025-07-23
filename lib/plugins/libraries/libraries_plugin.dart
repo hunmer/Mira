@@ -22,10 +22,6 @@ class LibrariesPlugin extends PluginBase {
     return _instance!;
   }
 
-  setTabManager(LibraryTabManager tabManager) {
-    this.tabManager = tabManager;
-  }
-
   @override
   String get id => 'libraries';
   late final LibraryUIController libraryUIController; // 弹出组件
@@ -52,6 +48,8 @@ class LibrariesPlugin extends PluginBase {
     await dataController.init();
     foldersTagsController = FoldersTagsCache();
     await foldersTagsController.init();
+    tabManager = LibraryTabManager();
+    await tabManager.init();
     libraryController = LibraryDataController(plugin: this);
     server = WebSocketServer(8080);
   }

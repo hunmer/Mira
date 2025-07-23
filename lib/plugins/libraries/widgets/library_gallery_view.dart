@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
@@ -47,9 +48,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late LibraryTabManager _tabManager;
   late bool _showSidebar = true;
   late bool _isLoading = true;
-  late Map<String, dynamic>? _tabData;
+  late LibraryTabData? _tabData;
   late List<LibraryFolder> _folders = [];
   late List<LibraryTag> _tags = [];
+  bool _isFirstLoad = false;
 
   late Set<String> _displayFields = {};
   Map<String, dynamic> _filterOptions = {};
@@ -66,11 +68,16 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     _displayFields = _tabManager.getLibraryDisplayFields(tabId);
     _filterOptions = _tabManager.getLibraryFilter(tabId);
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
-    _tabData = _tabManager.getTabData(tabId);
+    _tabData = _tabManager.getTabData(widget.tabId);
+    _progressSubscription = _uploadQueue.progressStream.listen((completed) {
+      setState(() {
+        _uploadProgress = _uploadQueue.progress;
+      });
+    });
     initEvents();
   }
 
-  void _updateFoldersTags() async {
+  Future<void> _loadFoldersTags() async {
     // final tags =
     //     (await widget.plugin.foldersTagsController
     //             .getTagCache(widget.library.id)
@@ -89,20 +96,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         (await inst.getFolders())
             .map((item) => LibraryFolder.fromMap(item))
             .toList();
-    print('folders: ${folders.length}');
-    print('tags: ${tags.length}');
-    setState(() {
-      _tags = tags;
-      _folders = folders;
-    });
+    _tags = tags;
+    _folders = folders;
   }
 
   void initEvents() async {
-    _progressSubscription = _uploadQueue.progressStream.listen((completed) {
-      setState(() {
-        _uploadProgress = _uploadQueue.progress;
-      });
-    });
     EventManager.instance.subscribe(
       'thumbnail::generated',
       _onThumbnailGenerated,
@@ -116,13 +114,14 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       }
     });
     EventManager.instance.subscribe('library::filter_updated', _onFilterUpdate);
-    _refresh();
   }
 
-  void _refresh() {
+  void _refresh() async {
     if (mounted) {
-      _loadFiles();
-      _updateFoldersTags();
+      setState(() {
+        _loadFiles();
+        _loadFoldersTags();
+      });
     }
   }
 
@@ -190,8 +189,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   Future<void> _loadFiles() async {
     // todo 完善更多过滤器
+    _isLoading = true;
     final query = {
-      'recycled': _tabData?['isRecycleBin'],
+      'recycled': _tabData!.isRecycleBin,
       'name': _filterOptions['name'] ?? '',
       'tags': _filterOptions['tags'] ?? [],
       'folder': _filterOptions['folder'] ?? '',
@@ -206,19 +206,22 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       'limit': _paginationOptions['perPage'],
     };
 
-    final inst = widget.plugin.libraryController.getLibraryInst(widget.library);
-    if (inst == null) return;
-    final result = await inst.findFiles(query: query);
-
-    setState(() {
-      if (result == null || result.isEmpty) {
-        _items = [];
-      } else {
-        _items = result['results'] as List<LibraryFile>;
-        _totalItems = result['total'] as int;
+    try {
+      final inst = widget.plugin.libraryController.getLibraryInst(
+        widget.library,
+      );
+      if (inst != null) {
+        final result = await inst.findFiles(query: query);
+        if (result != null && result.isNotEmpty) {
+          _items = result['results'] as List<LibraryFile>;
+          _totalItems = result['total'] as int;
+        }
       }
+    } catch (err) {
+      _items = [];
+    } finally {
       _isLoading = false;
-    });
+    }
   }
 
   void _onFileSelected(LibraryFile file) {
@@ -256,9 +259,44 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     });
   }
 
+  Future<void> _doFirstLoad() async {
+    if (!_isFirstLoad) {
+      _isFirstLoad = true;
+      await _loadFiles();
+      await _loadFoldersTags();
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final isRecycleBin = _tabData?['isRecycleBin'];
+    return FutureBuilder<List<dynamic>>(
+      future: () async {
+        return [
+          // 保证library完成初始化连接
+          await widget.plugin.libraryController.loadLibraryInst(widget.library),
+          // 保证完成首次刷新
+          await _doFirstLoad(),
+        ];
+      }(),
+      builder: (context, snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+          case ConnectionState.waiting:
+            return Center(child: CircularProgressIndicator());
+          case ConnectionState.active:
+          case ConnectionState.done:
+            if (snapshot.hasError) {
+              return Text('加载数据出错: ${snapshot.error}');
+            }
+            // snapshot.data
+            return buildContent();
+        }
+      },
+    );
+  }
+
+  Widget buildContent() {
+    final isRecycleBin = _tabData!.isRecycleBin;
     final screenWidth = MediaQuery.of(context).size.width;
     final totalPages = (_totalItems / _paginationOptions['perPage']).ceil();
     if (_isLoading) {
@@ -376,7 +414,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                     totalPages: totalPages,
                     onPageChanged: (page) {
                       _paginationOptions['page'] = page;
-                      _loadFiles();
+                      _refresh();
                     },
                     visiblePagesCount:
                         MediaQuery.of(context).size.width ~/ 200 + 2,

@@ -17,8 +17,7 @@ import '../models/library.dart';
 import 'package:dynamic_tabbar/dynamic_tabbar.dart';
 
 class LibraryTabsView extends StatefulWidget {
-  final Library? library;
-  const LibraryTabsView({super.key, this.library});
+  const LibraryTabsView({super.key});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -26,24 +25,25 @@ class LibraryTabsView extends StatefulWidget {
 }
 
 class _LibraryTabsViewState extends State<LibraryTabsView> {
-  late final LibraryTabManager _tabManager;
   late LibrariesPlugin _plugin;
+  late LibraryTabManager _tabManager;
   @override
   void initState() {
     super.initState();
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
-    _tabManager = LibraryTabManager(ValueNotifier(-1));
-    _plugin.setTabManager(_tabManager);
-    initEvents();
+    _tabManager = _plugin.tabManager;
+    init();
   }
 
-  void initEvents() {
-    _tabManager.onTabEventStream.stream.listen((detail) {
+  Future<void> init() async {
+    _tabManager.onTabEventStream.stream.listen((detail) async {
       final event = detail['event'];
       final tabId = detail['tabId'];
       print('tab event: $event, tabId: $tabId');
       switch (event) {
         case 'active':
+          // 保证tab所属的library进行初始化连接
+
           _tabManager.tryUpdate(tabId);
           break;
         case 'close':
@@ -59,15 +59,15 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
       if (args is MapEventArgs) {
         final libraryId = args.item['libraryId'];
         final currentTab = _tabManager.getCurrentTabId();
-        _tabManager.map((tabId, tabData) {
-          final library = tabData['library'] as Library;
+        for (LibraryTabData tabData in _tabManager.tabDatas) {
+          final library = tabData.library;
           if (library.id == libraryId) {
-            _tabManager.setValue(tabId, 'needUpdate', true);
-            if (tabId == currentTab) {
-              _tabManager.tryUpdate(tabId);
+            _tabManager.setValue(tabData.id, 'needUpdate', true);
+            if (tabData.id == currentTab) {
+              _tabManager.tryUpdate(tabData.id);
             }
           }
-        });
+        }
       }
     });
     EventManager.instance.subscribe(
@@ -122,118 +122,132 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
   @override
   Widget build(BuildContext context) {
-    final isDesktop = Utils.isDesktop();
-    final tabs =
-        _tabManager.tabDatas.entries.map((entry) {
-          final tabId = entry.key;
-          final tabData = entry.value;
-          return TabData(
-            index: tabId.hashCode,
+    return FutureBuilder<bool>(
+      future: _tabManager.isLoaded, // 等待tabManager加载完毕
+      builder: (context, snapshot) {
+        switch (snapshot.connectionState) {
+          case ConnectionState.none:
+          case ConnectionState.waiting:
+            return CircularProgressIndicator();
+          case ConnectionState.active:
+          case ConnectionState.done:
+            if (snapshot.hasError) {
+              return Text('加载数据出错: ${snapshot.error}');
+            }
 
-            title: Tab(
-              child: GestureDetector(
-                onSecondaryTapDown:
-                    (details) => _showContextMenu(
-                      context,
-                      details.globalPosition,
-                      tabData['library'],
-                      tabId,
-                    ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Text(
-                      tabData['name'] ?? tabData['library'].name,
-                      style: TextStyle(fontSize: 18),
-                    ),
-                    const SizedBox(width: 4),
-                    GestureDetector(
-                      behavior: HitTestBehavior.opaque,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () => _tabManager.closeTab(tabId),
-                        child: const Icon(Icons.close, size: 20),
+            final isDesktop = Utils.isDesktop();
+            final tabs =
+                _tabManager.tabDatas.toList().map((tabData) {
+                  return TabData(
+                    index: tabData.id.hashCode,
+                    title: Tab(
+                      child: GestureDetector(
+                        onSecondaryTapDown:
+                            (details) => _showContextMenu(
+                              context,
+                              details.globalPosition,
+                              tabData.library,
+                              tabData.id,
+                            ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              tabData.title.isNotEmpty
+                                  ? tabData.title
+                                  : tabData.library.name,
+                              style: TextStyle(fontSize: 18),
+                            ),
+                            const SizedBox(width: 4),
+                            GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              child: InkWell(
+                                borderRadius: BorderRadius.circular(12),
+                                onTap: () => _tabManager.closeTab(tabData.id),
+                                child: const Icon(Icons.close, size: 20),
+                              ),
+                            ),
+                          ],
+                        ),
                       ),
                     ),
-                  ],
+                    content: LibraryContentView(
+                      plugin: _plugin,
+                      tabId: tabData.id,
+                      tabData: tabData,
+                    ),
+                  );
+                }).toList();
+            return Scaffold(
+              appBar: AppBar(
+                leading: IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => setState(() => _showSidebar = !_showSidebar),
                 ),
+                actions: [
+                  // settings
+                  IconButton(
+                    icon: const Icon(Icons.settings),
+                    onPressed: () => Navigator.pushNamed(context, '/settings'),
+                  ),
+                ],
+                title: const Text('素材管理器'),
+                backgroundColor: Theme.of(context).colorScheme.surface,
               ),
-            ),
-            content: LibraryContentView(
-              plugin: _plugin,
-              tabId: tabId,
-              tabData: tabData,
-            ),
-          );
-        }).toList();
-    return Scaffold(
-      appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => setState(() => _showSidebar = !_showSidebar),
-        ),
-        actions: [
-          // settings
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
-          ),
-        ],
-        title: const Text('素材管理器'),
-        backgroundColor: Theme.of(context).colorScheme.surface,
-      ),
-      body: Row(
-        children: [
-          if (_showSidebar) ...[
-            AppSidebarView(),
-            const VerticalDivider(width: 1),
-          ],
-          Expanded(
-            child:
-                tabs.isEmpty
-                    ? LibraryTabsEmptyView(onAddTab: () => _openLibrary())
-                    : DynamicTabBarWidget(
-                      dynamicTabs: tabs,
-                      showBackIcon: true,
-                      showNextIcon: true,
-                      trailing: IconButton(
-                        icon: const Icon(Icons.add),
-                        onPressed: () => _openLibrary(),
-                      ),
-                      leading: IconButton(
-                        icon: const Icon(Icons.close),
-                        onPressed: () => _tabManager.closeAllTabs(),
-                      ),
-                      // 桌面端禁止手势滑动
-                      physics:
-                          isDesktop
-                              ? const NeverScrollableScrollPhysics()
-                              : null,
-                      physicsTabBarView:
-                          isDesktop
-                              ? const NeverScrollableScrollPhysics()
-                              : null,
-                      onTabChanged: (index) {
-                        if (index != null) {
-                          final tabId = _tabManager.tabDatas.keys.elementAt(
-                            index,
-                          );
-                          _tabManager.setTabActive(tabId);
-                        }
-                      },
-                      onTabControllerUpdated: (controller) {
-                        // controller.addListener(() {
-                        //   final index = controller.index;
-                        //   final tabId = _tabManager.tabDatas.keys.elementAt(
-                        //     index,
-                        //   );
-                        //   _tabManager.setTabActive(tabId);
-                        // });
-                      },
-                    ),
-          ),
-        ],
-      ),
+              body: Row(
+                children: [
+                  if (_showSidebar) ...[
+                    AppSidebarView(),
+                    const VerticalDivider(width: 1),
+                  ],
+                  Expanded(
+                    child:
+                        tabs.isEmpty
+                            ? LibraryTabsEmptyView(
+                              onAddTab: () => _openLibrary(),
+                            )
+                            : DynamicTabBarWidget(
+                              dynamicTabs: tabs,
+                              showBackIcon: true,
+                              showNextIcon: true,
+                              trailing: IconButton(
+                                icon: const Icon(Icons.add),
+                                onPressed: () => _openLibrary(),
+                              ),
+                              leading: IconButton(
+                                icon: const Icon(Icons.close),
+                                onPressed: () => _tabManager.closeAllTabs(),
+                              ),
+                              // 桌面端禁止手势滑动
+                              physics:
+                                  isDesktop
+                                      ? const NeverScrollableScrollPhysics()
+                                      : null,
+                              physicsTabBarView:
+                                  isDesktop
+                                      ? const NeverScrollableScrollPhysics()
+                                      : null,
+                              onTabChanged: (index) {
+                                if (index != null) {
+                                  _tabManager.setActive(index);
+                                }
+                              },
+                              onTabControllerUpdated: (controller) {
+                                // controller.addListener(() {
+                                //   final index = controller.index;
+                                //   final tabId = _tabManager.tabDatas.keys.elementAt(
+                                //     index,
+                                //   );
+                                //   _tabManager.setTabActive(tabId);
+                                // });
+                              },
+                            ),
+                  ),
+                ],
+              ),
+            );
+        }
+      },
     );
   }
 

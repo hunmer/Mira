@@ -11,34 +11,21 @@ class LibraryDataController {
   final Map<String, LibraryDataInterface> dataInterfaces = {};
   LibraryDataController({required this.plugin});
 
-  Future<void> openLibrary(
-    Library library,
-    BuildContext context, {
-    bool newTabView = true,
-  }) async {
+  Future<LibraryDataInterface?> loadLibrary(Library library) async {
     final libraryId = library.id;
-    print('Opening library ${library.name}...');
+    print('loading library ${library.name}...');
     await plugin.foldersTagsController.createFolderCache(library.id);
     await plugin.foldersTagsController.createTagCache(library.id);
-    final path = library.customFields['path'];
-    final url = path.startsWith('ws://') ? path : 'ws://localhost:8080';
 
-    if (plugin.server.connecting) {
-      await plugin.server.stop();
+    final path = library.customFields['path'];
+    if (library.isLocal && !plugin.server.connecting) {
+      await plugin.server.start(path);
     }
-    await plugin.server.start(path);
-    final channel = WebSocketChannel.connect(Uri.parse(url));
+
+    final channel = WebSocketChannel.connect(Uri.parse(library.url));
     dataInterfaces[libraryId] = LibraryDataWebSocket(channel, library);
     await channel.ready;
-    if (newTabView) {
-      // 打开一个新的tabs页面
-      Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => LibraryTabsView(library: library),
-        ),
-      );
-    }
+    return dataInterfaces[libraryId];
   }
 
   LibraryDataInterface? getLibraryInst(libraryId) {
@@ -46,6 +33,13 @@ class LibraryDataController {
       libraryId = libraryId.id;
     }
     return dataInterfaces[libraryId];
+  }
+
+  Future<LibraryDataInterface?> loadLibraryInst(Library library) async {
+    if (getLibraryInst(Library) == null) {
+      return await loadLibrary(library);
+    }
+    return null;
   }
 
   void close() {}

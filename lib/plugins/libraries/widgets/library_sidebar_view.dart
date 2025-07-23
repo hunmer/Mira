@@ -30,7 +30,6 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
   @override
   void initState() {
     super.initState();
-    _library = widget.plugin.tabManager.getCurrentLibrary();
   }
 
   @override
@@ -49,7 +48,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
                   widget.tags
                       .map((tag) => TreeItem(id: tag.id, title: tag.title))
                       .toList(),
-              library: _library!,
+              library: widget.library,
               showSelectAll: false,
               onSelectionChanged:
                   (ids) => widget.plugin.tabManager.updateCurrentFitler({
@@ -75,7 +74,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
                             TreeItem(id: folder.id, title: folder.title),
                       )
                       .toList(),
-              library: _library!,
+              library: widget.library,
               showSelectAll: false,
               onSelectionChanged: (ids) {
                 if (ids != null && ids.isNotEmpty) {

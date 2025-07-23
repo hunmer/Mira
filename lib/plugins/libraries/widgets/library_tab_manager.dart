@@ -1,5 +1,6 @@
 import 'dart:async';
 
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_manager.dart';
@@ -8,45 +9,170 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:uuid/uuid.dart';
 import '../models/library.dart';
 
+class LibraryTabData {
+  final String id;
+  final Library library;
+  final bool isPinned;
+  final bool isRecycleBin;
+  bool isActive;
+  bool needUpdate;
+  String title;
+  final DateTime createDate;
+  final Map<String, dynamic> pageOptions;
+  final Map<String, dynamic> filter;
+  final Set<String> displayFields;
+
+  LibraryTabData({
+    this.title = '',
+    this.isActive = false,
+    this.needUpdate = false,
+    required this.id,
+    required this.library,
+    this.isPinned = false,
+    this.isRecycleBin = false,
+    required this.createDate,
+    this.pageOptions = const {'page': 1, 'perPage': 100},
+    this.filter = const {},
+    this.displayFields = const {
+      'title',
+      'rating',
+      'notes',
+      'createdAt',
+      'tags',
+      'folder',
+      'size',
+    },
+  });
+
+  factory LibraryTabData.fromMap(Map<String, dynamic> map) {
+    return LibraryTabData(
+      id: map['id'] as String,
+      title: map['title'] as String,
+      library: Library.fromMap(map['library']),
+      isActive: map['isActive'] as bool? ?? false,
+      isPinned: map['isPinned'] as bool? ?? false,
+      isRecycleBin: map['isRecycleBin'] as bool? ?? false,
+      createDate: DateTime.parse(map['create_date'] as String),
+      pageOptions: Map<String, dynamic>.from(map['pageOptions'] as Map),
+      filter: Map<String, dynamic>.from(map['filter'] as Map),
+      displayFields: Set<String>.from(map['displayFields'] as List),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'title': title,
+      'library': library,
+      'isActive': isActive,
+      'isPinned': isPinned,
+      'isRecycleBin': isRecycleBin,
+      'create_date': createDate.toIso8601String(),
+      'pageOptions': pageOptions,
+      'filter': filter,
+      'displayFields': displayFields.toList(),
+    };
+  }
+
+  LibraryTabData copyWith({
+    String? id,
+    String? title,
+    Library? library,
+    bool? needUpdate,
+    bool? isActive,
+    bool? isPinned,
+    bool? isRecycleBin,
+    DateTime? createDate,
+    Map<String, dynamic>? pageOptions,
+    Map<String, dynamic>? filter,
+    Set<String>? displayFields,
+  }) {
+    return LibraryTabData(
+      id: id ?? this.id,
+      title: title ?? this.title,
+      library: library ?? this.library,
+      needUpdate: needUpdate ?? this.needUpdate,
+      isPinned: isPinned ?? this.isPinned,
+      isActive: isActive ?? this.isActive,
+      isRecycleBin: isRecycleBin ?? this.isRecycleBin,
+      createDate: createDate ?? this.createDate,
+      pageOptions: pageOptions ?? this.pageOptions,
+      filter: filter ?? this.filter,
+      displayFields: displayFields ?? this.displayFields,
+    );
+  }
+}
+
 class LibraryTabManager {
-  final Map<String, dynamic> tabDatas = {};
-  final ValueNotifier<int> currentIndex;
+  final List<LibraryTabData> tabDatas = [];
+  late final ValueNotifier<int> currentIndex = ValueNotifier<int>(-1);
   late final LibrariesPlugin plugin;
-  // onTabUpdate stream
   final StreamController<Map<String, dynamic>> onTabEventStream =
       StreamController.broadcast();
-  List<String> getTabIds() => tabDatas.keys.toList();
+  late final bool autoSave;
+  bool _isLoaded = false;
+  List<String> getTabIds() => tabDatas.map((item) => item.id).toList();
+  Future<bool> get isLoaded async {
+    await loadfromjson();
+    return _isLoaded;
+  }
 
-  LibraryTabManager(this.currentIndex) {
+  LibraryTabManager({this.autoSave = true}) {
     plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
+  }
+
+  Future<void> init() async {
+    await loadfromjson();
+  }
+
+  // savetoJson
+  Future<void> savetoJson() async {
+    await plugin.storage.writeJson('tabs.json', tabDatas);
+  }
+
+  // readfromjson
+  Future<void> readfromjson() async {
+    final data = await plugin.storage.readJson('tabs.json') ?? [];
+    print('load data ${data.length}');
+    tabDatas.clear();
+    for (var item in data) {
+      if (item is Map<String, dynamic>) {
+        tabDatas.add(LibraryTabData.fromMap(item));
+      }
+    }
+    _isLoaded = true;
+  }
+
+  // loadfromjson
+  Future<void> loadfromjson() async {
+    if (!_isLoaded && autoSave) await readfromjson();
   }
 
   // 添加tab
   void addTab(Library library, {bool isRecycleBin = false}) {
-    tabDatas[Uuid().v4()] = {
-      'library': library,
-      'isPinned': false,
-      'isRecycleBin': isRecycleBin,
-      'create_date': DateTime.now(),
-      'pageOptions': {'page': 1, 'perPage': 100},
-      'filter': {},
-      'displayFields': <String>{
-        'title',
-        'rating',
-        'notes',
-        'createdAt',
-        'tags',
-        'folder',
-        'size',
-      },
-    };
+    tabDatas.add(
+      LibraryTabData(
+        id: Uuid().v4(),
+        library: library,
+        isRecycleBin: isRecycleBin,
+        createDate: DateTime.now(),
+      ),
+    );
+    trySaveTabs();
     currentIndex.value = tabDatas.length - 1;
     onTabEvent('add', currentIndex.value);
+  }
+
+  void trySaveTabs() {
+    if (autoSave) {
+      savetoJson();
+    }
   }
 
   void closeTabIndex(int index) {
     final tabData = getTabIds()[index];
     tabDatas.remove(tabData);
+    trySaveTabs();
     onTabEvent('close', index);
   }
 
@@ -73,9 +199,25 @@ class LibraryTabManager {
   }
 
   void setValue(String tabId, String key, dynamic value) {
-    final tabData = getTabData(tabId);
+    final index = getTabIds().indexOf(tabId);
+    final tabData = tabDatas[index];
+    LibraryTabData newData;
     if (tabData != null) {
-      tabData[key] = value;
+      switch (key) {
+        case 'filter':
+          newData = tabData.copyWith(filter: value as Map<String, dynamic>);
+          break;
+        case 'displayFields':
+          newData = tabData.copyWith(displayFields: value as Set<String>);
+          break;
+        case 'needUpdate':
+          newData = tabData.copyWith(needUpdate: value as bool);
+          break;
+        default:
+          return;
+      }
+      tabDatas[index] = newData;
+      trySaveTabs();
     }
   }
 
@@ -89,22 +231,16 @@ class LibraryTabManager {
   }
 
   void tryUpdate(String tabId) {
-    final tabData = getTabData(tabId) ?? {};
-    if (tabData.containsKey('needUpdate') && tabData['needUpdate']) {
+    final tabData = getTabData(tabId);
+    if (tabData != null) {
       updateTab(tabId);
-      tabData['needUpdate'] = false;
+      setValue(tabId, 'needUpdate', false);
     }
-  }
-
-  Map<String, dynamic> map(Function(String, Map<String, dynamic>) callback) {
-    return tabDatas.map((key, value) {
-      final result = callback(key, value);
-      return result ?? MapEntry(key, value);
-    });
   }
 
   void closeAllTabs() {
     tabDatas.clear();
+    trySaveTabs();
     currentIndex.value = 0;
   }
 
@@ -114,15 +250,14 @@ class LibraryTabManager {
 
   updateCurrentFitler(Map<String, dynamic> filter) {
     final tabData = getCurrentData();
-    if (tabData != null) {
+    final tabId = getCurrentTabId();
+    if (tabData != null && tabId != null) {
       // 合并过滤器
-      tabData['filter'] = {...?tabData['filter'], ...filter};
+      final newFilter = {...tabData.filter, ...filter};
+      setValue(tabId, 'filter', newFilter);
       EventManager.instance.broadcast(
         'library::filter_updated',
-        MapEventArgs({
-          'library': tabData['library'],
-          'filter': tabData['filter'],
-        }),
+        MapEventArgs({'library': tabData.library, 'filter': newFilter}),
       );
     }
   }
@@ -130,43 +265,35 @@ class LibraryTabManager {
   setLibraryFilter(String tabId, Map<String, dynamic> filter) {}
 
   Map<String, dynamic> getLibraryFilter(String tabId) {
-    final tabData = tabDatas[tabId];
+    final tabData = getTabData(tabId);
     if (tabData != null) {
-      return Map<String, dynamic>.from(tabData['filter'] as Map);
+      return tabData.filter;
     } else {
       return {};
     }
   }
 
-  Map<String, dynamic>? getTabData(String tabId) {
-    final tabData = tabDatas[tabId];
-    if (tabData != null) {
-      return tabData;
-    } else {
-      return null;
-    }
+  LibraryTabData? getTabData(String tabId) {
+    return tabDatas.firstWhereOrNull((element) => element.id == tabId);
   }
 
   Set<String> getLibraryDisplayFields(String tabId) {
-    final tabData = tabDatas[tabId];
+    final tabData = getTabData(tabId);
     if (tabData != null) {
-      return tabData['displayFields'];
+      return tabData.displayFields;
     } else {
       return {};
     }
   }
 
   setLibraryDisplayFields(String tabId, Set<String> fields) {
-    final tabData = tabDatas[tabId];
-    if (tabData != null) {
-      tabData['displayFields'] = fields;
-    }
+    setValue(tabId, 'displayFields', fields);
   }
 
   Map<String, dynamic> getPageOptions(String tabId) {
-    final tabData = tabDatas[tabId];
+    final tabData = getTabData(tabId);
     if (tabData != null) {
-      return tabData['pageOptions'];
+      return tabData.pageOptions;
     } else {
       return {'page': 1, 'perPage': 20};
     }
@@ -174,8 +301,9 @@ class LibraryTabManager {
 
   String? getCurrentTabId() {
     final tabIds = getTabIds();
-    return tabIds.isNotEmpty && currentIndex.value < tabIds.length
-        ? tabIds[currentIndex.value]
+    final index = currentIndex.value;
+    return tabIds.isNotEmpty && index < tabIds.length && index != -1
+        ? tabIds[index]
         : null;
   }
 
@@ -190,14 +318,22 @@ class LibraryTabManager {
     }
   }
 
-  dynamic getCurrentData() {
-    return tabDatas[getCurrentTabId()];
+  setActive(int index) {
+    final tabData = tabDatas.elementAt(index);
+    setTabActive(tabData.id);
+  }
+
+  LibraryTabData? getCurrentData() {
+    final tabId = getCurrentTabId();
+    if (tabId != null) {
+      return getTabData(tabId);
+    }
   }
 
   Library? getCurrentLibrary() {
     final data = getCurrentData();
     if (data != null) {
-      return data['library'];
+      return data.library;
     }
   }
 }

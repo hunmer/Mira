@@ -3,6 +3,7 @@ import 'package:flutter_context_menu/flutter_context_menu.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/library_edit_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_tabs_view.dart';
 import '../models/library.dart';
 import '../l10n/libraries_localizations.dart';
 
@@ -31,10 +32,9 @@ class _LibraryListViewState extends State<LibraryListView> {
     if (!newTabView) {
       widget.onSelected?.call(library);
     }
-    await _plugin.libraryController.openLibrary(
-      library,
+    Navigator.push(
       context,
-      newTabView: newTabView,
+      MaterialPageRoute(builder: (context) => LibraryTabsView()),
     );
   }
 

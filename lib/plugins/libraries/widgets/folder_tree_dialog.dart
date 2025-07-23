@@ -10,14 +10,14 @@ class AsyncTreeViewDialog extends StatefulWidget {
   final String title;
   final IconData? defaultIcon;
   final String? type;
-  final Function(List<String>) onSelectionChanged;
+  final Function(List<String>)? onSelectionChanged;
 
   const AsyncTreeViewDialog({
     this.selected,
     this.defaultIcon,
     this.type,
     required this.items,
-    required this.onSelectionChanged,
+    this.onSelectionChanged,
     required this.library,
     required this.title,
     super.key,
@@ -28,21 +28,11 @@ class AsyncTreeViewDialog extends StatefulWidget {
 }
 
 class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
-  late FolderTreeWidget _treeWidget;
   final GlobalKey<FolderTreeWidgetState> _treeWidgetStateKey = GlobalKey();
-
+  late List<String> _selected = [];
   @override
   void initState() {
     super.initState();
-    _treeWidget = FolderTreeWidget(
-      selected: widget.selected,
-      items: widget.items,
-      library: widget.library,
-      defaultIcon: widget.defaultIcon,
-      type: widget.type,
-      key: _treeWidgetStateKey,
-      onSelectionChanged: widget.onSelectionChanged,
-    );
   }
 
   @override
@@ -53,7 +43,22 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
 
     return AlertDialog(
       title: Text(widget.title),
-      content: SizedBox(width: maxWidth, height: maxHeight, child: _treeWidget),
+      content: SizedBox(
+        width: maxWidth,
+        height: maxHeight,
+        child: FolderTreeWidget(
+          selected: widget.selected,
+          items: widget.items,
+          library: widget.library,
+          defaultIcon: widget.defaultIcon,
+          type: widget.type,
+          key: _treeWidgetStateKey,
+          onSelectionChanged: (List<String> vals) {
+            _selected = vals;
+            widget.onSelectionChanged?.call(vals);
+          },
+        ),
+      ),
       actions: [
         TextButton(
           onPressed: () => Navigator.pop(context),
@@ -63,7 +68,12 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
           onPressed:
               () => Navigator.pop(
                 context,
-                _treeWidget.getSelected(_treeWidgetStateKey.currentState!),
+                _selected.map((id) {
+                  final item = widget.items.firstWhere(
+                    (element) => element.id == id,
+                  );
+                  return item;
+                }).toList(),
               ),
           child: const Text('OK'),
         ),
