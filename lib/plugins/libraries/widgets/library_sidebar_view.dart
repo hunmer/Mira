@@ -9,15 +9,21 @@ import '../models/library.dart';
 class LibrarySidebarView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Library library;
+  final String tabId;
   final List<LibraryTag> tags;
+  final List<String> tagsSelected;
   final List<LibraryFolder> folders;
+  final List<String> folderSelected;
 
   const LibrarySidebarView({
     super.key,
     required this.plugin,
+    required this.tabId,
     required this.library,
     required this.tags,
+    this.tagsSelected = const [],
     required this.folders,
+    this.folderSelected = const [],
   });
 
   @override
@@ -47,9 +53,10 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
                       .map((tag) => TreeItem(id: tag.id, title: tag.title))
                       .toList(),
               library: widget.library,
+              selected: Set<String>.from(widget.tagsSelected),
               showSelectAll: false,
               onSelectionChanged:
-                  (ids) => widget.plugin.tabManager.updateCurrentFitler({
+                  (ids) => widget.plugin.tabManager.updateFilter(widget.tabId, {
                     'tags': ids,
                   }),
               type: 'tags',
@@ -72,15 +79,18 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
                             TreeItem(id: folder.id, title: folder.title),
                       )
                       .toList(),
+              selected: Set<String>.from(widget.folderSelected),
               library: widget.library,
               showSelectAll: false,
               onSelectionChanged: (ids) {
                 if (ids != null && ids.isNotEmpty) {
-                  widget.plugin.tabManager.updateCurrentFitler({
+                  widget.plugin.tabManager.updateFilter(widget.tabId, {
                     'folder': ids.first,
                   });
                 } else {
-                  widget.plugin.tabManager.updateCurrentFitler({'folder': ''});
+                  widget.plugin.tabManager.updateFilter(widget.tabId, {
+                    'folder': '',
+                  });
                 }
               },
               type: 'folders',

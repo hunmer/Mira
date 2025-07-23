@@ -68,7 +68,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     _displayFields = _tabManager.getLibraryDisplayFields(tabId);
     _filterOptions = _tabManager.getLibraryFilter(tabId);
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
-    _tabData = _tabManager.getTabData(widget.tabId);
+    _tabData = _tabManager.getTabData(tabId);
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
       setState(() {
         _uploadProgress = _uploadQueue.progress;
@@ -113,7 +113,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         }
       }
     });
-    EventManager.instance.subscribe('library::filter_updated', _onFilterUpdate);
+    EventManager.instance.subscribe('filter::updated', _onFilterUpdate);
   }
 
   void _refresh() async {
@@ -128,10 +128,13 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   //  系统内广播更新过滤器
   void _onFilterUpdate(EventArgs args) {
     if (args is MapEventArgs) {
-      final libraryId = args.item['libraryId'];
-      if (libraryId != widget.library.id) return;
-      _filterOptions = Map<String, dynamic>.from(args.item['filter']);
-      _refresh();
+      final tabId = args.item['tabId'];
+      if (widget.tabId == tabId) {
+        _filterOptions = Map<String, dynamic>.from(args.item['filter']);
+        setState(() {
+          _loadFiles();
+        });
+      }
     }
   }
 
@@ -376,8 +379,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               child: LibrarySidebarView(
                 plugin: widget.plugin,
                 library: widget.library,
+                tabId: widget.tabId,
                 tags: _tags,
+                tagsSelected: _filterOptions['tags'] ?? [],
                 folders: _folders,
+                folderSelected: _filterOptions['folder'] ?? [],
               ),
             ),
             VerticalDivider(width: 1),

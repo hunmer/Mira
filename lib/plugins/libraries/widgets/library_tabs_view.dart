@@ -171,7 +171,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                     ),
                     content: LibraryContentView(
                       plugin: _plugin,
-                      tabId: tabData.id,
                       tabData: tabData,
                     ),
                   );

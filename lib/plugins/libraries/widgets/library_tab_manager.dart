@@ -9,6 +9,8 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:uuid/uuid.dart';
 import '../models/library.dart';
 
+const DEFAULT_PAGE_OPTIONS = {'page': 1, 'perPage': 100};
+
 class LibraryTabData {
   final String id;
   final Library library;
@@ -31,7 +33,7 @@ class LibraryTabData {
     this.isPinned = false,
     this.isRecycleBin = false,
     required this.createDate,
-    this.pageOptions = const {'page': 1, 'perPage': 100},
+    this.pageOptions = DEFAULT_PAGE_OPTIONS,
     this.filter = const {},
     this.displayFields = const {
       'title',
@@ -137,7 +139,12 @@ class LibraryTabManager {
     tabDatas.clear();
     for (var item in data) {
       if (item is Map<String, dynamic>) {
-        tabDatas.add(LibraryTabData.fromMap(item));
+        // 重置
+        item['filter'] = {};
+        item['displayFields'] = [];
+        item['pageOptions'] = DEFAULT_PAGE_OPTIONS;
+        final tabData = LibraryTabData.fromMap(item);
+        tabDatas.add(tabData);
       }
     }
     _isLoaded = true;
@@ -248,16 +255,19 @@ class LibraryTabManager {
     currentIndex.dispose();
   }
 
-  updateCurrentFitler(Map<String, dynamic> filter) {
-    final tabData = getCurrentData();
-    final tabId = getCurrentTabId();
+  updateFilter(String tabId, Map<String, dynamic> filter) {
+    final tabData = getTabData(tabId);
     if (tabData != null && tabId != null) {
       // 合并过滤器
       final newFilter = {...tabData.filter, ...filter};
       setValue(tabId, 'filter', newFilter);
       EventManager.instance.broadcast(
-        'library::filter_updated',
-        MapEventArgs({'library': tabData.library, 'filter': newFilter}),
+        'filter::updated',
+        MapEventArgs({
+          'library': tabData.library,
+          'tabId': tabId,
+          'filter': newFilter,
+        }),
       );
     }
   }
@@ -295,7 +305,7 @@ class LibraryTabManager {
     if (tabData != null) {
       return tabData.pageOptions;
     } else {
-      return {'page': 1, 'perPage': 20};
+      return DEFAULT_PAGE_OPTIONS;
     }
   }
 

@@ -6,13 +6,11 @@ import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 class LibraryContentView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final LibraryTabData tabData;
-  final String tabId;
 
   const LibraryContentView({
     super.key,
     required this.plugin,
     required this.tabData,
-    required this.tabId,
   });
 
   @override
@@ -29,7 +27,7 @@ class _LibraryContentViewState extends State<LibraryContentView>
     super.build(context);
     return LibraryGalleryView(
       plugin: widget.plugin,
-      tabId: widget.tabId,
+      tabId: widget.tabData.id,
       library: widget.tabData.library,
     );
   }
