@@ -9,6 +9,7 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:uuid/uuid.dart';
 import '../models/library.dart';
 
+// ignore: constant_identifier_names
 const DEFAULT_PAGE_OPTIONS = {'page': 1, 'perPage': 100};
 
 class LibraryTabData {
@@ -330,19 +331,5 @@ class LibraryTabManager {
   setActive(int index) {
     final tabData = tabDatas.elementAt(index);
     setTabActive(tabData.id);
-  }
-
-  LibraryTabData? getCurrentData() {
-    final tabId = getCurrentTabId();
-    if (tabId != null) {
-      return getTabData(tabId);
-    }
-  }
-
-  Library? getCurrentLibrary() {
-    final data = getCurrentData();
-    if (data != null) {
-      return data.library;
-    }
   }
 }

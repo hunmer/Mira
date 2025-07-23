@@ -20,6 +20,7 @@ class FileUploadListDialog extends StatefulWidget {
   });
 
   @override
+  // ignore: library_private_types_in_public_api
   _FileUploadListDialogState createState() => _FileUploadListDialogState();
 }
 
@@ -57,6 +58,7 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
 
   @override
   void dispose() {
+    _taskStatusSubscription?.cancel();
     _progressSubscription?.cancel();
     _tabController.dispose();
     super.dispose();
@@ -112,8 +114,4 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
   }
 
   // _getStatusText moved to upload_queue_view.dart
-}
-
-extension on QueueTask {
-  operator [](String other) {}
 }

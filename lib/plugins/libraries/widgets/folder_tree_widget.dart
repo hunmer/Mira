@@ -1,6 +1,5 @@
 // ignore_for_file: deprecated_member_use
 
-import 'package:checkable_treeview/checkable_treeview.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';

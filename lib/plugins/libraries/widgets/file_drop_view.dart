@@ -126,7 +126,6 @@ class _FileDropViewState extends State<FileDropView>
       onSelectChanged: (index, value) {
         setState(() {
           _selectedItems[index] = value;
-          _fileDataSource.notifyListeners();
         });
       },
     );
@@ -201,7 +200,6 @@ class _FileDropViewState extends State<FileDropView>
         onSelectChanged: (index, value) {
           setState(() {
             _selectedItems[index] = value;
-            _fileDataSource.notifyListeners(); // 确保数据源通知监听器
           });
         },
       );
@@ -224,6 +222,7 @@ class _FileDropViewState extends State<FileDropView>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return SizedBox(
       width: MediaQuery.of(context).size.width * 0.8,
       height: MediaQuery.of(context).size.height * 0.8,

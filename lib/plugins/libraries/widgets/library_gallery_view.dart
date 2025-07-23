@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
@@ -139,7 +138,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void _onThumbnailGenerated(EventArgs args) {
-    if (args is! serverEventArgs) return;
+    if (args is! ServerEventArgs) return;
   }
 
   @override

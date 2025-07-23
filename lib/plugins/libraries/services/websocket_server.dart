@@ -3,7 +3,6 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:image/image.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_sqlite5.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
@@ -63,7 +62,7 @@ class WebSocketServer {
     );
     dbService.getEventManager().broadcastToClients(
       eventName,
-      serverEventArgs(eventData),
+      ServerEventArgs(eventData),
     );
   }
 
@@ -75,7 +74,7 @@ class WebSocketServer {
     final dbService = _libraryServices.firstWhere(
       (library) => library.getLibraryId() == data['libraryId'],
     );
-    dbService.getEventManager().broadcast(eventName, serverEventArgs(data));
+    dbService.getEventManager().broadcast(eventName, ServerEventArgs(data));
   }
 
   void _handleConnection(WebSocketChannel channel) async {
@@ -454,7 +453,7 @@ class WebSocketServer {
   void broadcastLibraryEvent(
     String libraryId,
     String eventName,
-    serverEventArgs args,
+    ServerEventArgs args,
   ) {
     final message = jsonEncode({'event': eventName, 'data': args});
 

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:mira/core/theme_controller.dart';
 import 'package:mira/screens/settings_screen/controllers/settings_screen_controller.dart';
 
 class AppSidebarView extends StatefulWidget {

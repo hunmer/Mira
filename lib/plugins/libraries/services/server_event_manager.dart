@@ -10,7 +10,7 @@ class ServerEventManager {
   ServerEventManager(this._server, this._db);
 
   /// 广播事件给所有连接的客户端
-  void broadcastToClients(String eventName, serverEventArgs args) {
+  void broadcastToClients(String eventName, ServerEventArgs args) {
     _server.broadcastLibraryEvent(_db.getLibraryId(), eventName, args);
   }
 

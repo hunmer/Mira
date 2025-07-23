@@ -3,6 +3,7 @@ import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/event/event_throttle.dart';
 import 'package:mira/core/plugin_manager.dart';
+// ignore: library_prefixes
 import 'package:mira/core/utils/utils.dart' as Utils;
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';

@@ -5,8 +5,6 @@ import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:path/path.dart' as path;
 
-import 'package:queue_it/queue_it.dart';
-
 class UploadQueueView extends StatefulWidget {
   final UploadQueueService queueServer;
 
@@ -36,6 +34,7 @@ class _UploadQueueViewState extends State<UploadQueueView>
 
   @override
   Widget build(BuildContext context) {
+    super.build(context);
     return QueueItWidget(
       queue: widget.queueServer.queue,
       builder: (context, snapshot) {
@@ -59,7 +58,7 @@ class _UploadQueueViewState extends State<UploadQueueView>
                         items.map((item) {
                           final task = item.data as QueueTask;
                           return DataRow2(
-                            color: MaterialStateProperty.all(
+                            color: WidgetStateProperty.all(
                               getStatusColor(task.status),
                             ),
                             cells: [

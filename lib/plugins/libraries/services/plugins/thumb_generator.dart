@@ -20,7 +20,7 @@ class ThumbGenerator {
   }
 
   Future<void> _onFileCreated(EventArgs args) async {
-    if (args is! serverEventArgs) return;
+    if (args is! ServerEventArgs) return;
 
     try {
       final path = args.item['path'];
@@ -58,7 +58,7 @@ class ThumbGenerator {
   }
 
   Future<void> _onFileDeleted(EventArgs args) async {
-    if (args is! serverEventArgs) return;
+    if (args is! ServerEventArgs) return;
 
     try {
       final thumbPath = path.join(
