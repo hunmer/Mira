@@ -71,3 +71,5 @@ app.*.map.json
 !analysis_options.yaml
 !README.md
 sdk/typescript/node_modules/
+sdk/typescript/src/examples/
+sdk/typescript/src/test/

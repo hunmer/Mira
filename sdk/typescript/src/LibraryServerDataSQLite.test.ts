@@ -4,7 +4,7 @@ import * as fs from 'fs';
 
 describe('LibraryServerDataSQLite', () => {
   let db: LibraryServerDataSQLite;
-  const testDbPath = path.join(__dirname, 'test.db');
+  const testDbPath = path.join(__dirname, 'test/test.db');
 
   beforeAll(async () => {
     // 确保测试数据库不存在
@@ -115,7 +115,7 @@ describe('LibraryServerDataSQLite', () => {
   describe('folder operations', () => {
     it('should create and get a folder', async () => {
       const folderData = {
-        id: 1,
+        id: Date.now(), // 使用时间戳作为唯一ID
         title: 'Test Folder',
         parent_id: null,
         color: 0xFF0000,
@@ -123,11 +123,11 @@ describe('LibraryServerDataSQLite', () => {
       };
 
       const folderId = await db.createFolder(folderData);
-      expect(folderId).toBe(1);
+      expect(folderId).toBe(folderData.id);
 
       const retrievedFolder = await db.getFolder(folderId);
       expect(retrievedFolder).toEqual({
-        id: 1,
+        id: folderData.id,
         title: 'Test Folder',
         parent_id: null,
         color: 0xFF0000,
@@ -139,7 +139,7 @@ describe('LibraryServerDataSQLite', () => {
   describe('tag operations', () => {
     it('should create and get a tag', async () => {
       const tagData = {
-        id: 1,
+        id: Date.now(), // 使用时间戳作为唯一ID
         title: 'Test Tag',
         parent_id: null,
         color: 0x00FF00,
@@ -147,11 +147,11 @@ describe('LibraryServerDataSQLite', () => {
       };
 
       const tagId = await db.createTag(tagData);
-      expect(tagId).toBe(1);
+      expect(tagId).toBe(tagData.id);
 
       const retrievedTag = await db.getTag(tagId);
       expect(retrievedTag).toEqual({
-        id: 1,
+        id: tagData.id,
         title: 'Test Tag',
         parent_id: null,
         color: 0x00FF00,

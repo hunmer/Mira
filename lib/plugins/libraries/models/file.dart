@@ -60,7 +60,9 @@ class LibraryFile {
               : int.tryParse(map['size']?.toString() ?? '0') ?? 0,
       hash: map['hash'] ?? '',
       customFields: Map<String, dynamic>.from(
-        map['customFields'] ?? map['custom_fields'] ?? {},
+        map['customFields'] ?? map['custom_fields'] is String
+            ? jsonDecode(map['customFields'] ?? map['custom_fields'] ?? '{}')
+            : map['customFields'] ?? map['custom_fields'] ?? {},
       ),
       notes: map['notes'],
       rating: map['rating'] ?? map['stars'] ?? 0,
