@@ -21,7 +21,6 @@ export class LibraryServerDataSQLite implements ILibraryServerData {
     // 初始化数据库连接和表结构
     const dbPath = path.join(await this.getLibraryPath(), 'library_data.db');
     this.db = new Database(dbPath);
-
     // 创建文件表
     await this.executeSql(`
       CREATE TABLE IF NOT EXISTS files(
