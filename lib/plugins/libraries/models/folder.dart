@@ -19,7 +19,7 @@ class LibraryFolder {
     return LibraryFolder(
       id: map['id'].toString(),
       title: map['title'],
-      parentId: map['parentId'],
+      parentId: map['parent_id']?.toString(),
       color:
           map['color'] != null
               ? Color(int.tryParse(map['color'].toString()) ?? 0)
@@ -35,7 +35,7 @@ class LibraryFolder {
     return {
       'id': id,
       'title': title,
-      'parentId': parentId,
+      'parent_id': parentId,
       // ignore: deprecated_member_use
       'color': color?.value,
       'icon': icon?.codePoint,

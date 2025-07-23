@@ -70,7 +70,7 @@ class LibraryFile {
       folderId: map['folderId'] ?? map['folder_id']?.toString() ?? '',
       reference: map['reference'],
       url: map['url'],
-      path: map['path'],
+      path: map['path'] ?? '',
       thumb: map['thumb'],
       type: map['type'],
     );

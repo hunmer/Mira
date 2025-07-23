@@ -306,8 +306,20 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
+  Future<List<Map<String, dynamic>>> getAllFolders() async {
+    final response = await _sendRequest(action: 'folders', type: '');
+    return response is List ? List<Map<String, dynamic>>.from(response) : [];
+  }
+
+  @override
   Future<List<Map<String, dynamic>>> getTags() async {
     final response = await _sendRequest(action: 'read', type: 'tag');
+    return response is List ? List<Map<String, dynamic>>.from(response) : [];
+  }
+
+  @override
+  Future<List<Map<String, dynamic>>> getAllTags() async {
+    final response = await _sendRequest(action: 'tags', type: '');
     return response is List ? List<Map<String, dynamic>>.from(response) : [];
   }
 

@@ -19,7 +19,7 @@ class LibraryTag {
     return LibraryTag(
       id: map['id'].toString(),
       title: map['title'],
-      parentId: map['parentId'],
+      parentId: map['parent_id']?.toString(),
       color: map['color'] != null ? Color(map['color']) : null,
       icon: map['icon'] != null ? IconData(map['icon']) : null,
     );
@@ -29,7 +29,7 @@ class LibraryTag {
     return {
       'id': id,
       'title': title,
-      'parentId': parentId,
+      'parent_id': parentId,
       'color': color,
       'icon': icon,
     };

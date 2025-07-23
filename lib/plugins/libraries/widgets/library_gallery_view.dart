@@ -52,6 +52,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late List<LibraryFolder> _folders = [];
   late List<LibraryTag> _tags = [];
   bool _isFirstLoad = false;
+  List<String> _eventSubscribes = [];
 
   late Set<String> _displayFields = {};
   Map<String, dynamic> _filterOptions = {};
@@ -91,9 +92,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     final inst =
         widget.plugin.libraryController.getLibraryInst(widget.library.id)!;
     final tags =
-        (await inst.getTags()).map((item) => LibraryTag.fromMap(item)).toList();
+        (await inst.getAllTags())
+            .map((item) => LibraryTag.fromMap(item))
+            .toList();
     final folders =
-        (await inst.getFolders())
+        (await inst.getAllFolders())
             .map((item) => LibraryFolder.fromMap(item))
             .toList();
     _tags = tags;
@@ -101,26 +104,28 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void initEvents() async {
-    EventManager.instance.subscribe(
-      'thumbnail::generated',
-      _onThumbnailGenerated,
-    );
-    EventManager.instance.subscribe('tab::doUpdate', (EventArgs args) {
-      if (args is MapEventArgs) {
-        if (args.item['tabId'] == widget.tabId) {
-          _refresh();
-          print('updated Tab ${widget.tabId}');
+    _eventSubscribes.addAll([
+      EventManager.instance.subscribe(
+        'thumbnail::generated',
+        _onThumbnailGenerated,
+      ),
+      EventManager.instance.subscribe('tab::doUpdate', (EventArgs args) {
+        if (args is MapEventArgs) {
+          if (args.item['tabId'] == widget.tabId) {
+            _refresh();
+            print('updated Tab ${widget.tabId}');
+          }
         }
-      }
-    });
-    EventManager.instance.subscribe('filter::updated', _onFilterUpdate);
+      }),
+      EventManager.instance.subscribe('filter::updated', _onFilterUpdate),
+    ]);
   }
 
   void _refresh() async {
     if (mounted) {
       setState(() {
         _loadFiles();
-        _loadFoldersTags();
+        // _loadFoldersTags();
       });
     }
   }
@@ -146,6 +151,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   void dispose() {
     _progressSubscription?.cancel();
     _uploadQueue.dispose();
+    for (final key in _eventSubscribes) {
+      EventManager.instance.unsubscribe(key);
+    }
     super.dispose();
   }
 
@@ -262,9 +270,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<dynamic>(
-      future: () async {
+      future: () {
         // 保证library完成初始化连接
-        return await widget.plugin.libraryController
+        return widget.plugin.libraryController
             .loadLibraryInst(widget.library)
             .then((_) => _doFirstLoad());
       }(),
@@ -291,9 +299,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     if (totalPages > 0 && _paginationOptions['page'] > totalPages) {
       _paginationOptions = Map<String, dynamic>.from(_paginationOptions);
       _paginationOptions['page'] = totalPages;
-    }
-    if (_isLoading) {
-      return const Center(child: CircularProgressIndicator());
     }
     return Scaffold(
       appBar: LibraryGalleryAppBar(
@@ -379,7 +384,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                 tags: _tags,
                 tagsSelected: _filterOptions['tags'] ?? [],
                 folders: _folders,
-                folderSelected: _filterOptions['folder'] ?? [],
+                folderSelected:
+                    _filterOptions['folder'] is String
+                        ? [_filterOptions['folder']]
+                        : [],
               ),
             ),
             VerticalDivider(width: 1),
@@ -409,6 +417,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                     currentPage: _paginationOptions['page'],
                     totalPages: totalPages,
                     onPageChanged: (page) {
+                      _paginationOptions = Map<String, dynamic>.from(
+                        _paginationOptions,
+                      );
                       _paginationOptions['page'] = page;
                       setState(() {
                         _loadFiles();

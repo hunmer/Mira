@@ -125,6 +125,7 @@ export class LibraryDataConverter {
         if (processed >= maxItems) break;
         const urlMeta = data.urlMeta.find(m => m.fid === file.id);
         const descMeta = data.descMeta.find(m => m.fid === file.id);
+        const tags = this.getTagIdsForFile(file.id, data.tagsMeta, tagMap);
         const newFileId = await this.libraryData.createFile({
           name: file.title,
           created_at: file.birthtime || file.date,
@@ -135,7 +136,7 @@ export class LibraryDataConverter {
           folder_id: this.getFolderIdsForFile(file.id, data.foldersMeta, folderMap),
           reference: urlMeta?.url,
           path: this.generateFilePath(file.title, file.link, folderMap),
-          tags: JSON.stringify(this.getTagIdsForFile(file.id, data.tagsMeta, tagMap))
+          tags: tags != null && tags.length ? JSON.stringify(tags) : null,
         });
 
         if (typeof newFileId === 'number') {
@@ -254,9 +255,9 @@ export class LibraryDataConverter {
 }
 
 // 使用示例
-async function main(sourceDbPath: string, targetDbPath: string) {
-  if (!sourceDbPath || !targetDbPath) {
-    console.error('Usage: node convertLibraryData.js <sourceDbPath> <targetDbPath>');
+async function main(sourceDbPath: string, targetDir: string) {
+  if (!sourceDbPath || !targetDir) {
+    console.error('Usage: node convertLibraryData.js <sourceDbFile> <targetDir>');
     process.exit(1);
   }
 
@@ -266,7 +267,6 @@ async function main(sourceDbPath: string, targetDbPath: string) {
   }
 
   // 确保目标目录存在
-  const targetDir = path.dirname(targetDbPath);
   if (!fs.existsSync(targetDir)) {
     fs.mkdirSync(targetDir, { recursive: true });
   }
@@ -288,7 +288,7 @@ async function main(sourceDbPath: string, targetDbPath: string) {
     
     console.log(`Found ${sourceData.files.length} files, ${sourceData.folders.length} folders, ${sourceData.tags.length} tags`);
     console.log('Converting and inserting data...');
-    await converter.convertAndInsertData(sourceData, { maxItems: 1000 }); // 测试时可限制最大转换条数
+    await converter.convertAndInsertData(sourceData, { maxItems: undefined }); // 测试时可限制最大转换条数
     console.log(`Data conversion completed successfully. Database saved to: ${targetDir}`);
   } catch (error) {
     console.error('Data conversion failed:', error);

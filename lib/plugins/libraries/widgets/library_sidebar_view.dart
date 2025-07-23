@@ -42,42 +42,12 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
       color: Theme.of(context).colorScheme.surface,
       child: Column(
         children: [
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text('标签目录', style: Theme.of(context).textTheme.titleMedium),
-          ),
           Expanded(
             child: FolderTreeWidget(
-              items:
-                  widget.tags
-                      .map((tag) => TreeItem(id: tag.id, title: tag.title))
-                      .toList(),
-              library: widget.library,
-              selected: Set<String>.from(widget.tagsSelected),
-              showSelectAll: false,
-              onSelectionChanged:
-                  (ids) => widget.plugin.tabManager.updateFilter(widget.tabId, {
-                    'tags': ids,
-                  }),
-              type: 'tags',
-            ),
-          ),
-          const Divider(),
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            child: Text(
-              '文件夹目录',
-              style: Theme.of(context).textTheme.titleMedium,
-            ),
-          ),
-          Expanded(
-            child: FolderTreeWidget(
+              title: '文件夹',
               items:
                   widget.folders
-                      .map(
-                        (folder) =>
-                            TreeItem(id: folder.id, title: folder.title),
-                      )
+                      .map((folder) => TreeItem.fromMap(folder.toMap()))
                       .toList(),
               selected: Set<String>.from(widget.folderSelected),
               library: widget.library,
@@ -94,6 +64,24 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
                 }
               },
               type: 'folders',
+            ),
+          ),
+          const Divider(),
+          Expanded(
+            child: FolderTreeWidget(
+              title: '标签',
+              items:
+                  widget.tags
+                      .map((tag) => TreeItem.fromMap(tag.toMap()))
+                      .toList(),
+              library: widget.library,
+              selected: Set<String>.from(widget.tagsSelected),
+              showSelectAll: false,
+              onSelectionChanged:
+                  (ids) => widget.plugin.tabManager.updateFilter(widget.tabId, {
+                    'tags': ids,
+                  }),
+              type: 'tags',
             ),
           ),
         ],

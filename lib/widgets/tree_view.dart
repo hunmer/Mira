@@ -1,5 +1,6 @@
 // ignore_for_file: deprecated_member_use
 
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:checkable_treeview/checkable_treeview.dart';
@@ -43,7 +44,7 @@ class TreeItem {
   factory TreeItem.fromMap(Map<String, dynamic> map) => TreeItem(
     id: map['id']?.toString() ?? '',
     title: map['title'] as String? ?? '',
-    parentId: map['parentId'] as String?,
+    parentId: map['parent_id'] as String?,
     color:
         map['color'] != null
             ? Color(int.tryParse(map['color'].toString()) ?? 0)
@@ -61,7 +62,7 @@ class TreeItem {
   Map<String, dynamic> toMap() => {
     'id': id,
     'title': title,
-    'parentId': parentId,
+    'parent_id': parentId,
     'color': color?.value,
     'icon': icon?.codePoint,
     'isSelected': isSelected,
@@ -106,11 +107,8 @@ class _customTreeViewState extends State<customTreeView> {
     super.initState();
     // Initialize selected items
     for (final id in widget.selected) {
-      final item = widget.items.firstWhere(
-        (item) => item.id == id,
-        orElse: () => TreeItem(id: '', title: ''),
-      );
-      if (item.id.isNotEmpty) {
+      final item = widget.items.firstWhereOrNull((item) => item.id == id);
+      if (item != null) {
         item.isSelected = true;
       }
     }
@@ -152,8 +150,7 @@ class _customTreeViewState extends State<customTreeView> {
       },
       value: item.id,
       icon: Icon(
-        item.icon ??
-            (children.isEmpty ? Icons.insert_drive_file : Icons.folder),
+        item.icon ?? widget.defaultIcon,
         color: item.color ?? Colors.black,
       ),
       children: children,
@@ -168,7 +165,10 @@ class _customTreeViewState extends State<customTreeView> {
       children: [
         Row(
           children: [
-            Text(widget.title),
+            Padding(
+              padding: const EdgeInsets.only(left: 8.0),
+              child: Text(widget.title),
+            ),
             const Spacer(),
             if (_showSearch) ...[
               Expanded(

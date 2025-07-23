@@ -81,7 +81,7 @@ class WebSocketServer {
     channel.stream.listen(
       (message) async {
         try {
-          debugPrint('Incoming message: $message');
+          // debugPrint('Incoming message: $message');
           final data = jsonDecode(message);
           await _handleMessage(channel, data);
           if (data is Map && data.containsKey('libraryId')) {
@@ -156,6 +156,20 @@ class WebSocketServer {
     );
     try {
       switch (action) {
+        case 'folders':
+          sendToWebsocket(channel, {
+            'status': 'success',
+            'data': await dbService.getAllFolders(),
+            'requestId': requestId,
+          });
+          break;
+        case 'tags':
+          sendToWebsocket(channel, {
+            'status': 'success',
+            'data': await dbService.getAllTags(),
+            'requestId': requestId,
+          });
+          break;
         case 'create':
           int id;
           switch (recordType) {
@@ -220,6 +234,7 @@ class WebSocketServer {
             'requestId': requestId,
           });
           break;
+
         case 'read':
           if (payload.containsKey('id')) {
             final id = payload['id'] as int;

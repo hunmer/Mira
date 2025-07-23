@@ -105,7 +105,7 @@ class LibraryItem extends StatelessWidget {
                                         if (displayFields.contains('title'))
                                           Text(
                                             path.basenameWithoutExtension(
-                                              file.path!,
+                                              file.name,
                                             ),
                                             maxLines: 1,
                                             overflow: TextOverflow.ellipsis,
@@ -211,7 +211,7 @@ class LibraryItem extends StatelessWidget {
                             ),
                             SizedBox(width: 4),
                             Text(
-                              path.extension(file.path!).toUpperCase(),
+                              path.extension(file.name).toUpperCase(),
                               style: TextStyle(fontSize: 10),
                             ),
                           ],

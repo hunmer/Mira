@@ -79,21 +79,20 @@ class FolderCache {
 
   Future<void> init() async {
     store = await newMemoryCacheStore();
-    cache =
-        await store.cache<LibraryFolder>(
-            name: '${id}_folders',
-            fromEncodable: (json) => LibraryFolder.fromMap(json),
-            eventListenerMode: EventListenerMode.synchronous,
-          )
-          ..on<CacheEntryCreatedEvent<LibraryFolder>>().listen(
-            (event) => print('Folder "${event.entry.key}" added'),
-          )
-          ..on<CacheEntryUpdatedEvent<LibraryFolder>>().listen(
-            (event) => print('Folder "${event.newEntry.key}" updated'),
-          )
-          ..on<CacheEntryRemovedEvent<LibraryFolder>>().listen(
-            (event) => print('Folder "${event.entry.key}" removed'),
-          );
+    cache = await store.cache<LibraryFolder>(
+      name: '${id}_folders',
+      fromEncodable: (json) => LibraryFolder.fromMap(json),
+      eventListenerMode: EventListenerMode.synchronous,
+    );
+    // ..on<CacheEntryCreatedEvent<LibraryFolder>>().listen(
+    //   (event) => print('Folder "${event.entry.key}" added'),
+    // )
+    // ..on<CacheEntryUpdatedEvent<LibraryFolder>>().listen(
+    //   (event) => print('Folder "${event.newEntry.key}" updated'),
+    // )
+    // ..on<CacheEntryRemovedEvent<LibraryFolder>>().listen(
+    //   (event) => print('Folder "${event.entry.key}" removed'),
+    // );
   }
 
   Future<void> put(LibraryFolder folder) async {
@@ -131,21 +130,20 @@ class TagCache {
 
   Future<void> init() async {
     store = await newMemoryCacheStore();
-    cache =
-        await store.cache<LibraryTag>(
-            name: '${id}_tags',
-            fromEncodable: (json) => LibraryTag.fromMap(json),
-            eventListenerMode: EventListenerMode.synchronous,
-          )
-          ..on<CacheEntryCreatedEvent<LibraryTag>>().listen(
-            (event) => print('Tag "${event.entry.key}" added'),
-          )
-          ..on<CacheEntryUpdatedEvent<LibraryTag>>().listen(
-            (event) => print('Tag "${event.newEntry.key}" updated'),
-          )
-          ..on<CacheEntryRemovedEvent<LibraryTag>>().listen(
-            (event) => print('Tag "${event.entry.key}" removed'),
-          );
+    cache = await store.cache<LibraryTag>(
+      name: '${id}_tags',
+      fromEncodable: (json) => LibraryTag.fromMap(json),
+      eventListenerMode: EventListenerMode.synchronous,
+    );
+    // ..on<CacheEntryCreatedEvent<LibraryTag>>().listen(
+    //   (event) => print('Tag "${event.entry.key}" added'),
+    // )
+    // ..on<CacheEntryUpdatedEvent<LibraryTag>>().listen(
+    //   (event) => print('Tag "${event.newEntry.key}" updated'),
+    // )
+    // ..on<CacheEntryRemovedEvent<LibraryTag>>().listen(
+    //   (event) => print('Tag "${event.entry.key}" removed'),
+    // );
   }
 
   Future<void> put(LibraryTag tag) async {

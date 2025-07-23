@@ -18,7 +18,7 @@ class LibraryUIController {
     final folders =
         await _plugin.libraryController
             .getLibraryInst(library.id)!
-            .getFolders();
+            .getAllFolders();
     final result = await showDialog<List<TreeItem>>(
       context: context,
       builder:

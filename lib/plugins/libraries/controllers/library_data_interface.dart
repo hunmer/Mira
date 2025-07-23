@@ -18,6 +18,8 @@ abstract class LibraryDataInterface {
   Future<void> deleteFolder(String id);
   Future<List<Map<String, dynamic>>> findFolders({Map<String, dynamic>? query});
   Future<List<Map<String, dynamic>>> getFolders();
+  Future<List<Map<String, dynamic>>> getAllFolders();
+  Future<List<Map<String, dynamic>>> getAllTags();
   Future<void> updateFolder({required String id, bool? deleted, String? name});
 
   Future<void> addTag(Map<String, dynamic> tag);
