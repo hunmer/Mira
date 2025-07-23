@@ -14,6 +14,7 @@ import 'package:mira/plugins/libraries/widgets/library_tabs_context_menu.dart'
 import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:mira/views/library_tabs_empty_view.dart';
+import 'package:rxdart/rxdart.dart';
 import '../models/library.dart';
 import 'package:dynamic_tabbar/dynamic_tabbar.dart';
 
@@ -40,23 +41,26 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   }
 
   Future<void> init() async {
-    _tabManager.onTabEventStream.stream.listen((detail) async {
-      final event = detail['event'];
-      final tabId = detail['tabId'];
-      print('tab event: $event, tabId: $tabId');
-      switch (event) {
-        case 'active':
-          // 保证tab所属的library进行初始化连接
-          _tabManager.tryUpdate(tabId);
-          break;
-        case 'close':
-        case 'add':
-          setState(() {
-            _loadTabDatas();
-          });
-          break;
-      }
-    });
+    _tabManager.onTabEventStream.stream
+        .throttleTime(Duration(microseconds: 500))
+        .listen((detail) async {
+          final event = detail['event'];
+          final tabId = detail['tabId'];
+          print('tab event: $event, tabId: $tabId');
+          switch (event) {
+            case 'active':
+              // 保证tab所属的library进行初始化连接
+              _tabManager.tryUpdate(tabId);
+              break;
+            case 'close':
+            case 'add':
+            case 'clear':
+              setState(() {
+                _loadTabDatas();
+              });
+              break;
+          }
+        });
 
     final chanedStream = EventThrottle(duration: Duration(milliseconds: 1000));
     chanedStream.stream.listen((EventArgs args) {

@@ -70,3 +70,4 @@ app.*.map.json
 !linux/**
 !analysis_options.yaml
 !README.md
+sdk/typescript/node_modules/

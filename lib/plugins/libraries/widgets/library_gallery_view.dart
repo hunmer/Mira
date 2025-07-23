@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
@@ -260,14 +261,12 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   @override
   Widget build(BuildContext context) {
-    return FutureBuilder<List<dynamic>>(
+    return FutureBuilder<dynamic>(
       future: () async {
-        return [
-          // 保证library完成初始化连接
-          await widget.plugin.libraryController.loadLibraryInst(widget.library),
-          // 保证完成首次刷新
-          await _doFirstLoad(),
-        ];
+        // 保证library完成初始化连接
+        return await widget.plugin.libraryController
+            .loadLibraryInst(widget.library)
+            .then((_) => _doFirstLoad());
       }(),
       builder: (context, snapshot) {
         switch (snapshot.connectionState) {
@@ -289,6 +288,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     final isRecycleBin = _tabData!.isRecycleBin;
     final screenWidth = MediaQuery.of(context).size.width;
     final totalPages = (_totalItems / _paginationOptions['perPage']).ceil();
+    if (totalPages > 0 && _paginationOptions['page'] > totalPages) {
+      _paginationOptions = Map<String, dynamic>.from(_paginationOptions);
+      _paginationOptions['page'] = totalPages;
+    }
     if (_isLoading) {
       return const Center(child: CircularProgressIndicator());
     }
@@ -407,7 +410,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                     totalPages: totalPages,
                     onPageChanged: (page) {
                       _paginationOptions['page'] = page;
-                      _refresh();
+                      setState(() {
+                        _loadFiles();
+                      });
                     },
                     visiblePagesCount:
                         MediaQuery.of(context).size.width ~/ 200 + 2,

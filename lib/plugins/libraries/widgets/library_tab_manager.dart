@@ -9,9 +9,6 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:uuid/uuid.dart';
 import '../models/library.dart';
 
-// ignore: constant_identifier_names
-const DEFAULT_PAGE_OPTIONS = {'page': 1, 'perPage': 100};
-
 class LibraryTabData {
   final String id;
   final Library library;
@@ -21,7 +18,7 @@ class LibraryTabData {
   bool needUpdate;
   String title;
   final DateTime createDate;
-  final Map<String, dynamic> pageOptions;
+  Map<String, dynamic> pageOptions;
   final Map<String, dynamic> filter;
   final Set<String> displayFields;
 
@@ -34,7 +31,7 @@ class LibraryTabData {
     this.isPinned = false,
     this.isRecycleBin = false,
     required this.createDate,
-    this.pageOptions = DEFAULT_PAGE_OPTIONS,
+    this.pageOptions = const {'page': 1, 'perPage': 100},
     this.filter = const {},
     this.displayFields = const {
       'title',
@@ -143,7 +140,7 @@ class LibraryTabManager {
         // 重置
         item['filter'] = {};
         item['displayFields'] = [];
-        item['pageOptions'] = DEFAULT_PAGE_OPTIONS;
+        item['pageOptions'] = {'page': 1, 'perPage': 100};
         final tabData = LibraryTabData.fromMap(item);
         tabDatas.add(tabData);
       }
@@ -247,6 +244,7 @@ class LibraryTabManager {
 
   void closeAllTabs() {
     tabDatas.clear();
+    onTabEventStream.add({'event': 'clear'});
     trySaveTabs();
     currentIndex.value = 0;
   }
@@ -305,7 +303,7 @@ class LibraryTabManager {
     if (tabData != null) {
       return tabData.pageOptions;
     } else {
-      return DEFAULT_PAGE_OPTIONS;
+      return {'page': 1, 'perPage': 100};
     }
   }
 
