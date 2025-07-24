@@ -31,7 +31,7 @@ class LibraryTabData {
     this.isPinned = false,
     this.isRecycleBin = false,
     required this.createDate,
-    this.pageOptions = const {'page': 1, 'perPage': 100},
+    this.pageOptions = const {'page': 1, 'perPage': 10},
     this.filter = const {},
     this.displayFields = const {},
   });
