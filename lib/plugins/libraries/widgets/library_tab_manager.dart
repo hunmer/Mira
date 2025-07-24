@@ -97,7 +97,7 @@ class LibraryTabData {
 
 class LibraryTabManager {
   final List<LibraryTabData> tabDatas = [];
-  late final ValueNotifier<int> currentIndex = ValueNotifier<int>(-1);
+  final ValueNotifier<int> currentIndex;
   late final LibrariesPlugin plugin;
   final StreamController<Map<String, dynamic>> onTabEventStream =
       StreamController.broadcast();
@@ -109,7 +109,7 @@ class LibraryTabManager {
     return _isLoaded;
   }
 
-  LibraryTabManager({this.autoSave = true}) {
+  LibraryTabManager(this.currentIndex, {this.autoSave = true}) {
     plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
   }
 

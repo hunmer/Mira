@@ -1,3 +1,4 @@
+import 'package:flutter/material.dart';
 import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
@@ -48,7 +49,7 @@ class LibrariesPlugin extends PluginBase {
     await dataController.init();
     foldersTagsController = FoldersTagsCache();
     await foldersTagsController.init();
-    tabManager = LibraryTabManager();
+    tabManager = LibraryTabManager(ValueNotifier<int>(-1));
     await tabManager.init();
     libraryController = LibraryDataController(plugin: this);
     server = WebSocketServer(8080);

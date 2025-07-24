@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
@@ -47,7 +46,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late List<LibraryFile> _items = [];
   late LibraryTabManager _tabManager;
   late bool _showSidebar = true;
-  late bool _isLoading = true;
+  late bool _isItemsLoading = true;
   late LibraryTabData? _tabData;
   late List<LibraryFolder> _folders = [];
   late List<LibraryTag> _tags = [];
@@ -79,30 +78,19 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   Future<void> _loadFoldersTags() async {
-    // final tags =
-    //     (await widget.plugin.foldersTagsController
-    //             .getTagCache(widget.library.id)
-    //             .getAll())
-    //         .cast<LibraryTag>();
-    // final folders =
-    //     (await widget.plugin.foldersTagsController
-    //             .getFolderCache(widget.library.id)
-    //             .getAll())
-    //         .cast<LibraryFolder>();
     final inst = widget.plugin.libraryController.getLibraryInst(
       widget.library.id,
     );
-    if (inst == null) return;
-    final tags =
-        (await inst.getAllTags())
-            .map((item) => LibraryTag.fromMap(item))
-            .toList();
-    final folders =
-        (await inst.getAllFolders())
-            .map((item) => LibraryFolder.fromMap(item))
-            .toList();
-    _tags = tags;
-    _folders = folders;
+    if (inst != null) {
+      _tags =
+          (await inst.getAllTags())
+              .map((item) => LibraryTag.fromMap(item))
+              .toList();
+      _folders =
+          (await inst.getAllFolders())
+              .map((item) => LibraryFolder.fromMap(item))
+              .toList();
+    }
   }
 
   void initEvents() async {
@@ -191,7 +179,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   Future<void> _loadFiles() async {
     // todo 完善更多过滤器
-    _isLoading = true;
+    _isItemsLoading = true;
     final query = {
       'recycled': _tabData!.isRecycleBin,
       'name': _filterOptions['name'] ?? '',
@@ -222,7 +210,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     } catch (err) {
       _items = [];
     } finally {
-      _isLoading = false;
+      _isItemsLoading = false;
     }
   }
 
@@ -400,18 +388,21 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             child: Column(
               children: [
                 Expanded(
-                  child: LibraryGalleryBody(
-                    plugin: widget.plugin,
-                    library: widget.library,
-                    isRecycleBin: isRecycleBin,
-                    displayFields: _displayFields,
-                    items: ValueNotifier(_items),
-                    isSelectionMode: _isSelectionMode,
-                    selectedFileIds: _selectedFileIds,
-                    onFileSelected: _onFileSelected,
-                    onFileOpen: _onFileOpen,
-                    imagesPerRow: _imagesPerRow,
-                  ),
+                  child:
+                      _isItemsLoading
+                          ? Center(child: CircularProgressIndicator())
+                          : LibraryGalleryBody(
+                            plugin: widget.plugin,
+                            library: widget.library,
+                            isRecycleBin: isRecycleBin,
+                            displayFields: _displayFields,
+                            items: ValueNotifier(_items),
+                            isSelectionMode: _isSelectionMode,
+                            selectedFileIds: _selectedFileIds,
+                            onFileSelected: _onFileSelected,
+                            onFileOpen: _onFileOpen,
+                            imagesPerRow: _imagesPerRow,
+                          ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
