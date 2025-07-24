@@ -72,5 +72,5 @@ app.*.map.json
 !README.md
 sdk/typescript/node_modules/
 sdk/typescript/src/examples/
-sdk/typescript/src/test/
-sdk/typescript/src/testlib3/
+sdk/typescript/src/testlib*
+sdk/typescript/src/testlib1/library_data.db

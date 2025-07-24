@@ -294,6 +294,19 @@ export class LibraryServerDataSQLite implements ILibraryServerData {
     return rows.length > 0 ? this.rowToMap(rows[0]) : null;
   }
 
+  async findFolderByName(name: string, parentId?: number | null): Promise<Record<string, any> | null> {
+    const query = parentId !== undefined && parentId !== null
+      ? 'SELECT * FROM folders WHERE title = ? AND parent_id = ? LIMIT 1'
+      : 'SELECT * FROM folders WHERE title = ? AND parent_id IS NULL LIMIT 1';
+    
+    const params = parentId !== undefined && parentId !== null
+      ? [name, parentId]
+      : [name];
+    
+    const rows = await this.getSql(query, params);
+    return rows.length > 0 ? this.rowToMap(rows[0]) : null;
+  }
+
   async getFolders(options?: {
     parentId?: number;
     limit?: number;
@@ -623,9 +636,6 @@ export class LibraryServerDataSQLite implements ILibraryServerData {
   }
 
   private async getLibraryPath(): Promise<string> {
-    // 根据实际实现返回路径
     return this.config.customFields?.path || '';
   }
-
-  // 其他私有辅助方法...
 }
