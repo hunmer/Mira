@@ -635,7 +635,19 @@ export class LibraryServerDataSQLite implements ILibraryServerData {
     });
   }
 
-  private async getLibraryPath(): Promise<string> {
+  async getLibraryPath(): Promise<string> {
     return this.config.customFields?.path || '';
+  }
+
+  async query(sql: string, params?: any[]): Promise<any[]> {
+    return this.getSql(sql, params);
+  }
+
+  getLibraryInfo(): Record<string, any> {
+    return {
+      id: this.getLibraryId(),
+      status: 'connected',
+      config: this.config
+    };
   }
 }

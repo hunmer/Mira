@@ -1,5 +1,4 @@
 import 'package:mira/plugins/libraries/services/websocket_handlers/common_handler.dart';
-import 'package:mira/plugins/libraries/services/server_item_event.dart';
 
 class FolderHandler extends BaseWebSocketHandler {
   final String action;

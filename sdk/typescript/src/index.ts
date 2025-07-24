@@ -1,2 +1,2 @@
-export * from './ILibraryServerData';
-export * from './LibraryServerDataSQLite';
+export * from './lib/ILibraryServerData';
+export * from './lib/LibraryServerDataSQLite';

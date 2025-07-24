@@ -1,5 +1,4 @@
 import 'package:mira/plugins/libraries/services/websocket_handlers/common_handler.dart';
-import 'package:mira/plugins/libraries/services/server_item_event.dart';
 
 class FileHandler extends BaseWebSocketHandler {
   final String action;
@@ -54,8 +53,7 @@ class FileHandler extends BaseWebSocketHandler {
             );
             sendSuccess({'id': item['id'], 'path': data['path']});
           } else {
-            // TODO: Handle binary upload
-            sendError('Binary upload not yet implemented');
+            sendError('Binary upload is not supported in this version');
           }
           break;
 

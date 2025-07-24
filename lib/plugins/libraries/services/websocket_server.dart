@@ -30,13 +30,6 @@ class WebSocketServer {
     return dbServer;
   }
 
-  LibraryService _getLibraryService(String libraryId) {
-    final dbService = _libraryServices.firstWhere(
-      (library) => library.getLibraryId() == libraryId,
-    );
-    return LibraryService(dbService);
-  }
-
   bool libraryExists(String libraryId) {
     return _libraryServices.any(
       (library) => library.getLibraryId() == libraryId,
