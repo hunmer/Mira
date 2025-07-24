@@ -41,8 +41,11 @@ class Library {
     };
   }
 
-  bool get isLocal => !customFields['path'].startsWith('ws://');
-  String get url => isLocal ? 'ws://localhost:8080' : customFields['path'];
+  bool get isLocal => !customFields.containsKey('server');
+  String get url =>
+      customFields.containsKey('server')
+          ? customFields['server']
+          : 'ws://localhost:8080';
   // 转换为JSON
   Map<String, dynamic> toJson() => toMap();
   // 从JSON转换

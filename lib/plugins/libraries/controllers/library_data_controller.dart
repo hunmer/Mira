@@ -18,12 +18,12 @@ class LibraryDataController {
       await plugin.foldersTagsController.createFolderCache(library.id);
       await plugin.foldersTagsController.createTagCache(library.id);
 
-      final path = library.customFields['path'];
       if (library.isLocal && !plugin.server.connecting) {
-        await plugin.server.start(path);
+        await plugin.server.start(library.customFields['path']);
       }
 
-      final channel = WebSocketChannel.connect(Uri.parse(library.url));
+      final uri = Uri.parse(library.url);
+      final channel = WebSocketChannel.connect(uri);
       dataInterfaces[libraryId] = LibraryDataWebSocket(channel, library);
       await channel.ready;
       return dataInterfaces[libraryId];

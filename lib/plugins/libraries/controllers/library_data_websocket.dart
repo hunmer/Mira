@@ -72,7 +72,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
   void _handleResponse(dynamic message) {
     try {
-      // debugPrint('Received WebSocket message: $message');
+      debugPrint('Received WebSocket message: $message');
       final response = jsonDecode(message);
 
       if (response.containsKey('requestId')) {

@@ -1,10 +1,10 @@
 import { LibraryServerDataSQLite } from './LibraryServerDataSQLite';
 import { WebSocket } from 'ws';
-import { QueryHandler } from './handlers/QueryHandler';
-import { CreateHandler } from './handlers/CreateHandler';
-import { UpdateHandler } from './handlers/UpdateHandler';
-import { DeleteHandler } from './handlers/DeleteHandler';
 import { MessageHandler } from './handlers/MessageHandler';
+import { FileHandler } from './handlers/FileHandler';
+import { TagHandler } from './handlers/TagHandler';
+import { FolderHandler } from './handlers/FolderHandler';
+import { LibraryHandler } from './handlers/LibraryHandler';
 
 export interface WebSocketMessage {
   action: string;
@@ -22,18 +22,18 @@ export class WebSocketRouter {
     ws: WebSocket,
     message: WebSocketMessage
   ): Promise<MessageHandler | null> {
-    const { action } = message;
+    const { payload } = message;
 
-    // 根据action路由到不同的处理器
-    switch (action) {
-      case 'query':
-        return new QueryHandler(dbService, ws, message);
-      case 'update':
-        return new UpdateHandler(dbService, ws, message);
-      case 'delete':
-        return new DeleteHandler(dbService, ws, message);
-      case 'create':
-        return new CreateHandler(dbService, ws, message);
+    // 根据资源类型路由到不同的处理器
+    switch (payload.type) {
+      case 'file':
+        return new FileHandler(dbService, ws, message);
+      case 'tag':
+        return new TagHandler(dbService, ws, message);
+      case 'folder':
+        return new FolderHandler(dbService, ws, message);
+      case 'library':
+        return new LibraryHandler(dbService, ws, message);
       default:
         return null;
     }

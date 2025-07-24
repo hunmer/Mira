@@ -650,4 +650,43 @@ export class LibraryServerDataSQLite implements ILibraryServerData {
       config: this.config
     };
   }
+
+  // 查询方法
+  async queryFile(query: Record<string, any>): Promise<Record<string, any>[]> {
+    const { result } = await this.getFiles({ filters: query });
+    return result;
+  }
+
+  async queryFolder(query: Record<string, any>): Promise<Record<string, any>[]> {
+    const folders = await this.getFolders();
+    return folders.filter(folder => {
+      return Object.entries(query).every(([key, value]) => {
+        return folder[key] === value;
+      });
+    });
+  }
+
+  async queryLibrary(query: Record<string, any>): Promise<Record<string, any>> {
+    return this.getLibraryInfo();
+  }
+
+  async createLibrary(data: Record<string, any>): Promise<Record<string, any>> {
+    this.config.id = data.id || this.config.id;
+    this.config.customFields = { ...this.config.customFields, ...data };
+    return this.getLibraryInfo();
+  }
+
+  async closeLibrary(): Promise<boolean> {
+    await this.close();
+    return true;
+  }
+
+  async queryTag(query: Record<string, any>): Promise<Record<string, any>[]> {
+    const tags = await this.getTags();
+    return tags.filter(tag => {
+      return Object.entries(query).every(([key, value]) => {
+        return tag[key] === value;
+      });
+    });
+  }
 }

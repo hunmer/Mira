@@ -58,7 +58,7 @@ export class WebSocketServer {
       this.handleConnection(ws);
     });
 
-    console.log(`Serving at ws://localhost:${this.port}`);
+    console.log(`[!]Serving at ws://localhost:${this.port}`);
   }
 
   broadcastToClients(eventName: string, eventData: Record<string, any>): void {
@@ -90,9 +90,11 @@ export class WebSocketServer {
   }
 
   private handleConnection(ws: WebSocket): void {
+    console.log('New client connected');
     ws.on('message', async (message: string) => {
       try {
         const data = JSON.parse(message);
+        console.log('Incoming message:', data)
         await this.handleMessage(ws, data);
         
         if (data.libraryId) {
