@@ -77,6 +77,7 @@ dependencies:
   flutter_xlider: ^3.5.0
   dynamic_tabbar: ^1.0.9
   rxdart: ^0.28.0
+  shelf_router: ^1.1.4
 
 dev_dependencies:
   flutter_test:

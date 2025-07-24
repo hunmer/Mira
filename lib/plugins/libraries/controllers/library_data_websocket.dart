@@ -22,8 +22,8 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       },
     );
     _sendRequest(
-      action: 'connected',
-      type: 'library_update',
+      action: 'open',
+      type: 'library',
       data: {'library': library.toJson()},
     );
   }
@@ -36,7 +36,6 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     required String action,
     required String type,
     dynamic data,
-    Map<String, dynamic>? query,
     Duration timeout = const Duration(seconds: 10),
   }) async {
     final requestId = _generateRequestId();
@@ -47,15 +46,11 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       'action': action,
       'requestId': requestId,
       'libraryId': library.id,
-      'payload': {
-        'type': type,
-        if (data != null) 'data': data,
-        if (query != null) 'query': query,
-      },
+      'payload': {'type': type, 'data': data ?? {}},
     };
 
     _channel.sink.add(jsonEncode(message));
-    // debugPrint('Sending WebSocket message: ${jsonEncode(message)}');
+    debugPrint('Sending WebSocket message: ${jsonEncode(message)}');
 
     try {
       return await completer.future.timeout(
@@ -77,7 +72,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
   void _handleResponse(dynamic message) {
     try {
-      debugPrint('Received WebSocket message: $message');
+      // debugPrint('Received WebSocket message: $message');
       final response = jsonDecode(message);
 
       if (response.containsKey('requestId')) {
@@ -182,7 +177,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     return await _sendRequest(
       action: 'read',
       type: 'library',
-      query: query ?? {},
+      data: query ?? {},
     );
   }
 
@@ -249,7 +244,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     final result = await _sendRequest(
       action: 'read',
       type: 'file',
-      query: query ?? {},
+      data: query ?? {},
     );
     if (result == null) return [];
     return {
@@ -270,7 +265,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     return await _sendRequest(
       action: 'read',
       type: 'folder',
-      query: query ?? {},
+      data: query ?? {},
     );
   }
 
@@ -278,7 +273,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   Future<List<Map<String, dynamic>>> findTags({
     Map<String, dynamic>? query,
   }) async {
-    return await _sendRequest(action: 'read', type: 'tag', query: query ?? {});
+    return await _sendRequest(action: 'read', type: 'tag', data: query ?? {});
   }
 
   @override
@@ -307,8 +302,8 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
   @override
   Future<List<Map<String, dynamic>>> getAllFolders() async {
-    final response = await _sendRequest(action: 'folders', type: '');
-    return response is List ? List<Map<String, dynamic>>.from(response) : [];
+    final response = await _sendRequest(action: 'all', type: 'folder');
+    return List<Map<String, dynamic>>.from(response['folders']);
   }
 
   @override
@@ -319,8 +314,8 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
   @override
   Future<List<Map<String, dynamic>>> getAllTags() async {
-    final response = await _sendRequest(action: 'tags', type: '');
-    return response is List ? List<Map<String, dynamic>>.from(response) : [];
+    final response = await _sendRequest(action: 'all', type: 'tag');
+    return List<Map<String, dynamic>>.from(response['tags']);
   }
 
   @override
@@ -363,7 +358,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     final result = await _sendRequest(
       action: 'read',
       type: 'file',
-      query: {'id': id},
+      data: {'id': id},
     );
     return LibraryFile.fromMap(result);
   }
@@ -382,7 +377,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     final response = await _sendRequest(
       action: 'read',
       type: 'file_folder',
-      query: {'id': id},
+      data: {'id': id},
     );
     return response is List ? List<Map<String, dynamic>>.from(response) : [];
   }
@@ -392,7 +387,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     final response = await _sendRequest(
       action: 'read',
       type: 'file_tag',
-      query: {'id': id},
+      data: {'id': id},
     );
     return response is List ? List<Map<String, dynamic>>.from(response) : [];
   }

@@ -102,11 +102,9 @@ export class PathFilesImporter {
         if (!fs.existsSync(saveDir)) {
           try {
             fs.mkdirSync(saveDir, { recursive: true });
-          } catch (err) {
-           
-          }
+          } catch (err) {}
         }
-
+        console.log(filePath);
         if (options.importType === 'copy') {
           fs.copyFileSync(filePath, savePath);
         } else if (options.importType === 'move') {

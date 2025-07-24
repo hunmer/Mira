@@ -51,7 +51,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late LibraryTabData? _tabData;
   late List<LibraryFolder> _folders = [];
   late List<LibraryTag> _tags = [];
-  bool _isFirstLoad = false;
+  late bool _isFirstLoad = false;
   List<String> _eventSubscribes = [];
 
   late Set<String> _displayFields = {};
@@ -89,8 +89,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     //             .getFolderCache(widget.library.id)
     //             .getAll())
     //         .cast<LibraryFolder>();
-    final inst =
-        widget.plugin.libraryController.getLibraryInst(widget.library.id)!;
+    final inst = widget.plugin.libraryController.getLibraryInst(
+      widget.library.id,
+    );
+    if (inst == null) return;
     final tags =
         (await inst.getAllTags())
             .map((item) => LibraryTag.fromMap(item))
