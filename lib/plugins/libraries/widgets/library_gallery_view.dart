@@ -38,41 +38,45 @@ class LibraryGalleryView extends StatefulWidget {
 
 class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late UploadQueueService _uploadQueue;
-  double _uploadProgress = 0;
+  final ValueNotifier<double> _uploadProgressNotifier = ValueNotifier(0);
   StreamSubscription<int>? _progressSubscription;
-  bool _isSelectionMode = false;
-  Set<int> _selectedFileIds = {};
-  late int _totalItems = 0;
-  late List<LibraryFile> _items = [];
+  final ValueNotifier<bool> _isSelectionModeNotifier = ValueNotifier(false);
+  final ValueNotifier<Set<int>> _selectedFileIds = ValueNotifier({});
+  final ValueNotifier<int> _totalItemsNotifier = ValueNotifier(0);
+  final ValueNotifier<List<LibraryFile>> _items = ValueNotifier([]);
   late LibraryTabManager _tabManager;
-  late bool _showSidebar = true;
-  late bool _isItemsLoading = true;
+  final ValueNotifier<bool> _showSidebarNotifier = ValueNotifier(true);
+  final ValueNotifier<bool> _isItemsLoadingNotifier = ValueNotifier(true);
   late LibraryTabData? _tabData;
-  late List<LibraryFolder> _folders = [];
-  late List<LibraryTag> _tags = [];
-  late bool _isFirstLoad = false;
+  final ValueNotifier<List<LibraryFolder>> _folders = ValueNotifier([]);
+  final ValueNotifier<List<LibraryTag>> _tags = ValueNotifier([]);
+  final ValueNotifier<bool> _isFirstLoadNotifier = ValueNotifier(false);
   List<String> _eventSubscribes = [];
 
-  late Set<String> _displayFields = {};
-  Map<String, dynamic> _filterOptions = {};
-  Map<String, dynamic> _paginationOptions = {};
+  final ValueNotifier<Set<String>> _displayFieldsNotifier = ValueNotifier({});
+  final ValueNotifier<Map<String, dynamic>> _filterOptionsNotifier =
+      ValueNotifier({});
+  final ValueNotifier<Map<String, dynamic>> _paginationOptionsNotifier =
+      ValueNotifier({});
   final ValueNotifier<LibraryFile?> _selectedFileNotifier = ValueNotifier(null);
-  int _imagesPerRow = 0; // 每行显示图片自动调节
+  final ValueNotifier<int> _imagesPerRowNotifier = ValueNotifier(
+    0,
+  ); // 每行显示图片自动调节
 
   @override
   void initState() {
     super.initState();
     final tabId = widget.tabId;
     _tabManager = widget.plugin.tabManager;
-    _paginationOptions = _tabManager.getPageOptions(tabId);
-    _displayFields = _tabManager.getLibraryDisplayFields(tabId);
-    _filterOptions = _tabManager.getLibraryFilter(tabId);
+    _paginationOptionsNotifier.value = Map<String, dynamic>.from(
+      _tabManager.getPageOptions(tabId),
+    );
+    _displayFieldsNotifier.value = _tabManager.getLibraryDisplayFields(tabId);
+    _filterOptionsNotifier.value = _tabManager.getLibraryFilter(tabId);
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
     _tabData = _tabManager.getTabData(tabId);
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
-      setState(() {
-        _uploadProgress = _uploadQueue.progress;
-      });
+      _uploadProgressNotifier.value = _uploadQueue.progress;
     });
     initEvents();
   }
@@ -82,11 +86,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       widget.library.id,
     );
     if (inst != null) {
-      _tags =
+      _tags.value =
           (await inst.getAllTags())
               .map((item) => LibraryTag.fromMap(item))
               .toList();
-      _folders =
+      _folders.value =
           (await inst.getAllFolders())
               .map((item) => LibraryFolder.fromMap(item))
               .toList();
@@ -112,11 +116,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void _refresh() async {
+    print('refresh');
     if (mounted) {
-      setState(() {
-        _loadFiles();
-        // _loadFoldersTags();
-      });
+      _loadFiles();
+      // _loadFoldersTags();
     }
   }
 
@@ -125,10 +128,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     if (args is MapEventArgs) {
       final tabId = args.item['tabId'];
       if (widget.tabId == tabId) {
-        _filterOptions = Map<String, dynamic>.from(args.item['filter']);
-        setState(() {
-          _loadFiles();
-        });
+        _filterOptionsNotifier.value = Map<String, dynamic>.from(
+          args.item['filter'],
+        );
+        _loadFiles();
       }
     }
   }
@@ -159,41 +162,34 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void _toggleSelectAll() {
-    setState(() {
-      if (_selectedFileIds.isEmpty) {
-        _selectedFileIds = _items.map((f) => f.id).toSet();
-      } else {
-        _selectedFileIds.clear();
-      }
-    });
+    if (_selectedFileIds.value.isEmpty) {
+      _selectedFileIds.value = _items.value.map((f) => f.id).toSet();
+    } else {
+      _selectedFileIds.value.clear();
+    }
   }
 
   void _exitSelectionMode() {
-    setState(() {
-      if (_selectedFileIds.isNotEmpty) {
-        _selectedFileIds.clear();
-      }
-      _isSelectionMode = false;
-    });
+    if (_selectedFileIds.value.isNotEmpty) {
+      _selectedFileIds.value.clear();
+    }
+    _isSelectionModeNotifier.value = false;
   }
 
   Future<void> _loadFiles() async {
-    // todo 完善更多过滤器
-    _isItemsLoading = true;
+    if (!mounted) return;
+    _isItemsLoadingNotifier.value = true;
+
+    final filterOptions = _filterOptionsNotifier.value;
+    final paginationOptions = _paginationOptionsNotifier.value;
+
     final query = {
       'recycled': _tabData!.isRecycleBin,
-      'name': _filterOptions['name'] ?? '',
-      'tags': _filterOptions['tags'] ?? [],
-      'folder': _filterOptions['folder'] ?? '',
-      // 'dateRange': _filterOptions['dateRange'] ?? [],
-      // 'minSize': _filterOptions['minSize'] ?? 0,
-      // 'maxSize': _filterOptions['maxSize'] ?? 0,
-      // 'tags': _filterOptions['tags'] ?? [],
-      // 'minRating': _filterOptions['minRating'] ?? 0,
-      // 'type': _filterOptions['type'] ?? '',
-      'offset':
-          (_paginationOptions['page']! - 1) * _paginationOptions['perPage'],
-      'limit': _paginationOptions['perPage'],
+      'name': filterOptions['name'] ?? '',
+      'tags': filterOptions['tags'] ?? [],
+      'folder': filterOptions['folder'] ?? '',
+      'offset': (paginationOptions['page']! - 1) * paginationOptions['perPage'],
+      'limit': paginationOptions['perPage'],
     };
 
     try {
@@ -203,14 +199,16 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       if (inst != null) {
         final result = await inst.findFiles(query: query);
         if (result != null && result.isNotEmpty) {
-          _items = result['results'] as List<LibraryFile>;
-          _totalItems = result['total'] as int;
+          _items.value = result['results'] as List<LibraryFile>;
+          _totalItemsNotifier.value = result['total'] as int;
         }
       }
     } catch (err) {
-      _items = [];
+      _items.value = [];
     } finally {
-      _isItemsLoading = false;
+      if (mounted) {
+        _isItemsLoadingNotifier.value = false;
+      }
     }
   }
 
@@ -226,14 +224,12 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   void _onFileOpen(LibraryFile file) {
     final fileId = file.id;
-    if (_isSelectionMode) {
-      setState(() {
-        if (_selectedFileIds.contains(fileId)) {
-          _selectedFileIds.remove(fileId);
-        } else {
-          _selectedFileIds.add(fileId);
-        }
-      });
+    if (_isSelectionModeNotifier.value) {
+      if (_selectedFileIds.value.contains(fileId)) {
+        _selectedFileIds.value.remove(fileId);
+      } else {
+        _selectedFileIds.value.add(fileId);
+      }
     } else {
       Navigator.of(context).push(
         MaterialPageRoute(
@@ -244,14 +240,12 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void _toggleSidebar() {
-    setState(() {
-      _showSidebar = !_showSidebar;
-    });
+    _showSidebarNotifier.value = !_showSidebarNotifier.value;
   }
 
   Future<void> _doFirstLoad() async {
-    if (!_isFirstLoad) {
-      _isFirstLoad = true;
+    if (!_isFirstLoadNotifier.value) {
+      _isFirstLoadNotifier.value = true;
       await _loadFiles();
       await _loadFoldersTags();
     }
@@ -259,6 +253,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   @override
   Widget build(BuildContext context) {
+    print('build');
     return FutureBuilder<dynamic>(
       future: () {
         // 保证library完成初始化连接
@@ -285,17 +280,21 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   Widget buildContent() {
     final isRecycleBin = _tabData!.isRecycleBin;
     final screenWidth = MediaQuery.of(context).size.width;
-    final totalPages = (_totalItems / _paginationOptions['perPage']).ceil();
-    if (totalPages > 0 && _paginationOptions['page'] > totalPages) {
-      _paginationOptions = Map<String, dynamic>.from(_paginationOptions);
-      _paginationOptions['page'] = totalPages;
+    final paginationOptions = _paginationOptionsNotifier.value;
+    final totalPages =
+        (_totalItemsNotifier.value / paginationOptions['perPage']).ceil();
+    if (totalPages > 0 && paginationOptions['page'] > totalPages) {
+      _paginationOptionsNotifier.value = Map<String, dynamic>.from(
+        paginationOptions,
+      );
+      _paginationOptionsNotifier.value['page'] = totalPages;
     }
     return Scaffold(
       appBar: LibraryGalleryAppBar(
         title: widget.library.name,
         isRecycleBin: isRecycleBin,
-        isSelectionMode: _isSelectionMode,
-        selectedCount: _selectedFileIds.length,
+        isSelectionMode: _isSelectionModeNotifier.value,
+        selectedCount: _selectedFileIds.value.length,
         onSelectAll: _toggleSelectAll,
         onExitSelection: _exitSelectionMode,
         toggleSidebar: _toggleSidebar,
@@ -304,36 +303,35 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             context: context,
             builder: (context) => FileFilterDialog(),
           );
-          if (filterOptions != null) {
-            setState(() {
-              _filterOptions = filterOptions;
-            });
-            _tabManager.setLibraryFilter(widget.tabId, _filterOptions);
+          if (filterOptions != null &&
+              _filterOptionsNotifier.value != filterOptions) {
+            _filterOptionsNotifier.value = filterOptions;
+            _tabManager.setLibraryFilter(widget.tabId, filterOptions);
           }
         },
         onEnterSelection: () {
-          setState(() {
-            _isSelectionMode = true;
-          });
+          _isSelectionModeNotifier.value = true;
         },
         onUpload: _showDropDialog,
-        uploadProgress: _uploadProgress,
-        displayFields: _displayFields,
+        uploadProgress: _uploadProgressNotifier.value,
+        displayFields: _displayFieldsNotifier.value,
         onDisplayFieldsChanged: (newFields) {
-          setState(() {
-            _displayFields = newFields;
-          });
-          _tabManager.setLibraryDisplayFields(widget.tabId, _displayFields);
+          if (_displayFieldsNotifier.value != newFields) {
+            _displayFieldsNotifier.value = newFields;
+            _tabManager.setLibraryDisplayFields(widget.tabId, newFields);
+          }
         },
-        imagesPerRow: _imagesPerRow,
+        imagesPerRow: _imagesPerRowNotifier.value,
         onImagesPerRowChanged: (count) {
-          setState(() {
-            _imagesPerRow = count;
-          });
+          if (_imagesPerRowNotifier.value != count) {
+            _imagesPerRowNotifier.value = count;
+          }
         },
         onRefresh: _refresh,
       ),
-      bottomSheet: LibraryGalleryBottomSheet(uploadProgress: _uploadProgress),
+      bottomSheet: LibraryGalleryBottomSheet(
+        uploadProgress: _uploadProgressNotifier.value,
+      ),
       body: Row(
         children: [
           SizedBox(
@@ -354,9 +352,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                   child: IconButton(
                     icon: Icon(Icons.delete),
                     onPressed: () {
-                      setState(() {
-                        _tabManager.addTab(widget.library, isRecycleBin: true);
-                      });
+                      _tabManager.addTab(widget.library, isRecycleBin: true);
                     },
                   ),
                 ),
@@ -364,59 +360,90 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             ),
           ),
           VerticalDivider(width: 1),
-          if (_showSidebar) ...[
-            Expanded(
-              flex: screenWidth < 600 ? 6 : (screenWidth > 1300 ? 1 : 2),
-              child: LibrarySidebarView(
-                plugin: widget.plugin,
-                library: widget.library,
-                tabId: widget.tabId,
-                tags: _tags,
-                tagsSelected: _filterOptions['tags'] ?? [],
-                folders: _folders,
-                folderSelected:
-                    _filterOptions['folder'] is String
-                        ? [_filterOptions['folder']]
-                        : [],
-              ),
-            ),
-            VerticalDivider(width: 1),
-          ],
-
+          ValueListenableBuilder<bool>(
+            valueListenable: _showSidebarNotifier,
+            builder: (context, showSidebar, _) {
+              return showSidebar
+                  ? Expanded(
+                    flex: screenWidth < 600 ? 6 : (screenWidth > 1300 ? 1 : 2),
+                    child: ValueListenableBuilder<List<LibraryTag>>(
+                      valueListenable: _tags,
+                      builder: (context, tags, _) {
+                        return ValueListenableBuilder<List<LibraryFolder>>(
+                          valueListenable: _folders,
+                          builder: (context, folders, _) {
+                            return ValueListenableBuilder<Map<String, dynamic>>(
+                              valueListenable: _filterOptionsNotifier,
+                              builder: (context, filterOptions, _) {
+                                return LibrarySidebarView(
+                                  plugin: widget.plugin,
+                                  library: widget.library,
+                                  tabId: widget.tabId,
+                                  tags: tags,
+                                  tagsSelected: filterOptions['tags'] ?? [],
+                                  folders: folders,
+                                  folderSelected:
+                                      filterOptions['folder'] is String
+                                          ? [filterOptions['folder']]
+                                          : [],
+                                );
+                              },
+                            );
+                          },
+                        );
+                      },
+                    ),
+                  )
+                  : SizedBox.shrink();
+            },
+          ),
+          VerticalDivider(width: 1),
           Expanded(
             flex: 4,
             child: Column(
               children: [
                 Expanded(
-                  child:
-                      _isItemsLoading
-                          ? Center(child: CircularProgressIndicator())
-                          : LibraryGalleryBody(
+                  child: Stack(
+                    children: [
+                      ValueListenableBuilder<List<LibraryFile>>(
+                        valueListenable: _items,
+                        builder: (context, items, _) {
+                          return LibraryGalleryBody(
                             plugin: widget.plugin,
                             library: widget.library,
                             isRecycleBin: isRecycleBin,
-                            displayFields: _displayFields,
-                            items: ValueNotifier(_items),
-                            isSelectionMode: _isSelectionMode,
-                            selectedFileIds: _selectedFileIds,
+                            displayFields: _displayFieldsNotifier.value,
+                            items: items,
+                            isSelectionMode: _isSelectionModeNotifier.value,
+                            selectedFileIds: _selectedFileIds.value,
                             onFileSelected: _onFileSelected,
                             onFileOpen: _onFileOpen,
-                            imagesPerRow: _imagesPerRow,
-                          ),
+                            imagesPerRow: _imagesPerRowNotifier.value,
+                          );
+                        },
+                      ),
+                      ValueListenableBuilder<bool>(
+                        valueListenable: _isItemsLoadingNotifier,
+                        builder: (context, isLoading, _) {
+                          return isLoading
+                              ? Center(child: CircularProgressIndicator())
+                              : SizedBox.shrink();
+                        },
+                      ),
+                    ],
+                  ),
                 ),
                 Padding(
                   padding: const EdgeInsets.symmetric(vertical: 8.0),
                   child: NumberPagination(
-                    currentPage: _paginationOptions['page'],
+                    currentPage: _paginationOptionsNotifier.value['page'],
                     totalPages: totalPages,
                     onPageChanged: (page) {
-                      _paginationOptions = Map<String, dynamic>.from(
-                        _paginationOptions,
-                      );
-                      _paginationOptions['page'] = page;
-                      setState(() {
-                        _loadFiles();
-                      });
+                      _paginationOptionsNotifier.value = {
+                        ..._paginationOptionsNotifier.value,
+                        'page': page,
+                      };
+                      _loadFiles();
                     },
                     visiblePagesCount:
                         MediaQuery.of(context).size.width ~/ 200 + 2,

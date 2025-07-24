@@ -17,7 +17,7 @@ import 'package:mira/plugins/libraries/widgets/library_item.dart';
 class LibraryGalleryBody extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Library library;
-  final ValueNotifier<List<LibraryFile>> items;
+  final List<LibraryFile> items;
   final bool isSelectionMode;
   final bool isRecycleBin;
   final Set<int> selectedFileIds;
@@ -84,9 +84,9 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
               childAspectRatio: 0.8,
             ),
             padding: const EdgeInsets.all(8.0),
-            itemCount: widget.items.value.length,
+            itemCount: widget.items.length,
             itemBuilder: (context, index) {
-              final file = widget.items.value[index];
+              final file = widget.items[index];
               return LibraryItem(
                 file: file,
                 getTagTilte:
@@ -102,19 +102,19 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                 useThumbnail: file.thumb != null,
                 displayFields: widget.displayFields,
                 onTap: () {
-                  final file = widget.items.value[index];
+                  final file = widget.items[index];
                   isDesktop
                       ? widget.onFileSelected(file)
                       : widget.onFileOpen(file);
                 },
                 onDoubleTap: () {
-                  final file = widget.items.value[index];
+                  final file = widget.items[index];
                   isDesktop
                       ? widget.onFileOpen(file)
                       : widget.onFileSelected(file);
                 },
                 onLongPress: (details) {
-                  final file = widget.items.value[index];
+                  final file = widget.items[index];
                   LibraryFileContextMenu.show(
                     context: context,
                     plugin: widget.plugin,

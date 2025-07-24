@@ -32,7 +32,7 @@ class FileHandler extends BaseWebSocketHandler {
           } else {
             final result = await dbService.getFiles(
               select: payload['select'] as String? ?? '*',
-              filters: payload['query'] as Map<String, dynamic>?,
+              filters: payload['data'] as Map<String, dynamic>?,
             );
             for (var record in result['result']) {
               record['thumb'] = await dbService.getItemThumbPath(record);
