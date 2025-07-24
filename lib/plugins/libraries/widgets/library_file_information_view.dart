@@ -75,10 +75,7 @@ class _LibraryFileInformationViewState
                         Icons.insert_drive_file,
                         size: 48,
                         color:
-                            [
-                                  'audio',
-                                  'video',
-                                ].contains(widget.file.type?.toLowerCase())
+                            ['audio', 'video'].contains(widget.file.fileType)
                                 ? Colors.blue
                                 : null,
                       ),
@@ -145,7 +142,6 @@ class _LibraryFileInformationViewState
       url: _urlController.text.isEmpty ? null : _urlController.text,
       path: widget.file.path,
       thumb: widget.file.thumb,
-      type: widget.file.type,
     );
 
     Navigator.of(context).pop(updatedFile);

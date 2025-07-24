@@ -1,5 +1,7 @@
 import 'dart:convert';
 
+import 'package:mira/core/utils/utils.dart';
+
 class LibraryFile {
   final int id;
   final String name;
@@ -16,7 +18,6 @@ class LibraryFile {
   final String? url;
   final String? path;
   final String? thumb;
-  final String? type;
 
   LibraryFile({
     required this.id,
@@ -34,8 +35,9 @@ class LibraryFile {
     this.url,
     this.path,
     this.thumb,
-    this.type,
   });
+
+  String get fileType => getFileType(name).toLowerCase();
 
   factory LibraryFile.fromMap(Map<String, dynamic> map) {
     // 处理用户提供的JSON格式
@@ -72,7 +74,6 @@ class LibraryFile {
       url: map['url'],
       path: map['path'] ?? '',
       thumb: map['thumb'],
-      type: map['type'],
     );
   }
 
@@ -93,7 +94,6 @@ class LibraryFile {
       'url': url,
       'path': path,
       'thumb': thumb,
-      'type': type,
     };
   }
 }

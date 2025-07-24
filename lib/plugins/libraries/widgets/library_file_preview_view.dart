@@ -3,8 +3,11 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:fvp/fvp.dart' as fvp;
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
+import 'package:share_plus/share_plus.dart';
 // ignore: depend_on_referenced_packages
 import 'package:video_player/video_player.dart';
+import 'package:mira/plugins/libraries/widgets/video_preview.dart';
 
 class LibraryFilePreviewView extends StatefulWidget {
   final LibraryFile file;
@@ -51,10 +54,7 @@ class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
     switch (fileType) {
       case 'video':
         return _isInitialized
-            ? AspectRatio(
-              aspectRatio: _controller.value.aspectRatio,
-              child: VideoPlayer(_controller),
-            )
+            ? VideoPreview(videoPath: widget.file.path!)
             : const Center(child: CircularProgressIndicator());
       case 'audio':
         return Column(
@@ -111,6 +111,8 @@ class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
 
   @override
   Widget build(BuildContext context) {
+    final file = File(widget.file.path!);
+    final fileExists = file.existsSync();
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.file.name),
@@ -118,30 +120,28 @@ class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
           IconButton(
             icon: Icon(Icons.info),
             onPressed: () {
-              // TODO: 实现信息展示功能
+              showModalBottomSheet(
+                context: context,
+                builder:
+                    (context) => LibraryFileInformationView(file: widget.file),
+              );
             },
           ),
           IconButton(
             icon: Icon(Icons.share),
-            onPressed: () {
-              // TODO: 实现分享功能
+            onPressed: () async {
+              if (fileExists) {
+                await Share.shareUri(file.uri);
+              } else {
+                ScaffoldMessenger.of(
+                  context,
+                ).showSnackBar(const SnackBar(content: Text('文件不存在，无法分享')));
+              }
             },
           ),
         ],
       ),
       body: Center(child: _buildPlayer()),
-      floatingActionButton:
-          _getFileType(widget.file.name) == 'video'
-              ? FloatingActionButton(
-                onPressed: () {
-                  setState(() {
-                    _isPlaying = !_isPlaying;
-                    _isPlaying ? _controller.play() : _controller.pause();
-                  });
-                },
-                child: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-              )
-              : null,
     );
   }
 }

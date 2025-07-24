@@ -48,10 +48,6 @@ class _LibraryItemState extends State<LibraryItem> {
   double _volume = 0;
 
   Widget _buildFileIcon() {
-    final isVideo =
-        widget.file.type?.toLowerCase() == 'video' &&
-        (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
-
     if (_isHovering) {
       if (_isLoadError) {
         return const Center(
@@ -145,13 +141,13 @@ class _LibraryItemState extends State<LibraryItem> {
   }
 
   Widget _buildFileTags(String folderTitle, List<String> tagTitles) {
-    if (!widget.displayFields.any(
+    final displayFields = widget.displayFields;
+    if (!displayFields.any(
       (field) => ['rating', 'folder', 'tags'].contains(field),
     )) {
       return const SizedBox.shrink();
     }
     final file = widget.file;
-    final displayFields = widget.displayFields;
     return Wrap(
       spacing: 4,
       children: [
@@ -244,11 +240,11 @@ class _LibraryItemState extends State<LibraryItem> {
   }
 
   void _handleHover(bool isHovering) {
-    final isVideo =
-        getFileType(widget.file.name) == 'video' &&
+    final isMedia =
+        ['video', 'audio'].contains(widget.file.fileType) &&
         (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
 
-    if (!isVideo) return;
+    if (!isMedia) return;
 
     _hoverTimer?.cancel();
 

@@ -33,15 +33,7 @@ class LibraryTabData {
     required this.createDate,
     this.pageOptions = const {'page': 1, 'perPage': 100},
     this.filter = const {},
-    this.displayFields = const {
-      'title',
-      'rating',
-      'notes',
-      'createdAt',
-      'tags',
-      'folder',
-      'size',
-    },
+    this.displayFields = const {},
   });
 
   factory LibraryTabData.fromMap(Map<String, dynamic> map) {
@@ -161,6 +153,15 @@ class LibraryTabManager {
         library: library,
         isRecycleBin: isRecycleBin,
         createDate: DateTime.now(),
+        displayFields: {
+          'title',
+          'rating',
+          'notes',
+          'createdAt',
+          'tags',
+          'folder',
+          'size',
+        },
       ),
     );
     trySaveTabs();
