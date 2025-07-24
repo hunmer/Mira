@@ -1,4 +1,4 @@
-import { MessageHandler } from '../WebSocketRouter';
+import { MessageHandler } from './MessageHandler';
 import { WebSocket } from 'ws';
 import { WebSocketMessage } from '../WebSocketRouter';
 import { LibraryServerDataSQLite } from '../LibraryServerDataSQLite';
