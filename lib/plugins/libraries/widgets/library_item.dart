@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
@@ -8,18 +9,9 @@ import 'package:mira/widgets/icon_chip.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:path/path.dart' as path;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+import 'package:video_player/video_player.dart';
 
-class LibraryItem extends StatelessWidget {
-  final LibraryFile file;
-  final bool isSelected;
-  final bool useThumbnail;
-  final VoidCallback? onTap;
-  final VoidCallback? onDoubleTap;
-
-  final Future<String> Function(String) getFolderTitle;
-  final Future<String> Function(String) getTagTilte;
-  final Set<String> displayFields;
-
+class LibraryItem extends StatefulWidget {
   const LibraryItem({
     required this.file,
     this.isSelected = false,
@@ -33,14 +25,320 @@ class LibraryItem extends StatelessWidget {
     super.key,
   });
 
+  final LibraryFile file;
+  final bool isSelected;
+  final bool useThumbnail;
+  final VoidCallback? onTap;
+  final VoidCallback? onDoubleTap;
   final Function(dynamic) onLongPress;
+  final Future<String> Function(String) getFolderTitle;
+  final Future<String> Function(String) getTagTilte;
+  final Set<String> displayFields;
+
+  @override
+  State<LibraryItem> createState() => _LibraryItemState();
+}
+
+class _LibraryItemState extends State<LibraryItem> {
+  VideoPlayerController? _videoController;
+  bool _isHovering = false;
+  bool _isVideoReady = false;
+  Timer? _hoverTimer;
+  bool _isLoadError = false;
+  double _volume = 0;
+
+  Widget _buildFileIcon() {
+    final isVideo =
+        widget.file.type?.toLowerCase() == 'video' &&
+        (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
+    if (_isHovering) {
+      if (_isLoadError) {
+        return const Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, color: Colors.red, size: 36),
+              SizedBox(height: 8),
+              Text('加载失败', style: TextStyle(color: Colors.red, fontSize: 12)),
+            ],
+          ),
+        );
+      }
+      if (!_isVideoReady || _videoController == null) {
+        return const Center(child: CircularProgressIndicator());
+      } else {
+        return Stack(
+          alignment: Alignment.bottomCenter,
+          children: [
+            AspectRatio(
+              aspectRatio: _videoController!.value.aspectRatio,
+              child: VideoPlayer(_videoController!),
+            ),
+            Positioned(
+              top: 8,
+              left: 8,
+              child: GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _volume = _volume == 0 ? 1 : 0;
+                    _videoController?.setVolume(_volume);
+                  });
+                },
+                child: Icon(
+                  _volume == 0 ? Icons.volume_off : Icons.volume_up,
+                  color: Colors.white,
+                  size: 24,
+                ),
+              ),
+            ),
+            VideoProgressIndicator(
+              _videoController!,
+              allowScrubbing: true,
+              padding: const EdgeInsets.all(2),
+            ),
+          ],
+        );
+      }
+    } else {
+      return widget.useThumbnail && widget.file.thumb != null
+          ? buildImageFromUrl(widget.file.thumb!)
+          : Icon(Icons.insert_drive_file, size: 48);
+    }
+  }
+
+  Widget _buildFileInfo(BuildContext context, bool isCompact) {
+    if (isCompact) return const SizedBox.shrink();
+    final file = widget.file;
+    final displayFields = widget.displayFields;
+    return Padding(
+      padding: const EdgeInsets.all(8.0),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          if (displayFields.contains('title'))
+            Text(
+              path.basenameWithoutExtension(file.name),
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+            ),
+          if (displayFields.contains('notes') && file.notes != null)
+            Text(
+              file.notes!,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          if (displayFields.contains('createdAt'))
+            Text(
+              '创建: ${file.createdAt.toString().split(' ')[0]}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+          if (displayFields.contains('size'))
+            Text(
+              '大小: ${formatFileSize(file.size)}',
+              style: Theme.of(context).textTheme.bodySmall,
+            ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFileTags(String folderTitle, List<String> tagTitles) {
+    if (!widget.displayFields.any(
+      (field) => ['rating', 'folder', 'tags'].contains(field),
+    )) {
+      return const SizedBox.shrink();
+    }
+    final file = widget.file;
+    final displayFields = widget.displayFields;
+    return Wrap(
+      spacing: 4,
+      children: [
+        if (displayFields.contains('rating') &&
+            file.rating != null &&
+            file.rating! > 0)
+          IconChip(
+            icon: Icons.star,
+            label: '${file.rating}/5',
+            iconColor: Colors.amber,
+          ),
+        if (displayFields.contains('folder') && folderTitle.isNotEmpty)
+          IconChip(icon: Icons.folder, label: folderTitle),
+        if (displayFields.contains('tags') && file.tags.isNotEmpty)
+          ...tagTitles
+              .where((t) => t.isNotEmpty)
+              .map((tag) => IconChip(icon: Icons.label, label: tag)),
+      ],
+    );
+  }
+
+  Widget _buildFileExtensionBadge() {
+    return Positioned(
+      top: 8,
+      right: 8,
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.grey[200],
+          borderRadius: BorderRadius.circular(12),
+        ),
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(Icons.insert_drive_file, size: 14, color: Colors.grey[700]),
+            const SizedBox(width: 4),
+            Text(
+              path.extension(widget.file.name).toUpperCase(),
+              style: const TextStyle(fontSize: 10),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildSelectedIndicator() {
+    if (!widget.isSelected) return const SizedBox.shrink();
+
+    return Positioned(
+      top: 8,
+      left: 8,
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.blue,
+          shape: BoxShape.circle,
+        ),
+        child: const Icon(Icons.check, color: Colors.white, size: 20),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _videoController?.dispose();
+    _hoverTimer?.cancel();
+    super.dispose();
+  }
+
+  Future<void> _initializeVideo() async {
+    if (widget.file.path == null) return;
+    print('play ${widget.file.path}');
+    try {
+      _videoController = VideoPlayerController.file(
+        File(widget.file.path!),
+        videoPlayerOptions: VideoPlayerOptions(),
+      );
+      await _videoController!.initialize();
+      if (mounted) {
+        setState(() {
+          _isVideoReady = true;
+        });
+        await _videoController!.setLooping(true);
+        await _videoController!.setVolume(_volume);
+        await _videoController!.play();
+      }
+    } catch (err) {
+      _isLoadError = true;
+    }
+  }
+
+  void _handleHover(bool isHovering) {
+    final isVideo =
+        getFileType(widget.file.name) == 'video' &&
+        (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
+    if (!isVideo) return;
+
+    _hoverTimer?.cancel();
+
+    if (isHovering) {
+      _hoverTimer = Timer(const Duration(milliseconds: 300), () {
+        if (mounted) {
+          setState(() {
+            _isHovering = true;
+            _initializeVideo();
+          });
+        }
+      });
+    } else {
+      setState(() {
+        _isHovering = false;
+        _isVideoReady = false;
+        _videoController?.dispose();
+        _videoController = null;
+      });
+    }
+  }
+
+  Widget _buildDragItem(
+    BuildContext context,
+    String folderTitle,
+    List<String> tagTitles,
+  ) {
+    return DragItemWidget(
+      dragItemProvider: (request) async {
+        final item = DragItem(
+          localData: {'fileId': widget.file.id},
+          suggestedName: widget.file.name,
+        );
+        if ((Platform.isLinux || Platform.isMacOS || Platform.isWindows) &&
+            widget.file.path != null) {
+          final path = filePathToUri(widget.file.path!);
+          item.add(Formats.fileUri(Uri.tryParse(path)!));
+        }
+        return item;
+      },
+      allowedOperations: () => [DropOperation.copy],
+      child: DraggableWidget(
+        child: MouseRegion(
+          onEnter: (_) => _handleHover(true),
+          onExit: (_) => _handleHover(false),
+          child: GestureDetector(
+            onSecondaryTapDown: (details) => widget.onLongPress(details),
+            onLongPressDown:
+                kIsWeb ? widget.onLongPress(LongPressDownDetails) : null,
+            child: Card(
+              child: Stack(
+                children: [
+                  InkWell(
+                    onTap: widget.onTap,
+                    onDoubleTap: widget.onDoubleTap,
+                    child: LayoutBuilder(
+                      builder: (context, constraints) {
+                        final isCompact = constraints.maxWidth < 100;
+                        return SizedBox(
+                          width: double.infinity,
+                          child: Column(
+                            children: [
+                              Expanded(child: _buildFileIcon()),
+                              _buildFileInfo(context, isCompact),
+                              _buildFileTags(folderTitle, tagTitles),
+                            ],
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                  _buildFileExtensionBadge(),
+                  _buildSelectedIndicator(),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return FutureBuilder(
       future: Future.wait([
-        getFolderTitle(file.folderId),
-        Future.wait(file.tags.map((tag) => getTagTilte(tag)).toList()),
+        widget.getFolderTitle(widget.file.folderId),
+        Future.wait(
+          widget.file.tags.map((tag) => widget.getTagTilte(tag)).toList(),
+        ),
       ]),
       builder: (context, snapshot) {
         if (!snapshot.hasData) {
@@ -48,198 +346,7 @@ class LibraryItem extends StatelessWidget {
         }
         final folderTitle = snapshot.data![0] as String;
         final tagTitles = snapshot.data![1] as List<String>;
-        return DragItemWidget(
-          dragItemProvider: (request) async {
-            final item = DragItem(
-              localData: {'fileId': file.id},
-              suggestedName: file.name,
-            );
-            if ((Platform.isLinux || Platform.isMacOS || Platform.isWindows) &&
-                file.path != null) {
-              final path = filePathToUri(file.path!);
-              item.add(Formats.fileUri(Uri.tryParse(path)!));
-            }
-            return item;
-          },
-          allowedOperations: () => [DropOperation.copy],
-          child: DraggableWidget(
-            child: GestureDetector(
-              onSecondaryTapDown: (details) => onLongPress(details),
-              onLongPressDown:
-                  kIsWeb ? onLongPress(LongPressDownDetails) : null,
-              child: Card(
-                child: Stack(
-                  children: [
-                    InkWell(
-                      onTap: onTap,
-                      onDoubleTap: onDoubleTap,
-                      child: LayoutBuilder(
-                        builder: (context, constraints) {
-                          final isCompact = constraints.maxWidth < 100;
-                          return SizedBox(
-                            width: double.infinity,
-                            child: Column(
-                              children: [
-                                Expanded(
-                                  child:
-                                      useThumbnail && file.thumb != null
-                                          ? buildImageFromUrl(file.thumb!)
-                                          : Icon(
-                                            Icons.insert_drive_file,
-                                            size: 48,
-                                            color:
-                                                ['audio', 'video'].contains(
-                                                      file.type?.toLowerCase(),
-                                                    )
-                                                    ? Colors.blue
-                                                    : null,
-                                          ),
-                                ),
-                                if (!isCompact)
-                                  Padding(
-                                    padding: const EdgeInsets.all(8.0),
-                                    child: Column(
-                                      crossAxisAlignment:
-                                          CrossAxisAlignment.start,
-                                      children: [
-                                        if (displayFields.contains('title'))
-                                          Text(
-                                            path.basenameWithoutExtension(
-                                              file.name,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-
-                                        if (displayFields.contains('notes') &&
-                                            file.notes != null)
-                                          Text(
-                                            file.notes!,
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                            style:
-                                                Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                          ),
-                                        if (displayFields.contains('createdAt'))
-                                          Text(
-                                            '创建: ${file.createdAt.toString().split(' ')[0]}',
-                                            style:
-                                                Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                          ),
-                                        if (displayFields.contains('size'))
-                                          Text(
-                                            '大小: ${formatFileSize(file.size)}',
-                                            style:
-                                                Theme.of(
-                                                  context,
-                                                ).textTheme.bodySmall,
-                                          ),
-                                        if (displayFields.any(
-                                          (field) => [
-                                            'rating',
-                                            'folder',
-                                            'tags',
-                                          ].contains(field),
-                                        ))
-                                          Wrap(
-                                            spacing: 4,
-                                            children: [
-                                              if (displayFields.contains(
-                                                    'rating',
-                                                  ) &&
-                                                  file.rating != null &&
-                                                  file.rating! > 0)
-                                                IconChip(
-                                                  icon: Icons.star,
-                                                  label: '${file.rating}/5',
-                                                  iconColor: Colors.amber,
-                                                ),
-                                              if (displayFields.contains(
-                                                    'folder',
-                                                  ) &&
-                                                  folderTitle.isNotEmpty)
-                                                IconChip(
-                                                  icon: Icons.folder,
-                                                  label: folderTitle,
-                                                ),
-                                              if (displayFields.contains(
-                                                    'tags',
-                                                  ) &&
-                                                  file.tags.isNotEmpty)
-                                                ...tagTitles
-                                                    .where((t) => t.isNotEmpty)
-                                                    .map(
-                                                      (tag) => IconChip(
-                                                        icon: Icons.label,
-                                                        label: tag,
-                                                      ),
-                                                    ),
-                                            ],
-                                          ),
-                                      ],
-                                    ),
-                                  ),
-                              ],
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    Positioned(
-                      top: 8,
-                      right: 8,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.grey[200],
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        padding: EdgeInsets.symmetric(
-                          horizontal: 8,
-                          vertical: 2,
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Icon(
-                              Icons.insert_drive_file,
-                              size: 14,
-                              color: Colors.grey[700],
-                            ),
-                            SizedBox(width: 4),
-                            Text(
-                              path.extension(file.name).toUpperCase(),
-                              style: TextStyle(fontSize: 10),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    if (isSelected)
-                      Positioned(
-                        top: 8,
-                        left: 8,
-                        child: Container(
-                          decoration: BoxDecoration(
-                            color: Colors.blue,
-                            shape: BoxShape.circle,
-                          ),
-                          child: Icon(
-                            Icons.check,
-                            color: Colors.white,
-                            size: 20,
-                          ),
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        );
+        return _buildDragItem(context, folderTitle, tagTitles);
       },
     );
   }
