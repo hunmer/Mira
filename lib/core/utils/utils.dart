@@ -2,6 +2,7 @@
 import 'dart:io';
 import 'dart:math';
 
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -29,12 +30,13 @@ String formatFileSize(int bytes) {
 
 Widget buildImageFromUrl(String url) {
   return url.startsWith('http')
-      ? Image.network(
-        url,
+      ? CachedNetworkImage(
+        imageUrl: url,
         fit: BoxFit.cover,
-        errorBuilder:
-            (context, error, stackTrace) =>
-                Icon(Icons.insert_drive_file, size: 48),
+        progressIndicatorBuilder:
+            (context, url, downloadProgress) =>
+                CircularProgressIndicator(value: downloadProgress.progress),
+        errorWidget: (context, url, error) => Icon(Icons.error),
       )
       : Image.file(
         File(url),

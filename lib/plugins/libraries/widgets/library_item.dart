@@ -46,6 +46,7 @@ class _LibraryItemState extends State<LibraryItem> {
   Timer? _hoverTimer;
   bool _isLoadError = false;
   double _volume = 0;
+  final GlobalKey _mouseRegionKey = GlobalKey();
 
   Widget _buildFileIcon() {
     if (_isHovering) {
@@ -214,6 +215,7 @@ class _LibraryItemState extends State<LibraryItem> {
   void dispose() {
     _videoController?.dispose();
     _hoverTimer?.cancel();
+    _positionUpdateTimer?.cancel();
     super.dispose();
   }
 
@@ -237,6 +239,34 @@ class _LibraryItemState extends State<LibraryItem> {
     } catch (err) {
       _isLoadError = true;
     }
+  }
+
+  Timer? _positionUpdateTimer;
+  double _lastPosition = 0;
+
+  void _updateVideoPosition(double position) {
+    if (_videoController != null && _videoController!.value.isInitialized) {
+      final duration = _videoController!.value.duration;
+      _videoController!.seekTo(duration * position);
+    }
+  }
+
+  void _handleMousePosition(PointerHoverEvent event) {
+    if (_videoController == null || !_videoController!.value.isInitialized)
+      return;
+
+    final renderBox =
+        _mouseRegionKey.currentContext?.findRenderObject() as RenderBox?;
+    if (renderBox == null) return;
+
+    final localPosition = renderBox.globalToLocal(event.position);
+    final width = renderBox.size.width;
+    final position = (localPosition.dx / width).clamp(0.0, 1.0);
+
+    _positionUpdateTimer ??= Timer(const Duration(milliseconds: 200), () {
+      _positionUpdateTimer = null;
+      _updateVideoPosition(position);
+    });
   }
 
   void _handleHover(bool isHovering) {
@@ -288,8 +318,10 @@ class _LibraryItemState extends State<LibraryItem> {
       allowedOperations: () => [DropOperation.copy],
       child: DraggableWidget(
         child: MouseRegion(
+          key: _mouseRegionKey,
           onEnter: (_) => _handleHover(true),
           onExit: (_) => _handleHover(false),
+          onHover: _handleMousePosition,
           child: GestureDetector(
             onSecondaryTapDown: (details) => widget.onLongPress(details),
             onLongPressDown:

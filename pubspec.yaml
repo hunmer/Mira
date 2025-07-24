@@ -78,6 +78,7 @@ dependencies:
   dynamic_tabbar: ^1.0.9
   rxdart: ^0.28.0
   shelf_router: ^1.1.4
+  cached_network_image: ^3.4.1
 
 dev_dependencies:
   flutter_test:
