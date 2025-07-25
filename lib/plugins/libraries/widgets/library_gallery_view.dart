@@ -215,6 +215,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         final result = await inst.findFiles(query: query);
         _items.value = result['result'];
         _totalItemsNotifier.value = result['total'] as int;
+        print('Total Count: ${_totalItemsNotifier.value}');
       }
     } catch (err) {
       _items.value = [];
@@ -293,188 +294,214 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       _paginationOptionsNotifier.value['page'] = totalPages;
     }
     return Scaffold(
-      appBar: LibraryGalleryAppBar(
-        title: widget.library.name,
-        isRecycleBin: isRecycleBin,
-        isSelectionMode: _isSelectionModeNotifier.value,
-        selectedCount: _selectedFileIds.value.length,
-        onSelectAll: _toggleSelectAll,
-        onExitSelection: _exitSelectionMode,
-        toggleSidebar: _toggleSidebar,
-        onFilter: () async {
-          final filterOptions = await showDialog<Map<String, dynamic>>(
-            context: context,
-            builder: (context) => FileFilterDialog(),
-          );
-          if (filterOptions != null &&
-              _filterOptionsNotifier.value != filterOptions) {
-            _filterOptionsNotifier.value = filterOptions;
-            _tabManager.setLibraryFilter(widget.tabId, filterOptions);
-          }
-        },
-        onEnterSelection: () {
-          _isSelectionModeNotifier.value = true;
-        },
-        onUpload: _showDropDialog,
-        uploadProgress: _uploadProgressNotifier.value,
-        displayFields: _displayFieldsNotifier.value,
-        onDisplayFieldsChanged: (newFields) {
-          if (_displayFieldsNotifier.value != newFields) {
-            _displayFieldsNotifier.value = newFields;
-            _tabManager.setLibraryDisplayFields(widget.tabId, newFields);
-          }
-        },
-        imagesPerRow: _imagesPerRowNotifier.value,
-        onImagesPerRowChanged: (count) {
-          if (_imagesPerRowNotifier.value != count) {
-            _imagesPerRowNotifier.value = count;
-          }
-        },
-        onRefresh: _refresh,
-      ),
+      appBar: _buildAppBar(isRecycleBin),
       bottomSheet: LibraryGalleryBottomSheet(
         uploadProgress: _uploadProgressNotifier.value,
       ),
       body: Row(
         children: [
-          SizedBox(
-            width: 60,
-            child: Column(
-              children: [
-                // 收藏
-                Tooltip(
-                  message: '收藏',
-                  child: IconButton(
-                    icon: Icon(Icons.favorite),
-                    onPressed: () {},
-                  ),
-                ),
-                // 回收站
-                Tooltip(
-                  message: '回收站',
-                  child: IconButton(
-                    icon: Icon(Icons.delete),
-                    onPressed: () {
-                      _tabManager.addTab(widget.library, isRecycleBin: true);
-                    },
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildQuickActions(),
           VerticalDivider(width: 1),
-          ValueListenableBuilder<bool>(
-            valueListenable: _showSidebarNotifier,
-            builder: (context, showSidebar, _) {
-              return showSidebar
-                  ? Expanded(
-                    flex: screenWidth < 600 ? 6 : (screenWidth > 1300 ? 1 : 2),
-                    child: ValueListenableBuilder<List<LibraryTag>>(
-                      valueListenable: _tags,
-                      builder: (context, tags, _) {
-                        return ValueListenableBuilder<List<LibraryFolder>>(
-                          valueListenable: _folders,
-                          builder: (context, folders, _) {
-                            return ValueListenableBuilder<Map<String, dynamic>>(
-                              valueListenable: _filterOptionsNotifier,
-                              builder: (context, filterOptions, _) {
-                                return LibrarySidebarView(
-                                  plugin: widget.plugin,
-                                  library: widget.library,
-                                  tabId: widget.tabId,
-                                  tags: tags,
-                                  tagsSelected: filterOptions['tags'] ?? [],
-                                  folders: folders,
-                                  folderSelected:
-                                      filterOptions['folder'] is String
-                                          ? [filterOptions['folder']]
-                                          : [],
-                                );
-                              },
-                            );
-                          },
-                        );
-                      },
-                    ),
-                  )
-                  : SizedBox.shrink();
-            },
-          ),
+          _buildSidebarSection(screenWidth),
           VerticalDivider(width: 1),
-          Expanded(
-            flex: 4,
-            child: Column(
-              children: [
-                Expanded(
-                  child: Stack(
-                    children: [
-                      ValueListenableBuilder<List<LibraryFile>>(
-                        valueListenable: _items,
-                        builder: (context, items, _) {
-                          return LibraryGalleryBody(
-                            plugin: widget.plugin,
-                            library: widget.library,
-                            isRecycleBin: isRecycleBin,
-                            displayFields: _displayFieldsNotifier.value,
-                            items: items,
-                            isSelectionMode: _isSelectionModeNotifier.value,
-                            selectedFileIds: _selectedFileIds.value,
-                            onFileSelected: _onFileSelected,
-                            onFileOpen: _onFileOpen,
-                            imagesPerRow: _imagesPerRowNotifier.value,
-                          );
-                        },
-                      ),
-                      ValueListenableBuilder<bool>(
-                        valueListenable: _isItemsLoadingNotifier,
-                        builder: (context, isLoading, _) {
-                          return isLoading
-                              ? Center(child: CircularProgressIndicator())
-                              : SizedBox.shrink();
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-                Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 8.0),
-                  child: NumberPagination(
-                    currentPage: _paginationOptionsNotifier.value['page'],
-                    totalPages: totalPages,
-                    onPageChanged: (page) {
-                      _paginationOptionsNotifier.value = {
-                        ..._paginationOptionsNotifier.value,
-                        'page': page,
-                      };
-                      _loadFiles();
-                    },
-                    visiblePagesCount:
-                        MediaQuery.of(context).size.width ~/ 200 + 2,
-                    buttonRadius: 10.0,
-                    buttonElevation: 1.0,
-                    controlButtonSize: Size(34, 34),
-                    numberButtonSize: Size(34, 34),
-                    selectedButtonColor: Theme.of(context).primaryColor,
-                  ),
-                ),
-              ],
-            ),
-          ),
+          _buildMainContent(isRecycleBin, screenWidth),
           if (screenWidth > 800) ...[
             VerticalDivider(width: 1),
-            Expanded(
-              flex: 1,
-              child: ValueListenableBuilder<LibraryFile?>(
-                valueListenable: _selectedFileNotifier,
-                builder: (context, selectedFile, _) {
-                  return selectedFile != null
-                      ? LibraryFileInformationView(file: selectedFile)
-                      : const Center(child: Text('请选择一个文件查看详情'));
-                },
-              ),
-            ),
+            _buildFileDetailsSection(),
           ],
         ],
+      ),
+    );
+  }
+
+  PreferredSizeWidget _buildAppBar(bool isRecycleBin) {
+    return LibraryGalleryAppBar(
+      title: widget.library.name,
+      isRecycleBin: isRecycleBin,
+      isSelectionMode: _isSelectionModeNotifier.value,
+      selectedCount: _selectedFileIds.value.length,
+      onSelectAll: _toggleSelectAll,
+      onExitSelection: _exitSelectionMode,
+      toggleSidebar: _toggleSidebar,
+      onFilter: () async {
+        final filterOptions = await showDialog<Map<String, dynamic>>(
+          context: context,
+          builder: (context) => FileFilterDialog(),
+        );
+        if (filterOptions != null &&
+            _filterOptionsNotifier.value != filterOptions) {
+          _filterOptionsNotifier.value = filterOptions;
+          _tabManager.setLibraryFilter(widget.tabId, filterOptions);
+        }
+      },
+      onEnterSelection: () {
+        _isSelectionModeNotifier.value = true;
+      },
+      onUpload: _showDropDialog,
+      uploadProgress: _uploadProgressNotifier.value,
+      displayFields: _displayFieldsNotifier.value,
+      onDisplayFieldsChanged: (newFields) {
+        if (_displayFieldsNotifier.value != newFields) {
+          _displayFieldsNotifier.value = newFields;
+          _tabManager.setLibraryDisplayFields(widget.tabId, newFields);
+        }
+      },
+      imagesPerRow: _imagesPerRowNotifier.value,
+      onImagesPerRowChanged: (count) {
+        if (_imagesPerRowNotifier.value != count) {
+          _imagesPerRowNotifier.value = count;
+        }
+      },
+      onRefresh: _refresh,
+    );
+  }
+
+  Widget _buildQuickActions() {
+    return SizedBox(
+      width: 60,
+      child: Column(
+        children: [
+          Tooltip(
+            message: '收藏',
+            child: IconButton(icon: Icon(Icons.favorite), onPressed: () {}),
+          ),
+          Tooltip(
+            message: '回收站',
+            child: IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () {
+                _tabManager.addTab(widget.library, isRecycleBin: true);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSidebarSection(double screenWidth) {
+    return ValueListenableBuilder<bool>(
+      valueListenable: _showSidebarNotifier,
+      builder: (context, showSidebar, _) {
+        if (!showSidebar) return SizedBox.shrink();
+
+        return Expanded(
+          flex: screenWidth < 600 ? 6 : (screenWidth > 1300 ? 1 : 2),
+          child: ValueListenableBuilder(
+            valueListenable: _tags,
+            builder: (context, tags, _) {
+              return ValueListenableBuilder(
+                valueListenable: _folders,
+                builder: (context, folders, _) {
+                  return ValueListenableBuilder(
+                    valueListenable: _filterOptionsNotifier,
+                    builder: (context, filterOptions, _) {
+                      return LibrarySidebarView(
+                        plugin: widget.plugin,
+                        library: widget.library,
+                        tabId: widget.tabId,
+                        tags: tags,
+                        tagsSelected: filterOptions['tags'] ?? [],
+                        folders: folders,
+                        folderSelected:
+                            filterOptions['folder'] is String
+                                ? [filterOptions['folder']]
+                                : [],
+                      );
+                    },
+                  );
+                },
+              );
+            },
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildMainContent(bool isRecycleBin, double screenWidth) {
+    return Expanded(
+      flex: 4,
+      child: Column(
+        children: [
+          Expanded(
+            child: Stack(
+              children: [
+                ValueListenableBuilder(
+                  valueListenable: _items,
+                  builder: (context, items, _) {
+                    return LibraryGalleryBody(
+                      plugin: widget.plugin,
+                      library: widget.library,
+                      isRecycleBin: isRecycleBin,
+                      displayFields: _displayFieldsNotifier.value,
+                      items: items,
+                      isSelectionMode: _isSelectionModeNotifier.value,
+                      selectedFileIds: _selectedFileIds.value,
+                      onFileSelected: _onFileSelected,
+                      onFileOpen: _onFileOpen,
+                      imagesPerRow: _imagesPerRowNotifier.value,
+                    );
+                  },
+                ),
+                ValueListenableBuilder(
+                  valueListenable: _isItemsLoadingNotifier,
+                  builder: (context, isLoading, _) {
+                    return isLoading
+                        ? Center(child: CircularProgressIndicator())
+                        : SizedBox.shrink();
+                  },
+                ),
+              ],
+            ),
+          ),
+          _buildPagination(),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPagination() {
+    return ValueListenableBuilder<int>(
+      valueListenable: _totalItemsNotifier,
+      builder: (context, totalItems, _) {
+        final paginationOptions = _paginationOptionsNotifier.value;
+        final totalPages = (totalItems / paginationOptions['perPage']).ceil();
+
+        return Padding(
+          padding: const EdgeInsets.symmetric(vertical: 8.0),
+          child: NumberPagination(
+            currentPage: paginationOptions['page'],
+            totalPages: totalPages,
+            onPageChanged: (page) {
+              _paginationOptionsNotifier.value = {
+                ..._paginationOptionsNotifier.value,
+                'page': page,
+              };
+              _loadFiles();
+            },
+            visiblePagesCount: MediaQuery.of(context).size.width ~/ 200 + 2,
+            buttonRadius: 10.0,
+            buttonElevation: 1.0,
+            controlButtonSize: Size(34, 34),
+            numberButtonSize: Size(34, 34),
+            selectedButtonColor: Theme.of(context).primaryColor,
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildFileDetailsSection() {
+    return Expanded(
+      flex: 1,
+      child: ValueListenableBuilder(
+        valueListenable: _selectedFileNotifier,
+        builder: (context, selectedFile, _) {
+          return selectedFile != null
+              ? LibraryFileInformationView(file: selectedFile)
+              : const Center(child: Text('请选择一个文件查看详情'));
+        },
       ),
     );
   }

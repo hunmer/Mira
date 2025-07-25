@@ -290,7 +290,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       final result = await _sendRequest(
         action: 'read',
         type: 'file',
-        data: query ?? {},
+        data: {'query': query ?? {}},
       );
       if (result == null || result['result'] == null) {
         return {'result': [], 'total': 0, 'offset': 0, 'limit': 0};

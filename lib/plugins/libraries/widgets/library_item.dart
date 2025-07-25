@@ -220,13 +220,17 @@ class _LibraryItemState extends State<LibraryItem> {
   }
 
   Future<void> _initializeVideo() async {
-    if (widget.file.path == null) return;
-    print('play ${widget.file.path}');
+    final filePath = widget.file.path;
+    if (filePath == null) return;
+    print('play ${filePath}');
     try {
-      _videoController = VideoPlayerController.file(
-        File(widget.file.path!),
-        videoPlayerOptions: VideoPlayerOptions(),
-      );
+      if (filePath.startsWith('http')) {
+        _videoController = VideoPlayerController.networkUrl(
+          Uri.parse(filePath),
+        );
+      } else {
+        _videoController = VideoPlayerController.file(File(filePath));
+      }
       await _videoController!.initialize();
       if (mounted) {
         setState(() {

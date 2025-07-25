@@ -34,8 +34,11 @@ Widget buildImageFromUrl(String url) {
         imageUrl: url,
         fit: BoxFit.cover,
         progressIndicatorBuilder:
-            (context, url, downloadProgress) =>
-                CircularProgressIndicator(value: downloadProgress.progress),
+            (context, url, downloadProgress) => Center(
+              child: CircularProgressIndicator(
+                value: downloadProgress.progress,
+              ),
+            ),
         errorWidget: (context, url, error) => Icon(Icons.error),
       )
       : Image.file(
