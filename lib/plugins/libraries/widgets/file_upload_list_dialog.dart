@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:mira/core/utils/taskbar.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'dart:io';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
@@ -24,14 +25,11 @@ class FileUploadListDialog extends StatefulWidget {
   _FileUploadListDialogState createState() => _FileUploadListDialogState();
 }
 
-// UploadStatus and UploadItem moved to upload_queue_view.dart
-
 class _FileUploadListDialogState extends State<FileUploadListDialog>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final List<File> _receivedFiles = [];
-  final List<File> _uploadList = [];
-  StreamSubscription<int>? _progressSubscription;
+  final ValueNotifier<List<File>> _filesNotifier = ValueNotifier([]);
+  StreamSubscription<Map<String, int>>? _progressSubscription;
   StreamSubscription<QueueTask>? _taskStatusSubscription;
   double _uploadProgress = 0;
 
@@ -39,13 +37,12 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
-    _uploadList.addAll(widget.initialFiles);
+    _filesNotifier.value = List.from(widget.initialFiles);
     _progressSubscription = widget.uploadQueue.progressStream.listen((
-      completed,
+      progress,
     ) {
-      setState(() {
-        _uploadProgress = widget.uploadQueue.progress;
-      });
+      _uploadProgress = widget.uploadQueue.progress;
+      Taskbar.setProgress(progress['total'] as int, progress['done'] as int);
     });
     _taskStatusSubscription = widget.uploadQueue.taskStatusStream.listen((
       task,
@@ -64,16 +61,13 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
     super.dispose();
   }
 
-  void _onFilesSelected(List<File> files) {
-    setState(() {
-      _uploadList.addAll(files);
-      _receivedFiles.clear();
-      _uploadFiles(_uploadList);
-    });
+  Future<void> _onUploadFiles(List<File> files) async {
+    await widget.uploadQueue.addFiles(files);
+    _filesNotifier.value = [];
   }
 
-  Future<void> _uploadFiles(List<File> filesToUpload) async {
-    await widget.uploadQueue.addFiles(filesToUpload);
+  Future<void> _onFileAdded(List<File> files) async {
+    _filesNotifier.value = [..._filesNotifier.value, ...files];
   }
 
   @override
@@ -93,12 +87,23 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
                 controller: _tabController,
                 children: [
                   // 文件接收Tab
-                  FileDropView(
-                    plugin: widget.plugin,
-                    items: _receivedFiles,
-                    onFilesSelected: _onFilesSelected,
-                    btnOk: '开始上传',
-                    key: const PageStorageKey('fileDropView'), // 保持状态
+                  ValueListenableBuilder<List<File>>(
+                    valueListenable: _filesNotifier,
+                    builder: (context, files, child) {
+                      return FileDropView(
+                        plugin: widget.plugin,
+                        items: _filesNotifier.value,
+                        onFileAdded: _onFileAdded,
+                        onDone: _onUploadFiles,
+                        onClear: () {
+                          setState(() {
+                            _filesNotifier.value = [];
+                          });
+                        },
+                        btnOk: '开始上传',
+                        key: const PageStorageKey('fileDropView'),
+                      );
+                    },
                   ),
                   // 上传队列Tab
                   UploadQueueView(

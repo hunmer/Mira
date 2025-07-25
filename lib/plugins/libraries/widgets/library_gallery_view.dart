@@ -39,7 +39,7 @@ class LibraryGalleryView extends StatefulWidget {
 class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late UploadQueueService _uploadQueue;
   final ValueNotifier<double> _uploadProgressNotifier = ValueNotifier(0);
-  StreamSubscription<int>? _progressSubscription;
+  StreamSubscription<Map<String, int>>? _progressSubscription;
   final ValueNotifier<bool> _isSelectionModeNotifier = ValueNotifier(false);
   final ValueNotifier<Set<int>> _selectedFileIds = ValueNotifier({});
   final ValueNotifier<int> _totalItemsNotifier = ValueNotifier(0);

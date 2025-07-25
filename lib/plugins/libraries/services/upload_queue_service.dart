@@ -22,8 +22,8 @@ class QueueTask {
 class UploadQueueService {
   final LibrariesPlugin plugin;
   final Library library;
-  final StreamController<int> _progressController =
-      StreamController<int>.broadcast();
+  final StreamController<Map<String, int>> _progressController =
+      StreamController<Map<String, int>>.broadcast();
   final StreamController<QueueTask> _taskStatusController =
       StreamController<QueueTask>.broadcast();
   int _totalFiles = 0;
@@ -54,7 +54,7 @@ class UploadQueueService {
             _failedFileList.add(task.file);
             task.status = UploadStatus.failed;
           } finally {
-            _progressController.add(_completedFiles);
+            boradcastProgress();
           }
         },
       )
@@ -63,6 +63,14 @@ class UploadQueueService {
       });
     // 监听广播获取上传结果
     EventManager.instance.subscribe('file::uploaded', _onFileUploaded);
+  }
+
+  void boradcastProgress() {
+    _progressController.add({
+      'done': _completedFiles,
+      'total': _totalFiles,
+      'failed': _failedFiles,
+    });
   }
 
   void _onFileUploaded(EventArgs args) {
@@ -78,7 +86,7 @@ class UploadQueueService {
     }
   }
 
-  Stream<int> get progressStream => _progressController.stream;
+  Stream<Map<String, int>> get progressStream => _progressController.stream;
   Stream<QueueTask> get taskStatusStream => _taskStatusController.stream;
   List<File> get completedFiles => _completedFileList;
   List<File> get failedFiles => _failedFileList;
@@ -95,7 +103,6 @@ class UploadQueueService {
               ),
             )
             .toList();
-    _progressController.add(_completedFiles);
 
     for (final task in tasks) {
       queue.add(task, id: task.id);
@@ -126,11 +133,13 @@ class UploadQueueService {
     _totalFiles = 0;
     _completedFiles = 0;
     _failedFiles = 0;
-    _progressController.add(0);
     _completedFileList.clear();
     _failedFileList.clear();
     queue.cancelAll();
     queue.removeAll();
+    if (!_progressController.isClosed) {
+      boradcastProgress();
+    }
   }
 
   double get progress {

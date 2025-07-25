@@ -13,14 +13,18 @@ class FileDropView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final String btnOk;
   final List<File> items;
-  final Function(List<File>) onFilesSelected;
+  late Function(List<File>) onFileAdded;
+  late Function(List<File>) onDone;
+  late Function() onClear;
 
-  const FileDropView({
+  FileDropView({
     super.key,
     this.btnOk = '确定上传',
     required this.items,
     required this.plugin,
-    required this.onFilesSelected,
+    required this.onFileAdded,
+    required this.onDone,
+    required this.onClear,
   });
 
   @override
@@ -111,34 +115,19 @@ class _FileDropViewState extends State<FileDropView>
     with AutomaticKeepAliveClientMixin {
   @override
   bool get wantKeepAlive => true;
-  final List<File> _selectedFiles = [];
   final List<bool> _selectedItems = [];
-  late FileDataSource _fileDataSource;
   int _sortColumnIndex = 0;
   bool _sortAscending = true;
   final PaginatorController _paginatorController = PaginatorController();
   int _rowsPerPage = 50;
   int _initialRow = 0;
-  @override
-  void initState() {
-    super.initState();
-    _fileDataSource = FileDataSource(
-      files: _selectedFiles,
-      selectedItems: _selectedItems,
-      onSelectChanged: (index, value) {
-        setState(() {
-          _selectedItems[index] = value;
-        });
-      },
-    );
-  }
 
   void _sort(int columnIndex, bool ascending) {
     setState(() {
       _sortColumnIndex = columnIndex;
       _sortAscending = ascending;
 
-      _selectedFiles.sort((a, b) {
+      widget.items.sort((a, b) {
         final aPath = a.path.replaceAll('\\', '/');
         final bPath = b.path.replaceAll('\\', '/');
 
@@ -171,10 +160,9 @@ class _FileDropViewState extends State<FileDropView>
       allowMultiple: true,
     );
     if (result != null) {
-      setState(() {
-        _selectedFiles.addAll(result.paths.map((path) => File(path!)).toList());
-        _selectedItems.addAll(List.filled(result.paths.length, true));
-      });
+      final files = result.paths.map((path) => File(path!)).toList();
+      _selectedItems.addAll(List.filled(result.paths.length, true));
+      widget.onFileAdded(files);
     }
   }
 
@@ -193,33 +181,20 @@ class _FileDropViewState extends State<FileDropView>
             .list(recursive: true)
             .where((entity) => entity is File)
             .toList();
-    setState(() {
-      _selectedFiles.addAll(files.cast<File>());
-      _selectedItems.addAll(List.filled(files.length, true));
-      _fileDataSource = FileDataSource(
-        files: _selectedFiles,
-        selectedItems: _selectedItems,
-        onSelectChanged: (index, value) {
-          setState(() {
-            _selectedItems[index] = value;
-          });
-        },
-      );
-    });
+    _selectedItems.addAll(List.filled(files.length, true));
+    widget.onFileAdded(files.cast<File>());
   }
 
   void _onDone() {
     final filesToUpload = <File>[];
-    for (int i = 0; i < _selectedFiles.length; i++) {
+    for (int i = 0; i < widget.items.length; i++) {
       if (_selectedItems[i]) {
-        filesToUpload.add(_selectedFiles[i]);
+        filesToUpload.add(widget.items[i]);
       }
     }
-    widget.onFilesSelected(filesToUpload);
-    setState(() {
-      _selectedFiles.clear();
-      _selectedItems.clear();
-    });
+    widget.onDone(filesToUpload);
+    widget.onClear();
+    _selectedItems.clear();
   }
 
   @override
@@ -254,8 +229,8 @@ class _FileDropViewState extends State<FileDropView>
                             try {
                               final file = File(path);
                               if (await file.exists()) {
-                                _selectedFiles.add(file);
                                 _selectedItems.add(true);
+                                widget.onFileAdded([file]);
                               }
                             } catch (e) {
                               print('Error adding file: $e');
@@ -271,7 +246,6 @@ class _FileDropViewState extends State<FileDropView>
                 }
               },
               onDropOver: (event) {
-                setState(() {});
                 return Future.value(DropOperation.copy);
               },
               formats: [],
@@ -310,7 +284,7 @@ class _FileDropViewState extends State<FileDropView>
               ],
             ),
             const SizedBox(height: 16),
-            if (_selectedFiles.isNotEmpty) ...[
+            if (widget.items.isNotEmpty) ...[
               Expanded(
                 child: AsyncPaginatedDataTable2(
                   columnSpacing: 12,
@@ -362,7 +336,15 @@ class _FileDropViewState extends State<FileDropView>
                   ],
                   sortColumnIndex: _sortColumnIndex,
                   sortAscending: _sortAscending,
-                  source: _fileDataSource,
+                  source: FileDataSource(
+                    files: widget.items,
+                    selectedItems: _selectedItems,
+                    onSelectChanged: (index, value) {
+                      setState(() {
+                        _selectedItems[index] = value;
+                      });
+                    },
+                  ),
                   controller: _paginatorController,
                 ),
               ),
@@ -371,7 +353,7 @@ class _FileDropViewState extends State<FileDropView>
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    '共 ${_selectedFiles.length} 个文件',
+                    '共 ${widget.items.length} 个文件',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                   ElevatedButton(onPressed: _onDone, child: Text(widget.btnOk)),
