@@ -22,9 +22,9 @@ class LibraryDataController {
         await plugin.server.start(library.customFields['path']);
       }
 
-      final uri = Uri.parse(library.url);
-      final channel = WebSocketChannel.connect(uri);
-      dataInterfaces[libraryId] = LibraryDataWebSocket(channel, library);
+      final channel = WebSocketChannel.connect(Uri.parse(library.url));
+      final inst = LibraryDataWebSocket(channel, library);
+      dataInterfaces[libraryId] = inst;
       await channel.ready;
       return dataInterfaces[libraryId];
     }
@@ -36,10 +36,12 @@ class LibraryDataController {
   }
 
   Future<LibraryDataInterface?> loadLibraryInst(Library library) async {
-    if (getLibraryInst(library.id) == null) {
-      return await loadLibrary(library);
+    LibraryDataInterface? inst = getLibraryInst(library.id);
+    inst ??= await loadLibrary(library);
+    if (inst != null) {
+      inst.checkConnection(); // 校验与数据库的连接
     }
-    return null;
+    return inst;
   }
 
   void close() {}

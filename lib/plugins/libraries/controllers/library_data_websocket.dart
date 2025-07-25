@@ -10,21 +10,23 @@ import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'library_data_interface.dart';
 
+enum LibraryStatus { open, closed, error, connected }
+
 class LibraryDataWebSocket implements LibraryDataInterface {
+  final StreamController<LibraryStatus> _event =
+      StreamController<LibraryStatus>.broadcast();
+
   LibraryDataWebSocket(this._channel, this.library) {
     _channel.stream.listen(
       _handleResponse,
       onError: (error) {
+        _event.add(LibraryStatus.error);
         print('连接出错: $error');
       },
       onDone: () {
+        _event.add(LibraryStatus.closed);
         print('连接已关闭');
       },
-    );
-    _sendRequest(
-      action: 'open',
-      type: 'library',
-      data: {'library': library.toJson()},
     );
   }
   final Library library;
@@ -36,7 +38,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     required String action,
     required String type,
     dynamic data,
-    Duration timeout = const Duration(seconds: 10),
+    Duration timeout = const Duration(seconds: 30),
   }) async {
     final requestId = _generateRequestId();
     final completer = Completer<dynamic>();
@@ -57,13 +59,36 @@ class LibraryDataWebSocket implements LibraryDataInterface {
         timeout,
         onTimeout: () {
           _responseHandlers.remove(requestId);
-          print('$action request timed out after ${timeout.inSeconds} seconds');
+          completer.completeError(
+            TimeoutException(
+              '$action request timed out after ${timeout.inSeconds} seconds',
+            ),
+          );
+          throw TimeoutException(
+            '$action request timed out after ${timeout.inSeconds} seconds',
+          );
         },
       );
     } catch (e) {
       _responseHandlers.remove(requestId);
+      if (e is TimeoutException) {
+        debugPrint('WebSocket request timeout: ${e.toString()}');
+      } else {
+        debugPrint('WebSocket request error: ${e.toString()}');
+      }
       rethrow;
     }
+  }
+
+  @override
+  void checkConnection() {
+    // 发送给服务端，需要保证library已经加载
+    // 服务端会返回connected消息并且被客户端获取，所有这里不需要获取结果
+    _sendRequest(
+      action: 'open',
+      type: 'library',
+      data: {'library': library.toJson()},
+    );
   }
 
   String _generateRequestId() {
@@ -71,6 +96,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   void _handleResponse(dynamic message) {
+    _event.add(LibraryStatus.open);
     try {
       debugPrint('Received WebSocket message: $message');
       final response = jsonDecode(message);
@@ -98,9 +124,14 @@ class LibraryDataWebSocket implements LibraryDataInterface {
         final libraryId = data['libraryId'];
         switch (eventName) {
           case 'connected': // 初次连接
+            _event.add(LibraryStatus.connected);
             EventManager.instance.broadcast(
               'library::connected',
-              MapEventArgs({'libraryId': libraryId}),
+              MapEventArgs({
+                'libraryId': libraryId,
+                'tags': data['tags'],
+                'folders': data['folders'],
+              }),
             );
             EventManager.instance.broadcast(
               'tags::update',
@@ -241,21 +272,28 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
   @override
   Future<dynamic> findFiles({Map<String, dynamic>? query}) async {
-    final result = await _sendRequest(
-      action: 'read',
-      type: 'file',
-      data: query ?? {},
-    );
-    if (result == null) return [];
-    return {
-      'results':
-          (result['result'] as List)
-              .map((json) => LibraryFile.fromMap(json))
-              .toList(),
-      'total': result['total'] as int,
-      'offset': result['offset'] as int,
-      'limit': result['limit'] as int,
-    };
+    try {
+      final result = await _sendRequest(
+        action: 'read',
+        type: 'file',
+        data: query ?? {},
+      );
+      if (result == null || result['result'] == null) {
+        return {'result': [], 'total': 0, 'offset': 0, 'limit': 0};
+      }
+      return {
+        'result':
+            (result['result'] as List)
+                .map((json) => LibraryFile.fromMap(json))
+                .toList(),
+        'total': result['total'] as int? ?? 0,
+        'offset': result['offset'] as int? ?? 0,
+        'limit': result['limit'] as int? ?? 0,
+      };
+    } catch (e) {
+      debugPrint('Error in findFiles: ${e.toString()}');
+      return {'result': [], 'total': 0, 'offset': 0, 'limit': 0};
+    }
   }
 
   @override

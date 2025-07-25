@@ -111,6 +111,12 @@ class WebSocketServer {
     );
   }
 
+  LibraryServerDataInterface getLibraray(String libraryId) {
+    return _libraryServices.firstWhere(
+      (library) => library.getLibraryId() == libraryId,
+    );
+  }
+
   Future<void> _handleMessage(
     WebSocketChannel channel,
     Map<String, dynamic> row,
@@ -123,11 +129,12 @@ class WebSocketServer {
     final recordType = payload['type'] as String;
     final exists = libraryExists(libraryId);
 
-    if (action == 'open' && recordType == 'library' && !exists) {
+    if (action == 'open' && recordType == 'library') {
       final library = data['library'];
       try {
-        final dbService = await loadLibrary(library);
-        final service = LibraryService(dbService);
+        final service = LibraryService(
+          exists ? getLibraray(libraryId) : await loadLibrary(library),
+        );
         final result = await service.connectLibrary(library);
         sendToWebsocket(channel, {'event': 'connected', 'data': result});
       } catch (err) {

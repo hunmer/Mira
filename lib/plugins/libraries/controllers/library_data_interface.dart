@@ -13,7 +13,7 @@ abstract class LibraryDataInterface {
   Future<void> recoverFile(int id);
   Future<dynamic> findFiles({Map<String, dynamic>? query});
   Future<List<LibraryFile>> getFiles();
-
+  void checkConnection(); // 校验与数据库的连接
   Future<void> addFolder(Map<String, dynamic> folder);
   Future<void> deleteFolder(String id);
   Future<List<Map<String, dynamic>>> findFolders({Map<String, dynamic>? query});

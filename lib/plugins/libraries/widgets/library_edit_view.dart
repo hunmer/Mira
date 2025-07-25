@@ -44,7 +44,10 @@ class _LibraryEditViewState extends State<LibraryEditView> {
         _usernameController.text = library.customFields['username'] ?? '';
         _passwordController.text = library.customFields['password'] ?? '';
       }
-      _enableHash = widget.library?.customFields['enableHash'];
+      _enableHash =
+          library.customFields.containsKey('enableHash')
+              ? library.customFields['enableHash']
+              : false;
     } else {
       _selectedType = LibraryType.local;
     }

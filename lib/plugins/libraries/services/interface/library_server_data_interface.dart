@@ -1,7 +1,11 @@
+import 'package:mira/plugins/libraries/services/library_service.dart';
 import 'package:mira/plugins/libraries/services/server_event_manager.dart';
+import 'package:mira/plugins/libraries/services/websocket_server.dart';
 
 abstract class LibraryServerDataInterface {
   /// 获取事件管理器
+
+  WebSocketServer get server;
 
   ServerEventManager getEventManager();
 

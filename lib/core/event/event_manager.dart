@@ -59,6 +59,18 @@ class EventManager {
     return id;
   }
 
+  // subscribeOnce
+  String subscribeOnce(String eventName, Function(EventArgs) handler) {
+    final id = 'sub_${_subscriptionIdCounter++}';
+    final subscription = EventSubscription(id, eventName, (args) {
+      unsubscribe(eventName, handler);
+      handler(args);
+    });
+
+    _eventSubscriptions.putIfAbsent(eventName, () => []).add(subscription);
+    return id;
+  }
+
   /// 通过事件名称和处理函数取消订阅
   /// [eventName] 事件名称
   /// [handler] 事件处理函数（可选）

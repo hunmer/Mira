@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_manager.dart';
@@ -29,7 +31,8 @@ class LibraryTabsView extends StatefulWidget {
 class _LibraryTabsViewState extends State<LibraryTabsView> {
   late LibrariesPlugin _plugin;
   late LibraryTabManager _tabManager;
-  List<LibraryTabData> _tabDatas = [];
+  late final ValueNotifier<List<LibraryTabData>> _tabDatas = ValueNotifier([]);
+  List<StreamSubscription> _subscriptions = [];
 
   @override
   void initState() {
@@ -41,44 +44,43 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   }
 
   Future<void> init() async {
-    _tabManager.onTabEventStream.stream
-        .throttleTime(Duration(microseconds: 500))
-        .listen((detail) async {
-          final event = detail['event'];
-          final tabId = detail['tabId'];
-          print('tab event: $event, tabId: $tabId');
-          switch (event) {
-            case 'active':
-              // 保证tab所属的library进行初始化连接
-              _tabManager.tryUpdate(tabId);
-              break;
-            case 'close':
-            case 'add':
-            case 'clear':
-              setState(() {
-                _loadTabDatas();
-              });
-              break;
-          }
-        });
-
     final chanedStream = EventThrottle(duration: Duration(milliseconds: 1000));
-    chanedStream.stream.listen((EventArgs args) {
-      //  服务器广播文件更新
-      if (args is MapEventArgs) {
-        final libraryId = args.item['libraryId'];
-        final currentTab = _tabManager.getCurrentTabId();
-        for (LibraryTabData tabData in _tabManager.tabDatas) {
-          final library = tabData.library;
-          if (library.id == libraryId) {
-            _tabManager.setValue(tabData.id, 'needUpdate', true);
-            if (tabData.id == currentTab) {
-              _tabManager.tryUpdate(tabData.id);
+    _subscriptions.addAll([
+      _tabManager.onTabEventStream.stream
+          .throttleTime(Duration(microseconds: 500))
+          .listen((detail) async {
+            final event = detail['event'];
+            final tabId = detail['tabId'];
+            print('tab event: $event, tabId: $tabId');
+            switch (event) {
+              case 'active':
+                // 保证tab所属的library进行初始化连接
+                _tabManager.tryUpdate(tabId);
+                break;
+              case 'close':
+              case 'add':
+              case 'clear':
+                _loadTabDatas();
+                break;
+            }
+          }),
+      chanedStream.stream.listen((EventArgs args) {
+        //  服务器广播文件更新
+        if (args is MapEventArgs) {
+          final libraryId = args.item['libraryId'];
+          final currentTab = _tabManager.getCurrentTabId();
+          for (LibraryTabData tabData in _tabManager.tabDatas) {
+            final library = tabData.library;
+            if (library.id == libraryId) {
+              _tabManager.setValue(tabData.id, 'needUpdate', true);
+              if (tabData.id == currentTab) {
+                _tabManager.tryUpdate(tabData.id);
+              }
             }
           }
         }
-      }
-    });
+      }),
+    ]);
     EventManager.instance.subscribe(
       'file::changed',
       (args) => chanedStream.onCall(args),
@@ -94,12 +96,15 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   }
 
   void _loadTabDatas() {
-    _tabDatas = _tabManager.tabDatas.toList();
+    _tabDatas.value = _tabManager.tabDatas.toList();
   }
 
   @override
   void dispose() {
     super.dispose();
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
     _tabManager.dispose();
     _plugin.server.stop();
   }
@@ -149,7 +154,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             }
             final isDesktop = Utils.isDesktop();
             final tabs =
-                _tabDatas.map((tabData) {
+                _tabDatas.value.map((tabData) {
                   return TabData(
                     index: tabData.id.hashCode,
                     title: Tab(
@@ -217,34 +222,92 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                             ? LibraryTabsEmptyView(
                               onAddTab: () => _openLibrary(),
                             )
-                            : DynamicTabBarWidget(
-                              dynamicTabs: tabs,
-                              showBackIcon: true,
-                              showNextIcon: true,
-                              isScrollable: true,
-                              trailing: IconButton(
-                                icon: const Icon(Icons.add),
-                                onPressed: () => _openLibrary(),
-                              ),
-                              leading: IconButton(
-                                icon: const Icon(Icons.close),
-                                onPressed: () => _tabManager.closeAllTabs(),
-                              ),
-                              // 桌面端禁止手势滑动
-                              physics:
-                                  isDesktop
-                                      ? const NeverScrollableScrollPhysics()
-                                      : null,
-                              physicsTabBarView:
-                                  isDesktop
-                                      ? const NeverScrollableScrollPhysics()
-                                      : null,
-                              onTabChanged: (index) {
-                                if (index != null) {
-                                  _tabManager.setActive(index);
-                                }
+                            : ValueListenableBuilder<List<LibraryTabData>>(
+                              valueListenable: _tabDatas,
+                              builder: (context, tabDatas, child) {
+                                final tabs =
+                                    tabDatas.map((tabData) {
+                                      return TabData(
+                                        index: tabData.id.hashCode,
+                                        title: Tab(
+                                          child: GestureDetector(
+                                            onSecondaryTapDown:
+                                                (details) => _showContextMenu(
+                                                  context,
+                                                  details.globalPosition,
+                                                  tabData.library,
+                                                  tabData.id,
+                                                ),
+                                            child: Row(
+                                              mainAxisSize: MainAxisSize.min,
+                                              children: [
+                                                Text(
+                                                  tabData.title.isNotEmpty
+                                                      ? tabData.title
+                                                      : tabData.library.name,
+                                                  style: TextStyle(
+                                                    fontSize: 18,
+                                                  ),
+                                                ),
+                                                const SizedBox(width: 4),
+                                                GestureDetector(
+                                                  behavior:
+                                                      HitTestBehavior.opaque,
+                                                  child: InkWell(
+                                                    borderRadius:
+                                                        BorderRadius.circular(
+                                                          12,
+                                                        ),
+                                                    onTap:
+                                                        () => _tabManager
+                                                            .closeTab(
+                                                              tabData.id,
+                                                            ),
+                                                    child: const Icon(
+                                                      Icons.close,
+                                                      size: 20,
+                                                    ),
+                                                  ),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        ),
+                                        content: LibraryContentView(
+                                          plugin: _plugin,
+                                          tabData: tabData,
+                                        ),
+                                      );
+                                    }).toList();
+                                return DynamicTabBarWidget(
+                                  dynamicTabs: tabs,
+                                  showBackIcon: true,
+                                  showNextIcon: true,
+                                  isScrollable: true,
+                                  trailing: IconButton(
+                                    icon: const Icon(Icons.add),
+                                    onPressed: () => _openLibrary(),
+                                  ),
+                                  leading: IconButton(
+                                    icon: const Icon(Icons.close),
+                                    onPressed: () => _tabManager.closeAllTabs(),
+                                  ),
+                                  physics:
+                                      isDesktop
+                                          ? const NeverScrollableScrollPhysics()
+                                          : null,
+                                  physicsTabBarView:
+                                      isDesktop
+                                          ? const NeverScrollableScrollPhysics()
+                                          : null,
+                                  onTabChanged: (index) {
+                                    if (index != null) {
+                                      _tabManager.setActive(index);
+                                    }
+                                  },
+                                  onTabControllerUpdated: (controller) {},
+                                );
                               },
-                              onTabControllerUpdated: (controller) {},
                             ),
                   ),
                 ],

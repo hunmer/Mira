@@ -50,7 +50,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late LibraryTabData? _tabData;
   final ValueNotifier<List<LibraryFolder>> _folders = ValueNotifier([]);
   final ValueNotifier<List<LibraryTag>> _tags = ValueNotifier([]);
-  final ValueNotifier<bool> _isFirstLoadNotifier = ValueNotifier(false);
+  bool _isFirstLoad = false;
   List<String> _eventSubscribes = [];
 
   final ValueNotifier<Set<String>> _displayFieldsNotifier = ValueNotifier({});
@@ -112,14 +112,14 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         }
       }),
       EventManager.instance.subscribe('filter::updated', _onFilterUpdate),
+      EventManager.instance.subscribeOnce('library::connected', _doFirstLoad),
     ]);
   }
 
   void _refresh() async {
-    print('refresh');
     if (mounted) {
-      _loadFiles();
-      // _loadFoldersTags();
+      await _loadFiles();
+      await _loadFoldersTags();
     }
   }
 
@@ -133,6 +133,21 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         );
         _loadFiles();
       }
+    }
+  }
+
+  Future<void> _doFirstLoad(EventArgs args) async {
+    if (args is MapEventArgs && !_isFirstLoad) {
+      _isFirstLoad = true;
+      _tags.value =
+          (args.item['tags'] as List)
+              .map((item) => LibraryTag.fromMap(item))
+              .toList();
+      _folders.value =
+          (args.item['folders'] as List)
+              .map((item) => LibraryFolder.fromMap(item))
+              .toList();
+      await _loadFiles();
     }
   }
 
@@ -198,10 +213,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       );
       if (inst != null) {
         final result = await inst.findFiles(query: query);
-        if (result != null && result.isNotEmpty) {
-          _items.value = result['results'] as List<LibraryFile>;
-          _totalItemsNotifier.value = result['total'] as int;
-        }
+        _items.value = result['result'];
+        _totalItemsNotifier.value = result['total'] as int;
       }
     } catch (err) {
       _items.value = [];
@@ -243,23 +256,13 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     _showSidebarNotifier.value = !_showSidebarNotifier.value;
   }
 
-  Future<void> _doFirstLoad() async {
-    if (!_isFirstLoadNotifier.value) {
-      _isFirstLoadNotifier.value = true;
-      await _loadFiles();
-      await _loadFoldersTags();
-    }
-  }
-
   @override
   Widget build(BuildContext context) {
     print('build');
     return FutureBuilder<dynamic>(
       future: () {
         // 保证library完成初始化连接
-        return widget.plugin.libraryController
-            .loadLibraryInst(widget.library)
-            .then((_) => _doFirstLoad());
+        return widget.plugin.libraryController.loadLibraryInst(widget.library);
       }(),
       builder: (context, snapshot) {
         switch (snapshot.connectionState) {
