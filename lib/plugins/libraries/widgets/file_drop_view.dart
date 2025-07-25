@@ -12,11 +12,13 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 class FileDropView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final String btnOk;
+  final List<File> items;
   final Function(List<File>) onFilesSelected;
 
   const FileDropView({
     super.key,
     this.btnOk = '确定上传',
+    required this.items,
     required this.plugin,
     required this.onFilesSelected,
   });

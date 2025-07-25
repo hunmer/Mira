@@ -16,21 +16,34 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   final StreamController<LibraryStatus> _event =
       StreamController<LibraryStatus>.broadcast();
 
-  LibraryDataWebSocket(this._channel, this.library) {
-    _channel.stream.listen(
+  LibraryDataWebSocket(this.library) {
+    connect();
+    channel.stream.listen(
       _handleResponse,
       onError: (error) {
         _event.add(LibraryStatus.error);
         print('连接出错: $error');
+        reconnect();
       },
       onDone: () {
         _event.add(LibraryStatus.closed);
         print('连接已关闭');
+        reconnect();
       },
     );
   }
+
+  void connect() {
+    channel = WebSocketChannel.connect(Uri.parse(library.url));
+  }
+
+  void reconnect() {
+    print('重新连接');
+    connect();
+  }
+
   final Library library;
-  final WebSocketChannel _channel;
+  late final WebSocketChannel channel;
   final Map<String, Completer<dynamic>> _responseHandlers = {};
   final LibrariesPlugin _plugin =
       PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
@@ -51,7 +64,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       'payload': {'type': type, 'data': data ?? {}},
     };
 
-    _channel.sink.add(jsonEncode(message));
+    channel.sink.add(jsonEncode(message));
     debugPrint('Sending WebSocket message: ${jsonEncode(message)}');
 
     try {
@@ -118,12 +131,13 @@ class LibraryDataWebSocket implements LibraryDataInterface {
           return;
         }
 
-        final eventName = response['event'];
+        final eventName = response['eventName'];
         final data = response['data'];
         final id = data['id'];
         final libraryId = data['libraryId'];
         switch (eventName) {
           case 'connected': // 初次连接
+            print('连接成功');
             _event.add(LibraryStatus.connected);
             EventManager.instance.broadcast(
               'library::connected',
@@ -214,7 +228,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
   @override
   void close() {
-    _channel.sink.close();
+    channel.sink.close();
   }
 
   @override

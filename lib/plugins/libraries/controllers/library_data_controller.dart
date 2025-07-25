@@ -22,10 +22,9 @@ class LibraryDataController {
         await plugin.server.start(library.customFields['path']);
       }
 
-      final channel = WebSocketChannel.connect(Uri.parse(library.url));
-      final inst = LibraryDataWebSocket(channel, library);
+      final inst = LibraryDataWebSocket(library);
       dataInterfaces[libraryId] = inst;
-      await channel.ready;
+      await inst.channel.ready;
       return dataInterfaces[libraryId];
     }
     return null;

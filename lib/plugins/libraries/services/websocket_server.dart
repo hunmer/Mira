@@ -136,7 +136,7 @@ class WebSocketServer {
           exists ? getLibraray(libraryId) : await loadLibrary(library),
         );
         final result = await service.connectLibrary(library);
-        sendToWebsocket(channel, {'event': 'connected', 'data': result});
+        sendToWebsocket(channel, {'eventName': 'connected', 'data': result});
       } catch (err) {
         sendToWebsocket(channel, {
           'status': 'error',
@@ -182,7 +182,7 @@ class WebSocketServer {
     String eventName,
     ServerEventArgs args,
   ) {
-    final message = jsonEncode({'event': eventName, 'data': args});
+    final message = jsonEncode({'eventName': eventName, 'data': args});
 
     // 广播给指定library的客户端
     if (_libraryClients.containsKey(libraryId)) {

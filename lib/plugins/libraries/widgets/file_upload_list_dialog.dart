@@ -95,6 +95,7 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
                   // 文件接收Tab
                   FileDropView(
                     plugin: widget.plugin,
+                    items: _receivedFiles,
                     onFilesSelected: _onFilesSelected,
                     btnOk: '开始上传',
                     key: const PageStorageKey('fileDropView'), // 保持状态

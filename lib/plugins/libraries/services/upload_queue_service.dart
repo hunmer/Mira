@@ -127,6 +127,8 @@ class UploadQueueService {
     _completedFiles = 0;
     _failedFiles = 0;
     _progressController.add(0);
+    _completedFileList.clear();
+    _failedFileList.clear();
     queue.cancelAll();
     queue.removeAll();
   }
