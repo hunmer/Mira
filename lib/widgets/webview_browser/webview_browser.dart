@@ -1,8 +1,6 @@
 import 'dart:math';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
 
 import 'custom_image.dart';
 import 'webview_tab.dart';
@@ -11,10 +9,12 @@ const kHomeUrl = 'https://google.com';
 
 class WebViewBrowser extends StatefulWidget {
   final List<WebViewTab> initialTabs;
+  final List<String> initialUrls;
   final int initialTabIndex;
-  
+
   const WebViewBrowser({
     Key? key,
+    this.initialUrls = const [],
     this.initialTabs = const [],
     this.initialTabIndex = 0,
   }) : super(key: key);
@@ -31,10 +31,13 @@ class _WebViewBrowserState extends State<WebViewBrowser> {
   @override
   void initState() {
     super.initState();
-    
-    webViewTabs = List.from(widget.initialTabs);
+    webViewTabs = [];
+    // webViewTabs = List.from(widget.initialTabs);
+    for (final url in widget.initialUrls) {
+      webViewTabs.add(createWebViewTab(url: url));
+    }
     currentTabIndex = widget.initialTabIndex;
-    
+
     if (webViewTabs.isEmpty) {
       webViewTabs.add(createWebViewTab());
     }
@@ -44,13 +47,15 @@ class _WebViewBrowserState extends State<WebViewBrowser> {
   Widget build(BuildContext context) {
     return WillPopScope(
       child: Scaffold(
-          appBar: showWebViewTabsViewer
-              ? _buildWebViewTabViewerAppBar()
-              : _buildWebViewTabAppBar(),
-          body: IndexedStack(
-            index: showWebViewTabsViewer ? 1 : 0,
-            children: [_buildWebViewTabs(), _buildWebViewTabsViewer()],
-          )),
+        appBar:
+            showWebViewTabsViewer
+                ? _buildWebViewTabViewerAppBar()
+                : _buildWebViewTabAppBar(),
+        body: IndexedStack(
+          index: showWebViewTabsViewer ? 1 : 0,
+          children: [_buildWebViewTabs(), _buildWebViewTabsViewer()],
+        ),
+      ),
       onWillPop: () async {
         if (showWebViewTabsViewer) {
           setState(() {
@@ -95,16 +100,20 @@ class _WebViewBrowserState extends State<WebViewBrowser> {
   AppBar _buildWebViewTabAppBar() {
     return AppBar(
       leading: IconButton(
-          onPressed: () {
-            _addWebViewTab();
-          },
-          icon: const Icon(Icons.add)),
+        onPressed: () {
+          _addWebViewTab();
+        },
+        icon: const Icon(Icons.add),
+        color: Colors.white38,
+      ),
+      backgroundColor: Theme.of(context).colorScheme.secondary,
       title: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Text(
             webViewTabs[currentTabIndex].title ?? '',
             overflow: TextOverflow.fade,
+            style: TextStyle(color: Colors.white70),
           ),
           Row(
             mainAxisSize: MainAxisSize.max,
@@ -112,27 +121,28 @@ class _WebViewBrowserState extends State<WebViewBrowser> {
             children: [
               webViewTabs[currentTabIndex].isSecure != null
                   ? Icon(
-                      webViewTabs[currentTabIndex].isSecure == true
-                          ? Icons.lock
-                          : Icons.lock_open,
-                      color: webViewTabs[currentTabIndex].isSecure == true
-                          ? Colors.green
-                          : Colors.red,
-                      size: 12)
+                    webViewTabs[currentTabIndex].isSecure == true
+                        ? Icons.lock
+                        : Icons.lock_open,
+                    color:
+                        webViewTabs[currentTabIndex].isSecure == true
+                            ? Colors.green
+                            : Colors.red,
+                    size: 12,
+                  )
                   : Container(),
-              const SizedBox(
-                width: 5,
-              ),
+              const SizedBox(width: 5),
               Flexible(
-                  child: Text(
-                webViewTabs[currentTabIndex].currentUrl ??
-                    webViewTabs[currentTabIndex].url ??
-                    '',
-                style: const TextStyle(fontSize: 12, color: Colors.white70),
-                overflow: TextOverflow.fade,
-              )),
+                child: Text(
+                  webViewTabs[currentTabIndex].currentUrl ??
+                      webViewTabs[currentTabIndex].url ??
+                      '',
+                  style: const TextStyle(fontSize: 12, color: Colors.white70),
+                  overflow: TextOverflow.fade,
+                ),
+              ),
             ],
-          )
+          ),
         ],
       ),
       actions: _buildWebViewTabActions(),
@@ -155,18 +165,21 @@ class _WebViewBrowserState extends State<WebViewBrowser> {
         icon: Container(
           margin: const EdgeInsets.only(top: 5, bottom: 5),
           decoration: BoxDecoration(
-              border: Border.all(width: 2.0, color: Colors.white),
-              shape: BoxShape.rectangle,
-              borderRadius: BorderRadius.circular(5.0)),
+            border: Border.all(width: 2.0, color: Colors.white),
+            shape: BoxShape.rectangle,
+            borderRadius: BorderRadius.circular(5.0),
+          ),
           constraints: const BoxConstraints(minWidth: 25.0),
           child: Center(
-              child: Text(
-            webViewTabs.length.toString(),
-            style: const TextStyle(
+            child: Text(
+              webViewTabs.length.toString(),
+              style: const TextStyle(
                 color: Colors.white,
                 fontWeight: FontWeight.bold,
-                fontSize: 14.0),
-          )),
+                fontSize: 14.0,
+              ),
+            ),
+          ),
         ),
       ),
     ];
@@ -175,12 +188,14 @@ class _WebViewBrowserState extends State<WebViewBrowser> {
   AppBar _buildWebViewTabViewerAppBar() {
     return AppBar(
       leading: IconButton(
-          onPressed: () {
-            setState(() {
-              showWebViewTabsViewer = false;
-            });
-          },
-          icon: const Icon(Icons.arrow_back)),
+        onPressed: () {
+          setState(() {
+            showWebViewTabsViewer = false;
+          });
+        },
+        icon: const Icon(Icons.arrow_back),
+      ),
+      backgroundColor: Theme.of(context).colorScheme.secondary,
       title: const Text('WebView Tab Viewer'),
       actions: _buildWebViewTabsViewerActions(),
     );
@@ -189,9 +204,10 @@ class _WebViewBrowserState extends State<WebViewBrowser> {
   Widget _buildWebViewTabsViewer() {
     return GridView.count(
       crossAxisCount: 2,
-      children: webViewTabs.map((webViewTab) {
-        return _buildWebViewTabGrid(webViewTab);
-      }).toList(),
+      children:
+          webViewTabs.map((webViewTab) {
+            return _buildWebViewTabGrid(webViewTab);
+          }).toList(),
     );
   }
 
@@ -201,80 +217,92 @@ class _WebViewBrowserState extends State<WebViewBrowser> {
     final favicon = webViewTab.favicon;
 
     return Card(
-        clipBehavior: Clip.antiAlias,
-        elevation: 2,
-        shape: RoundedRectangleBorder(
-            side: currentTabIndex == webViewIndex
+      clipBehavior: Clip.antiAlias,
+      elevation: 2,
+      shape: RoundedRectangleBorder(
+        side:
+            currentTabIndex == webViewIndex
                 ? const BorderSide(
-                    // border color
-                    color: Colors.black,
-                    // border thickness
-                    width: 2)
+                  // border color
+                  color: Colors.black,
+                  // border thickness
+                  width: 2,
+                )
                 : BorderSide.none,
-            borderRadius: const BorderRadius.all(
-              Radius.circular(5),
-            )),
-        child: InkWell(
-          onTap: () {
-            _selectWebViewTab(webViewTab);
-          },
-          child: Column(
-            children: [
-              ListTile(
-                tileColor: Colors.black12,
-                selected: currentTabIndex == webViewIndex,
-                selectedColor: Colors.white,
-                selectedTileColor: Colors.black,
-                contentPadding: const EdgeInsets.only(left: 10),
-                visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
-                title: Row(mainAxisSize: MainAxisSize.max, children: [
+        borderRadius: const BorderRadius.all(Radius.circular(5)),
+      ),
+      child: InkWell(
+        onTap: () {
+          _selectWebViewTab(webViewTab);
+        },
+        child: Column(
+          children: [
+            ListTile(
+              tileColor: Colors.black12,
+              selected: currentTabIndex == webViewIndex,
+              selectedColor: Colors.white,
+              selectedTileColor: Colors.black,
+              contentPadding: const EdgeInsets.only(left: 10),
+              visualDensity: const VisualDensity(horizontal: 0, vertical: -4),
+              title: Row(
+                mainAxisSize: MainAxisSize.max,
+                children: [
                   Container(
                     padding: const EdgeInsets.only(right: 10),
-                    child: favicon != null
-                        ? CustomImage(
-                            url: favicon.url, maxWidth: 20.0, height: 20.0)
-                        : null,
+                    child:
+                        favicon != null
+                            ? CustomImage(
+                              url: favicon.url,
+                              maxWidth: 20.0,
+                              height: 20.0,
+                            )
+                            : null,
                   ),
                   Expanded(
-                      child: Text(
-                    webViewTab.title ?? '',
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(fontSize: 12),
-                  ))
-                ]),
-                trailing: IconButton(
-                    onPressed: () {
-                      _closeWebViewTab(webViewTab);
-                    },
-                    icon: const Icon(
-                      Icons.close,
-                      size: 16,
-                    )),
+                    child: Text(
+                      webViewTab.title ?? '',
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                  ),
+                ],
               ),
-              Expanded(
-                  child: Ink(
-                decoration: screenshotData != null
-                    ? BoxDecoration(
-                        image: DecorationImage(
-                        image: MemoryImage(screenshotData),
-                        fit: BoxFit.fitWidth,
-                        alignment: Alignment.topCenter,
-                      ))
-                    : null,
-              ))
-            ],
-          ),
-        ));
+              trailing: IconButton(
+                onPressed: () {
+                  _closeWebViewTab(webViewTab);
+                },
+                icon: const Icon(Icons.close, size: 16),
+              ),
+            ),
+            Expanded(
+              child: Ink(
+                decoration:
+                    screenshotData != null
+                        ? BoxDecoration(
+                          image: DecorationImage(
+                            image: MemoryImage(screenshotData),
+                            fit: BoxFit.fitWidth,
+                            alignment: Alignment.topCenter,
+                          ),
+                        )
+                        : null,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 
   List<Widget> _buildWebViewTabsViewerActions() {
     return [
       IconButton(
-          onPressed: () {
-            _closeAllWebViewTabs();
-          },
-          icon: const Icon(Icons.clear_all))
+        onPressed: () {
+          _closeAllWebViewTabs();
+        },
+        icon: const Icon(Icons.clear_all),
+      ),
     ];
   }
 

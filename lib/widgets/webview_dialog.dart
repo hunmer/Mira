@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_inappwebview/flutter_inappwebview.dart';
+import 'package:mira/widgets/webview_browser/webview_browser.dart';
 
 class WebViewDialog extends StatefulWidget {
   final String title;
@@ -27,10 +27,9 @@ class _WebViewDialogState extends State<WebViewDialog> {
       content:
           _showWebView
               ? SizedBox(
-                height: 300,
-                child: InAppWebView(
-                  initialUrlRequest: URLRequest(url: WebUri(widget.url)),
-                ),
+                width: MediaQuery.of(context).size.width * 0.8,
+                height: MediaQuery.of(context).size.height * 0.8,
+                child: WebViewBrowser(initialUrls: [widget.url]),
               )
               : Text(widget.message),
       actions: [

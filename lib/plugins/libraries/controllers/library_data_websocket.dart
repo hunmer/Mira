@@ -1,8 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:mira/core/event/event.dart';
+import 'package:mira/core/event/event_args.dart';
+import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/storage/storage_manager.dart';
 import 'package:mira/main.dart';
@@ -44,15 +44,17 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   final Library library;
+  final String clientId = const Uuid().v4();
   final StreamController<LibraryStatus> _event =
       StreamController<LibraryStatus>.broadcast();
   final StorageManager storage;
   late final WebSocketChannel channel;
   final Map<String, Completer<dynamic>> _responseHandlers = {};
   late List<Map<String, dynamic>> _requiredFields = const [];
-  late final Map<String, dynamic> _fieldsData;
+  late Map<String, dynamic> _fieldsData;
   final LibrariesPlugin _plugin =
       PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
+  bool _isDialogShown = false;
 
   Future<dynamic> _sendRequest({
     required String action,
@@ -60,25 +62,17 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     dynamic data,
     Duration timeout = const Duration(seconds: 30),
   }) async {
-    final fields =
-        _requiredFields
-            .where((item) => item['action'] == action && item['type'] == type)
-            .map((item) => item['field'])
-            .toList();
-    final fieldValues = <String, dynamic>{};
-    for (final field in fields) {
-      fieldValues[field] = getFieldValue(field);
-    }
-
+    final libraryId = library.id;
     final requestId = _generateRequestId();
     final completer = Completer<dynamic>();
     _responseHandlers[requestId] = completer;
 
     final message = {
       'action': action,
+      'clientId': clientId,
       'requestId': requestId,
-      'libraryId': library.id,
-      'fields': fieldValues,
+      'libraryId': libraryId,
+      'fields': await getLibraryFieldValues(action, type),
       'payload': {'type': type, 'data': data ?? {}},
     };
 
@@ -111,6 +105,20 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     }
   }
 
+  Future<Map<String, dynamic>> getLibraryFieldValues(
+    String action,
+    String type,
+  ) async {
+    final fieldValues = <String, dynamic>{};
+    for (final item in _requiredFields.where(
+      (item) => item['action'] == action && item['type'] == type,
+    )) {
+      final field = item['field'];
+      fieldValues[field] = getFieldValue(field);
+    }
+    return fieldValues;
+  }
+
   @override
   Future<Map<String, dynamic>> loadFields() async {
     try {
@@ -128,8 +136,10 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
-  Future<dynamic> setFieldValue(String field, dynamic value) async {
-    _fieldsData[field] = value;
+  Future<dynamic> setFieldValues(Map<String, dynamic> fields) async {
+    for (final field in fields.entries) {
+      _fieldsData[field.key] = field.value;
+    }
     await storage.writeJson('library_fields/${library.id}', _fieldsData);
   }
 
@@ -174,13 +184,17 @@ class LibraryDataWebSocket implements LibraryDataInterface {
           // response['msg'];
           return;
         }
-
         final eventName = response['eventName'];
         final data = response['data'];
         final libraryId = data?['libraryId'];
         switch (eventName) {
-          case 'message':
-            if (navigatorKey.currentContext != null) {
+          case 'setFields':
+            setFieldValues(Map<String, dynamic>.from(data['fields']));
+            break;
+          case 'dialog':
+            // TODO WebViewDialog持久化，当再次收到url地址时，检查是否已经被打开，没有的话则打开新窗口页
+            if (navigatorKey.currentContext != null && !_isDialogShown) {
+              _isDialogShown = true;
               showDialog(
                 context: navigatorKey.currentContext!,
                 builder:
@@ -189,7 +203,9 @@ class LibraryDataWebSocket implements LibraryDataInterface {
                       message: data['message'],
                       url: data['url'],
                     ),
-              );
+              ).then((_) {
+                _isDialogShown = false;
+              });
             }
             return;
           case 'try_connect': // 尝试连接

@@ -36,15 +36,15 @@ class WebViewTab extends StatefulWidget {
     return state?._favicon;
   }
 
-  const WebViewTab(
-      {required GlobalKey key,
-      this.url,
-      required this.onStateUpdated,
-      required this.onCloseTabRequested,
-      required this.onCreateTabRequested,
-      this.windowId})
-      : assert(url != null || windowId != null),
-        super(key: key);
+  const WebViewTab({
+    required GlobalKey key,
+    this.url,
+    required this.onStateUpdated,
+    required this.onCloseTabRequested,
+    required this.onCreateTabRequested,
+    this.windowId,
+  }) : assert(url != null || windowId != null),
+       super(key: key);
 
   @override
   State<WebViewTab> createState() => _WebViewTabState();
@@ -112,13 +112,15 @@ class _WebViewTabState extends State<WebViewTab> with WidgetsBindingObserver {
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
     if (!kIsWeb) {
-      if (state == AppLifecycleState.resumed) {
-        resume();
-        _webViewController?.resumeTimers();
-      } else {
-        pause();
-        _webViewController?.pauseTimers();
-      }
+      try {
+        if (state == AppLifecycleState.resumed) {
+          resume();
+          _webViewController?.resumeTimers();
+        } else {
+          pause();
+          _webViewController?.pauseTimers();
+        }
+      } catch (err) {}
     }
   }
 
@@ -126,107 +128,108 @@ class _WebViewTabState extends State<WebViewTab> with WidgetsBindingObserver {
   Widget build(BuildContext context) {
     final url = widget.url;
 
-    return Column(children: <Widget>[
-      Expanded(
-        child: Stack(
-          children: [
-            Container(
-              color: Colors.white,
-            ),
-            InAppWebView(
-              windowId: widget.windowId,
-              initialUrlRequest:
-                  url != null ? URLRequest(url: WebUri(url)) : null,
-              initialSettings: InAppWebViewSettings(
-                javaScriptCanOpenWindowsAutomatically: true,
-                supportMultipleWindows: true,
-                isFraudulentWebsiteWarningEnabled: true,
-                safeBrowsingEnabled: true,
-                mediaPlaybackRequiresUserGesture: false,
-                allowsInlineMediaPlayback: true,
-              ),
-              onWebViewCreated: (controller) async {
-                _webViewController = controller;
-                if (!kIsWeb &&
-                    defaultTargetPlatform == TargetPlatform.android) {
-                  await controller.startSafeBrowsing();
-                }
-              },
-              onLoadStart: (controller, url) {
-                _favicon = null;
-                _title = '';
-                if (url != null) {
-                  _url = url.toString();
-                  _isSecure = urlIsSecure(url);
-                }
-                widget.onStateUpdated.call();
-              },
-              onLoadStop: (controller, url) async {
-                updateScreenshot();
+    return Column(
+      children: <Widget>[
+        Expanded(
+          child: Stack(
+            children: [
+              Container(color: Colors.white),
+              InAppWebView(
+                windowId: widget.windowId,
+                initialUrlRequest:
+                    url != null ? URLRequest(url: WebUri(url)) : null,
+                initialSettings: InAppWebViewSettings(
+                  javaScriptCanOpenWindowsAutomatically: true,
+                  supportMultipleWindows: true,
+                  isFraudulentWebsiteWarningEnabled: true,
+                  safeBrowsingEnabled: true,
+                  mediaPlaybackRequiresUserGesture: false,
+                  allowsInlineMediaPlayback: true,
+                ),
+                onWebViewCreated: (controller) async {
+                  _webViewController = controller;
+                  if (!kIsWeb &&
+                      defaultTargetPlatform == TargetPlatform.android) {
+                    await controller.startSafeBrowsing();
+                  }
+                },
+                onLoadStart: (controller, url) {
+                  _favicon = null;
+                  _title = '';
+                  if (url != null) {
+                    _url = url.toString();
+                    _isSecure = urlIsSecure(url);
+                  }
+                  widget.onStateUpdated.call();
+                },
+                onLoadStop: (controller, url) async {
+                  updateScreenshot();
 
-                if (url != null) {
-                  final sslCertificate = await controller.getCertificate();
-                  _url = url.toString();
-                  _isSecure = sslCertificate != null || urlIsSecure(url);
-                }
-
-                final favicons = await _webViewController?.getFavicons();
-                if (favicons != null && favicons.isNotEmpty) {
-                  for (final favicon in favicons) {
-                    if (_favicon == null) {
-                      _favicon = favicon;
-                    } else if (favicon.width != null &&
-                        (favicon.width ?? 0) > (_favicon?.width ?? 0)) {
-                      _favicon = favicon;
+                  if (url != null) {
+                    try {
+                      final sslCertificate = await controller.getCertificate();
+                      _url = url.toString();
+                      _isSecure = sslCertificate != null || urlIsSecure(url);
+                    } catch (e) {
+                      _isSecure = urlIsSecure(url);
                     }
                   }
-                }
+                  final favicons = await _webViewController?.getFavicons();
+                  if (favicons != null && favicons.isNotEmpty) {
+                    for (final favicon in favicons) {
+                      if (_favicon == null) {
+                        _favicon = favicon;
+                      } else if (favicon.width != null &&
+                          (favicon.width ?? 0) > (_favicon?.width ?? 0)) {
+                        _favicon = favicon;
+                      }
+                    }
+                  }
 
-                widget.onStateUpdated.call();
-              },
-              onUpdateVisitedHistory: (controller, url, isReload) {
-                if (url != null) {
-                  _url = url.toString();
                   widget.onStateUpdated.call();
-                }
-              },
-              onTitleChanged: (controller, title) {
-                _title = title ?? '';
-                widget.onStateUpdated.call();
-              },
-              onProgressChanged: (controller, progress) {
-                setState(() {
-                  _progress = progress / 100;
-                });
-              },
-              onCreateWindow: (controller, createWindowAction) async {
-                widget.onCreateTabRequested(createWindowAction);
-                return true;
-              },
-              onCloseWindow: (controller) {
-                widget.onCloseTabRequested();
-              },
-            ),
-            _progress < 1.0
-                ? LinearProgressIndicator(
-                    value: _progress,
-                  )
-                : Container(),
-          ],
+                },
+                onUpdateVisitedHistory: (controller, url, isReload) {
+                  if (url != null) {
+                    _url = url.toString();
+                    widget.onStateUpdated.call();
+                  }
+                },
+                onTitleChanged: (controller, title) {
+                  _title = title ?? '';
+                  widget.onStateUpdated.call();
+                },
+                onProgressChanged: (controller, progress) {
+                  setState(() {
+                    _progress = progress / 100;
+                  });
+                },
+                onCreateWindow: (controller, createWindowAction) async {
+                  widget.onCreateTabRequested(createWindowAction);
+                  return true;
+                },
+                onCloseWindow: (controller) {
+                  widget.onCloseTabRequested();
+                },
+              ),
+              _progress < 1.0
+                  ? LinearProgressIndicator(value: _progress)
+                  : Container(),
+            ],
+          ),
         ),
-      ),
-    ]);
+      ],
+    );
   }
 
   Future<void> updateScreenshot() async {
     _screenshot = await _webViewController
         ?.takeScreenshot(
-            screenshotConfiguration: ScreenshotConfiguration(
-                compressFormat: CompressFormat.JPEG, quality: 20))
-        .timeout(
-          const Duration(milliseconds: 1500),
-          onTimeout: () => null,
-        );
+          screenshotConfiguration: ScreenshotConfiguration(
+            compressFormat: CompressFormat.JPEG,
+            quality: 20,
+          ),
+        )
+        .timeout(const Duration(milliseconds: 1500), onTimeout: () => null);
   }
 
   Future<void> pause() async {
@@ -243,7 +246,8 @@ class _WebViewTabState extends State<WebViewTab> with WidgetsBindingObserver {
     if (!kIsWeb) {
       if (defaultTargetPlatform == TargetPlatform.iOS) {
         await _webViewController?.setAllMediaPlaybackSuspended(
-            suspended: false);
+          suspended: false,
+        );
       } else if (defaultTargetPlatform == TargetPlatform.android) {
         await _webViewController?.resume();
       }

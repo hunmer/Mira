@@ -3,7 +3,7 @@ import 'package:mira/plugins/libraries/models/file.dart';
 abstract class LibraryDataInterface {
   Future<Map<String, dynamic>> loadFields();
   dynamic getFieldValue(String field, dynamic defaultVal);
-  Future<dynamic> setFieldValue(String field, dynamic value);
+  Future<dynamic> setFieldValues(Map<String, dynamic> fields);
 
   Future<void> addLibrary(Map<String, dynamic> library);
   Future<void> deleteLibrary(String id);
