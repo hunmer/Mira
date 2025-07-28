@@ -219,6 +219,15 @@ class _LibraryItemState extends State<LibraryItem> {
     super.dispose();
   }
 
+  void closeVideo() {
+    setState(() {
+      _isHovering = false;
+      _isVideoReady = false;
+      _videoController?.dispose();
+      _videoController = null;
+    });
+  }
+
   Future<void> _initializeVideo() async {
     final filePath = widget.file.path;
     if (filePath == null) return;
@@ -292,12 +301,7 @@ class _LibraryItemState extends State<LibraryItem> {
         }
       });
     } else {
-      setState(() {
-        _isHovering = false;
-        _isVideoReady = false;
-        _videoController?.dispose();
-        _videoController = null;
-      });
+      closeVideo();
     }
   }
 

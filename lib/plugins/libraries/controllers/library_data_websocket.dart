@@ -1,11 +1,15 @@
 import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
+import 'package:flutter/material.dart';
 import 'package:mira/core/event/event.dart';
 import 'package:mira/core/plugin_manager.dart';
+import 'package:mira/core/storage/storage_manager.dart';
+import 'package:mira/main.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/widgets/webview_dialog.dart';
 import 'package:uuid/uuid.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
 import 'library_data_interface.dart';
@@ -13,10 +17,7 @@ import 'library_data_interface.dart';
 enum LibraryStatus { open, closed, error, connected }
 
 class LibraryDataWebSocket implements LibraryDataInterface {
-  final StreamController<LibraryStatus> _event =
-      StreamController<LibraryStatus>.broadcast();
-
-  LibraryDataWebSocket(this.library) {
+  LibraryDataWebSocket(this.storage, this.library) {
     connect();
     channel.stream.listen(
       _handleResponse,
@@ -43,16 +44,32 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   final Library library;
+  final StreamController<LibraryStatus> _event =
+      StreamController<LibraryStatus>.broadcast();
+  final StorageManager storage;
   late final WebSocketChannel channel;
   final Map<String, Completer<dynamic>> _responseHandlers = {};
+  late List<Map<String, dynamic>> _requiredFields = const [];
+  late final Map<String, dynamic> _fieldsData;
   final LibrariesPlugin _plugin =
       PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
+
   Future<dynamic> _sendRequest({
     required String action,
     required String type,
     dynamic data,
     Duration timeout = const Duration(seconds: 30),
   }) async {
+    final fields =
+        _requiredFields
+            .where((item) => item['action'] == action && item['type'] == type)
+            .map((item) => item['field'])
+            .toList();
+    final fieldValues = <String, dynamic>{};
+    for (final field in fields) {
+      fieldValues[field] = getFieldValue(field);
+    }
+
     final requestId = _generateRequestId();
     final completer = Completer<dynamic>();
     _responseHandlers[requestId] = completer;
@@ -61,6 +78,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       'action': action,
       'requestId': requestId,
       'libraryId': library.id,
+      'fields': fieldValues,
       'payload': {'type': type, 'data': data ?? {}},
     };
 
@@ -94,10 +112,36 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
-  void checkConnection() {
+  Future<Map<String, dynamic>> loadFields() async {
+    try {
+      final result = await storage.readJson('library_fields/${library.id}', {});
+      return Map<String, dynamic>.from(result);
+    } catch (e) {
+      debugPrint('Error loading fields: $e');
+      return {};
+    }
+  }
+
+  @override
+  dynamic getFieldValue(String field, [dynamic defaultVal]) {
+    return _fieldsData.containsKey(field) ? _fieldsData[field] : defaultVal;
+  }
+
+  @override
+  Future<dynamic> setFieldValue(String field, dynamic value) async {
+    _fieldsData[field] = value;
+    await storage.writeJson('library_fields/${library.id}', _fieldsData);
+  }
+
+  @override
+  Stream<LibraryStatus> get status => _event.stream;
+
+  @override
+  Future<void> checkConnection() async {
     // 发送给服务端，需要保证library已经加载
     // 服务端会返回connected消息并且被客户端获取，所有这里不需要获取结果
-    _sendRequest(
+    _fieldsData = await loadFields();
+    await _sendRequest(
       action: 'open',
       type: 'library',
       data: {'library': library.toJson()},
@@ -108,7 +152,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     return Uuid().v4();
   }
 
-  void _handleResponse(dynamic message) {
+  Future<void> _handleResponse(dynamic message) async {
     _event.add(LibraryStatus.open);
     try {
       debugPrint('Received WebSocket message: $message');
@@ -133,9 +177,26 @@ class LibraryDataWebSocket implements LibraryDataInterface {
 
         final eventName = response['eventName'];
         final data = response['data'];
-        final id = data['id'];
-        final libraryId = data['libraryId'];
+        final libraryId = data?['libraryId'];
         switch (eventName) {
+          case 'message':
+            if (navigatorKey.currentContext != null) {
+              showDialog(
+                context: navigatorKey.currentContext!,
+                builder:
+                    (context) => WebViewDialog(
+                      title: data['title'],
+                      message: data['message'],
+                      url: data['url'],
+                    ),
+              );
+            }
+            return;
+          case 'try_connect': // 尝试连接
+            print('尝试连接');
+            _requiredFields = List<Map<String, dynamic>>.from(data['fields']);
+            _sendRequest(action: 'connect', type: 'library');
+            break;
           case 'connected': // 初次连接
             print('连接成功');
             _event.add(LibraryStatus.connected);

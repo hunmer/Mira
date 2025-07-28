@@ -132,7 +132,7 @@ class LibraryTabManager {
         // 重置
         item['filter'] = {};
         item['displayFields'] = [];
-        item['pageOptions'] = {'page': 1, 'perPage': 100};
+        item['pageOptions'] = {'page': 1, 'perPage': 1000};
         final tabData = LibraryTabData.fromMap(item);
         tabDatas.add(tabData);
       }

@@ -22,7 +22,7 @@ class LibraryDataController {
         await plugin.server.start(library.customFields['path']);
       }
 
-      final inst = LibraryDataWebSocket(library);
+      final inst = LibraryDataWebSocket(plugin.storage, library);
       dataInterfaces[libraryId] = inst;
       await inst.channel.ready;
       return dataInterfaces[libraryId];
@@ -38,7 +38,7 @@ class LibraryDataController {
     LibraryDataInterface? inst = getLibraryInst(library.id);
     inst ??= await loadLibrary(library);
     if (inst != null) {
-      inst.checkConnection(); // 校验与数据库的连接
+      await inst.checkConnection(); // 校验与数据库的连接
     }
     return inst;
   }

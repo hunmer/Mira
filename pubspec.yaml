@@ -80,6 +80,8 @@ dependencies:
   shelf_router: ^1.1.4
   cached_network_image: ^3.4.1
   windows_taskbar: ^1.1.2
+  giffy_dialog: ^2.3.0
+  flutter_inappwebview: ^6.1.5
 
 dev_dependencies:
   flutter_test:

@@ -5,9 +5,11 @@
 list(APPEND FLUTTER_PLUGIN_LIST
   audioplayers_windows
   file_selector_windows
+  flutter_inappwebview_windows
   fvp
   irondash_engine_context
   permission_handler_windows
+  rive_common
   share_plus
   sqlite3_flutter_libs
   super_native_extensions
