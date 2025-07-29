@@ -1,10 +1,12 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_sort_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
@@ -18,6 +20,37 @@ import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_body.dart';
+
+class _MultiValueNotifier extends ValueNotifier<void> {
+  final List<ValueNotifier> notifiers;
+  final List<VoidCallback> listeners = [];
+  int _version = 0;
+
+  _MultiValueNotifier(this.notifiers) : super(null) {
+    for (final notifier in notifiers) {
+      listener() {
+        _version++;
+        _handleChange();
+      }
+
+      notifier.addListener(listener);
+      listeners.add(listener);
+    }
+  }
+
+  void _handleChange() {
+    // ignore: void_checks
+    value = _version;
+  }
+
+  @override
+  void dispose() {
+    for (int i = 0; i < notifiers.length; i++) {
+      notifiers[i].removeListener(listeners[i]);
+    }
+    super.dispose();
+  }
+}
 
 class LibraryGalleryView extends StatefulWidget {
   final LibrariesPlugin plugin;
@@ -290,20 +323,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     _showSidebarNotifier.value = !_showSidebarNotifier.value;
   }
 
-  void _showSortDialog() {
-    showDialog(
-      context: context,
-      builder:
-          (context) =>
-              LibrarySortDialog(initialSortOptions: _sortOptionsNotifier.value),
-    ).then((sortOptions) {
-      if (sortOptions != null && _sortOptionsNotifier.value != sortOptions) {
-        _sortOptionsNotifier.value = sortOptions;
-        _loadFiles();
-      }
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     print('build');
@@ -363,61 +382,43 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   Widget _buildAppBarActions() {
-    final isRecycleBin = _tabData!.isRecycleBin;
-    return SizedBox(
-      width: 60,
-      child: Column(
-        children: [
-          Tooltip(
-            message: '刷新',
-            child: IconButton(icon: Icon(Icons.refresh), onPressed: _refresh),
-          ),
-          Tooltip(
-            message: '上传',
-            child: IconButton(
-              icon: Icon(Icons.upload),
-              onPressed: _showDropDialog,
-            ),
-          ),
-          Tooltip(
-            message: '排序',
-            child: IconButton(
-              icon: Icon(Icons.sort),
-              onPressed: _showSortDialog,
-            ),
-          ),
-          Tooltip(
-            message: '筛选',
-            child: IconButton(
-              icon: Icon(Icons.filter_alt),
-              onPressed: () async {
-                final filterOptions = await showDialog<Map<String, dynamic>>(
-                  context: context,
-                  builder: (context) => FileFilterDialog(),
-                );
-                if (filterOptions != null &&
-                    _filterOptionsNotifier.value != filterOptions) {
-                  _filterOptionsNotifier.value = filterOptions;
-                  _tabManager.setLibraryFilter(widget.tabId, filterOptions);
-                }
-              },
-            ),
-          ),
-          Tooltip(
-            message: '选择模式',
-            child: IconButton(
-              icon: Icon(Icons.select_all),
-              onPressed: () {
-                if (_isSelectionModeNotifier.value) {
-                  _exitSelectionMode();
-                } else {
-                  _isSelectionModeNotifier.value = true;
-                }
-              },
-            ),
-          ),
-        ],
-      ),
+    return LibraryGalleryAppBar(
+      title: widget.library.name,
+      isSelectionMode: _isSelectionModeNotifier.value,
+      selectedCount: _selectedFileIds.value.length,
+      isRecycleBin: _tabData!.isRecycleBin,
+      onSelectAll: _toggleSelectAll,
+      onExitSelection: _exitSelectionMode,
+      onFilter: () async {
+        final filterOptions = await showDialog<Map<String, dynamic>>(
+          context: context,
+          builder: (context) => FileFilterDialog(),
+        );
+        if (filterOptions != null &&
+            _filterOptionsNotifier.value != filterOptions) {
+          _filterOptionsNotifier.value = filterOptions;
+          _tabManager.setLibraryFilter(widget.tabId, filterOptions);
+        }
+      },
+      onEnterSelection: () => _isSelectionModeNotifier.value = true,
+      onUpload: _showDropDialog,
+      uploadProgress: _uploadProgressNotifier.value,
+      displayFields: _displayFieldsNotifier.value,
+      onDisplayFieldsChanged: (fields) {
+        _displayFieldsNotifier.value = fields;
+      },
+      imagesPerRow: _imagesPerRowNotifier.value,
+      onImagesPerRowChanged: (count) {
+        _imagesPerRowNotifier.value = count;
+      },
+      onRefresh: _refresh,
+      sortOptions: _sortOptionsNotifier.value,
+      onSortChanged: (sortOptions) {
+        if (sortOptions != null && _sortOptionsNotifier.value != sortOptions) {
+          _sortOptionsNotifier.value = sortOptions;
+          _loadFiles();
+        }
+      },
     );
   }
 
@@ -500,14 +501,20 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             child: Stack(
               children: [
                 ValueListenableBuilder(
-                  valueListenable: _items,
-                  builder: (context, items, _) {
+                  valueListenable: _MultiValueNotifier([
+                    _items,
+                    _isSelectionModeNotifier,
+                    _selectedFileIds,
+                    _displayFieldsNotifier,
+                    _imagesPerRowNotifier,
+                  ]),
+                  builder: (context, _, __) {
                     return LibraryGalleryBody(
                       plugin: widget.plugin,
                       library: widget.library,
                       isRecycleBin: isRecycleBin,
                       displayFields: _displayFieldsNotifier.value,
-                      items: items,
+                      items: _items.value,
                       isSelectionMode: _isSelectionModeNotifier.value,
                       selectedFileIds: _selectedFileIds.value,
                       onFileSelected: _onFileSelected,

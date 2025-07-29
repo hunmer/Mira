@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_xlider/flutter_xlider.dart';
 import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
+import 'package:mira/plugins/libraries/widgets/library_sort_dialog.dart';
 
 class LibraryGalleryAppBar extends StatefulWidget
     implements PreferredSizeWidget {
@@ -19,7 +20,8 @@ class LibraryGalleryAppBar extends StatefulWidget
   final int imagesPerRow;
   final ValueChanged<int> onImagesPerRowChanged;
   final VoidCallback onRefresh;
-  final VoidCallback toggleSidebar;
+  final Map<String, dynamic> sortOptions;
+  final ValueChanged<Map<String, dynamic>> onSortChanged;
 
   const LibraryGalleryAppBar({
     required this.title,
@@ -35,9 +37,10 @@ class LibraryGalleryAppBar extends StatefulWidget
     required this.displayFields,
     required this.onDisplayFieldsChanged,
     required this.imagesPerRow,
+    required this.sortOptions,
     required this.onImagesPerRowChanged,
     required this.onRefresh,
-    required this.toggleSidebar,
+    required this.onSortChanged,
     super.key,
   });
 
@@ -73,139 +76,198 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
     final localizations = LibrariesLocalizations.of(context);
     if (localizations == null) return Container();
 
-    return ValueListenableBuilder(
-      valueListenable: _imageRows,
-      builder: (context, imageRows, _) {
-        return AppBar(
-          title: Row(
-            children: [
-              if (widget.isRecycleBin) const Icon(Icons.delete),
-              Text(
-                widget.isSelectionMode
-                    ? '已选择 ${widget.selectedCount} 项'
-                    : widget.title,
-              ),
-            ],
-          ),
-          automaticallyImplyLeading: false,
-          leading: IconButton(
-            icon: const Icon(Icons.menu),
-            onPressed: widget.toggleSidebar,
-          ),
-          actions:
-              widget.isSelectionMode
-                  ? [
-                    IconButton(
-                      icon: const Icon(Icons.select_all),
-                      onPressed: widget.onSelectAll,
+    return SizedBox(
+      width: 60,
+      child: Column(
+        children:
+            widget.isSelectionMode
+                ? [
+                  IconButton(
+                    icon: const Icon(Icons.select_all),
+                    onPressed: widget.onSelectAll,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    onPressed: widget.onExitSelection,
+                  ),
+                ]
+                : [
+                  Stack(
+                    children: [
+                      IconButton(
+                        icon: const Icon(Icons.filter_list),
+                        onPressed: widget.onFilter,
+                      ),
+                    ],
+                  ),
+                  Tooltip(
+                    message: '筛选',
+                    child: IconButton(
+                      icon: Icon(Icons.filter_alt),
+                      onPressed: () async {
+                        widget.onSortChanged(
+                          await showDialog(
+                            context: context,
+                            builder:
+                                (context) => LibrarySortDialog(
+                                  initialSortOptions: widget.sortOptions,
+                                ),
+                          ),
+                        );
+                      },
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.close),
-                      onPressed: widget.onExitSelection,
-                    ),
-                  ]
-                  : [
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.check_box),
+                    onPressed: widget.onEnterSelection,
+                  ),
+                  if (!widget.isRecycleBin)
                     Stack(
                       children: [
                         IconButton(
-                          icon: const Icon(Icons.filter_list),
-                          onPressed: widget.onFilter,
+                          icon: Icon(Icons.file_upload),
+                          onPressed: widget.onUpload,
                         ),
+                        if (widget.uploadProgress > 0)
+                          Positioned(
+                            top: 0,
+                            right: 0,
+                            child: Container(
+                              padding: const EdgeInsets.all(2),
+                              constraints: const BoxConstraints(
+                                minWidth: 16,
+                                minHeight: 16,
+                              ),
+                              child:
+                                  widget.uploadProgress == 1
+                                      ? const Icon(
+                                        Icons.check,
+                                        size: 12,
+                                        color: Colors.green,
+                                      )
+                                      : Text(
+                                        '${widget.uploadProgress * 100}%',
+                                        style: const TextStyle(
+                                          color: Colors.blue,
+                                          fontSize: 10,
+                                        ),
+                                        textAlign: TextAlign.center,
+                                      ),
+                            ),
+                          ),
                       ],
                     ),
-                    IconButton(
-                      icon: const Icon(Icons.check_box),
-                      onPressed: widget.onEnterSelection,
-                    ),
-                    if (!widget.isRecycleBin)
-                      Stack(
-                        children: [
-                          IconButton(
-                            icon: Icon(Icons.file_upload),
-                            onPressed: widget.onUpload,
-                          ),
-                          if (widget.uploadProgress > 0)
-                            Positioned(
-                              top: 0,
-                              right: 0,
-                              child: Container(
-                                padding: const EdgeInsets.all(2),
-                                constraints: const BoxConstraints(
-                                  minWidth: 16,
-                                  minHeight: 16,
-                                ),
-                                child:
-                                    widget.uploadProgress == 1
-                                        ? const Icon(
-                                          Icons.check,
-                                          size: 12,
-                                          color: Colors.green,
-                                        )
-                                        : Text(
-                                          '${widget.uploadProgress * 100}%',
-                                          style: const TextStyle(
-                                            color: Colors.blue,
-                                            fontSize: 10,
-                                          ),
-                                          textAlign: TextAlign.center,
-                                        ),
+                  IconButton(
+                    icon: const Icon(Icons.grid_view),
+                    onPressed: () {
+                      showModalBottomSheet(
+                        context: context,
+                        builder:
+                            (context) => Container(
+                              padding: const EdgeInsets.all(16),
+                              height: 250,
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.only(bottom: 8),
+                                    child: Text(
+                                      '每行图片数量: ${_imageRows.value == 0 ? "自动" : _imageRows.value}',
+                                      style:
+                                          Theme.of(
+                                            context,
+                                          ).textTheme.titleMedium,
+                                    ),
+                                  ),
+                                  FlutterSlider(
+                                    values: [
+                                      _imageRows.value == 0
+                                          ? 3.0
+                                          : _imageRows.value.toDouble(),
+                                    ],
+                                    max: 20,
+                                    min: 0,
+                                    onDragging: (
+                                      handlerIndex,
+                                      lowerValue,
+                                      upperValue,
+                                    ) {
+                                      _handleImagesPerRowChange(
+                                        lowerValue.toInt(),
+                                      );
+                                    },
+                                  ),
+                                ],
                               ),
                             ),
-                        ],
-                      ),
-                    IconButton(
-                      icon: const Icon(Icons.grid_view),
-                      onPressed: () {
-                        showModalBottomSheet(
-                          context: context,
-                          builder:
-                              (context) => Container(
-                                padding: const EdgeInsets.all(16),
-                                height: 250,
-                                child: Column(
-                                  mainAxisSize: MainAxisSize.min,
+                      );
+                    },
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.refresh),
+                    onPressed: widget.onRefresh,
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.info_outline),
+                    onPressed: () {
+                      showDialog(
+                        context: context,
+                        builder:
+                            (context) => AlertDialog(
+                              content: SizedBox(
+                                width: double.maxFinite,
+                                child: ListView(
+                                  shrinkWrap: true,
                                   children: [
-                                    Padding(
-                                      padding: const EdgeInsets.only(bottom: 8),
-                                      child: Text(
-                                        '每行图片数量: ${imageRows == 0 ? "自动" : imageRows}',
-                                        style:
-                                            Theme.of(
-                                              context,
-                                            ).textTheme.titleMedium,
+                                    for (final field in [
+                                      'title',
+                                      'rating',
+                                      'notes',
+                                      'createdAt',
+                                      'tags',
+                                      'folder',
+                                      'size',
+                                    ])
+                                      StatefulBuilder(
+                                        builder: (context, setState) {
+                                          return CheckboxListTile(
+                                            title: Text(field),
+                                            value: widget.displayFields
+                                                .contains(field),
+                                            onChanged: (checked) {
+                                              setState(() {
+                                                if (checked == true) {
+                                                  widget.displayFields.add(
+                                                    field,
+                                                  );
+                                                } else {
+                                                  widget.displayFields.remove(
+                                                    field,
+                                                  );
+                                                }
+                                              });
+                                            },
+                                          );
+                                        },
                                       ),
-                                    ),
-                                    FlutterSlider(
-                                      values: [
-                                        imageRows == 0
-                                            ? 3.0
-                                            : imageRows.toDouble(),
-                                      ],
-                                      max: 20,
-                                      min: 0,
-                                      onDragging: (
-                                        handlerIndex,
-                                        lowerValue,
-                                        upperValue,
-                                      ) {
-                                        _handleImagesPerRowChange(
-                                          lowerValue.toInt(),
+                                    TextButton(
+                                      onPressed: () {
+                                        widget.onDisplayFieldsChanged(
+                                          widget.displayFields,
                                         );
+                                        Navigator.pop(context);
                                       },
+                                      child: Text('确定'),
                                     ),
                                   ],
                                 ),
                               ),
-                        );
-                      },
-                    ),
-                    IconButton(
-                      icon: const Icon(Icons.refresh),
-                      onPressed: widget.onRefresh,
-                    ),
-                  ],
-        );
-      },
+                            ),
+                      );
+                    },
+                  ),
+                ],
+      ),
     );
   }
 }

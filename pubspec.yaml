@@ -84,6 +84,7 @@ dependencies:
   flutter_inappwebview: ^6.1.5
   background_downloader: ^9.2.3
   hotkey_manager: ^0.2.3
+  flutter_bloc: ^9.1.1
 
 dev_dependencies:
   flutter_test:
