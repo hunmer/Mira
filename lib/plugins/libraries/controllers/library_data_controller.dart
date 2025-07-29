@@ -2,7 +2,6 @@ import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
 import 'package:mira/plugins/libraries/controllers/library_data_websocket.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
-import 'package:web_socket_channel/web_socket_channel.dart';
 
 class LibraryDataController {
   final LibrariesPlugin plugin;

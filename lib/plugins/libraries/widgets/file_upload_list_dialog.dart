@@ -31,7 +31,6 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
   final ValueNotifier<List<File>> _filesNotifier = ValueNotifier([]);
   StreamSubscription<Map<String, int>>? _progressSubscription;
   StreamSubscription<QueueTask>? _taskStatusSubscription;
-  double _uploadProgress = 0;
 
   @override
   void initState() {
@@ -41,7 +40,6 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
     _progressSubscription = widget.uploadQueue.progressStream.listen((
       progress,
     ) {
-      _uploadProgress = widget.uploadQueue.progress;
       Taskbar.setProgress(progress['total'] as int, progress['done'] as int);
     });
     _taskStatusSubscription = widget.uploadQueue.taskStatusStream.listen((

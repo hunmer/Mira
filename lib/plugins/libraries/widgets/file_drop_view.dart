@@ -9,6 +9,7 @@ import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 
+// ignore: must_be_immutable
 class FileDropView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final String btnOk;

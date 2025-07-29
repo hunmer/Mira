@@ -16,8 +16,6 @@ import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
-import 'package:mira/plugins/libraries/widgets/library_file_preview_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_body.dart';
 
@@ -52,7 +50,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   final ValueNotifier<List<LibraryFolder>> _folders = ValueNotifier([]);
   final ValueNotifier<List<LibraryTag>> _tags = ValueNotifier([]);
   bool _isFirstLoad = false;
-  List<String> _eventSubscribes = [];
+  final List<String> _eventSubscribes = [];
   final ScrollController _scrollController = ScrollController();
 
   final ValueNotifier<Set<String>> _displayFieldsNotifier = ValueNotifier({});
@@ -78,8 +76,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     _displayFieldsNotifier.value = _tabManager.getLibraryDisplayFields(tabId);
     _filterOptionsNotifier.value = _tabManager.getLibraryFilter(tabId);
     _sortOptionsNotifier.value = Map<String, dynamic>.from(
-      _tabManager.getSortOptions(tabId) ??
-          {'sort': 'imported_at', 'order': 'desc'},
+      _tabManager.getSortOptions(tabId),
     );
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
     _tabData = _tabManager.getTabData(tabId);

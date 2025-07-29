@@ -33,7 +33,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   late LibrariesPlugin _plugin;
   late LibraryTabManager _tabManager;
   late final ValueNotifier<List<LibraryTabData>> _tabDatas = ValueNotifier([]);
-  List<StreamSubscription> _subscriptions = [];
+  final List<StreamSubscription> _subscriptions = [];
 
   @override
   void initState() {

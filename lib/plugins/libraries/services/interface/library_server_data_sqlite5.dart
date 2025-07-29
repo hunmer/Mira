@@ -17,6 +17,7 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   Database? _db;
   bool _inTransaction = false;
   late bool _enableHash;
+  // ignore: annotate_overrides
   final WebSocketServer server;
   late final ServerEventManager eventManager;
   final Map<String, dynamic> config;

@@ -5,7 +5,9 @@ import 'package:mira/plugins/libraries/services/interface/library_server_data_sq
 import 'package:mira/plugins/libraries/services/library_service.dart';
 import 'package:mira/plugins/libraries/services/websocket_server.dart';
 import 'package:shelf_router/shelf_router.dart' as shelf_router;
+// ignore: depend_on_referenced_packages
 import 'package:shelf/shelf.dart' show Request, Response;
+// ignore: depend_on_referenced_packages
 import 'package:shelf/shelf_io.dart' as shelf_io;
 
 class HttpLibraryServer {

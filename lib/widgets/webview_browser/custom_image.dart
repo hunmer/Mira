@@ -12,25 +12,26 @@ class CustomImage extends StatelessWidget {
   final double minHeight;
   final Uri? url;
 
-  const CustomImage(
-      {Key? key,
-      this.url,
-      this.width,
-      this.height,
-      this.maxWidth = double.infinity,
-      this.maxHeight = double.infinity,
-      this.minWidth = 0.0,
-      this.minHeight = 0.0})
-      : super(key: key);
+  const CustomImage({
+    super.key,
+    this.url,
+    this.width,
+    this.height,
+    this.maxWidth = double.infinity,
+    this.maxHeight = double.infinity,
+    this.minWidth = 0.0,
+    this.minHeight = 0.0,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
       constraints: BoxConstraints(
-          maxWidth: maxWidth,
-          maxHeight: maxHeight,
-          minHeight: minHeight,
-          minWidth: minWidth),
+        maxWidth: maxWidth,
+        maxHeight: maxHeight,
+        minHeight: minHeight,
+        minWidth: minWidth,
+      ),
       width: width,
       height: height,
       child: getImage(),
@@ -40,8 +41,9 @@ class CustomImage extends StatelessWidget {
   Widget? getImage() {
     if (url != null) {
       if (url!.scheme == "data") {
-        Uint8List bytes = const Base64Decoder()
-            .convert(url.toString().replaceFirst("data:image/png;base64,", ""));
+        Uint8List bytes = const Base64Decoder().convert(
+          url.toString().replaceFirst("data:image/png;base64,", ""),
+        );
         return Image.memory(
           bytes,
           fit: BoxFit.contain,
@@ -58,9 +60,6 @@ class CustomImage extends StatelessWidget {
   }
 
   Widget getBrokenImageIcon() {
-    return Icon(
-      Icons.broken_image,
-      size: width ?? height ?? maxWidth,
-    );
+    return Icon(Icons.broken_image, size: width ?? height ?? maxWidth);
   }
 }

@@ -1,4 +1,3 @@
-import 'package:mira/plugins/libraries/services/library_service.dart';
 import 'package:mira/plugins/libraries/services/server_event_manager.dart';
 import 'package:mira/plugins/libraries/services/websocket_server.dart';
 

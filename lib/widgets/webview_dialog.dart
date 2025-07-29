@@ -7,11 +7,11 @@ class WebViewDialog extends StatefulWidget {
   final String url;
 
   const WebViewDialog({
-    Key? key,
+    super.key,
     required this.title,
     required this.message,
     required this.url,
-  }) : super(key: key);
+  });
 
   @override
   State<WebViewDialog> createState() => _WebViewDialogState();

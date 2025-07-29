@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'package:path/path.dart' as path;
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/event/event_args.dart';
@@ -146,7 +145,6 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     await storage.writeJson('library_fields/${library.id}', _fieldsData);
   }
 
-  @override
   Stream<LibraryStatus> get status => _event.stream;
 
   @override

@@ -87,9 +87,9 @@ class _HotKeySettingsViewState extends State<HotKeySettingsView> {
         },
       ),
       floatingActionButton: FloatingActionButton(
-        child: const Icon(Icons.add),
         tooltip: 'Add new shortcut',
         onPressed: () => _showAddDialog(context),
+        child: const Icon(Icons.add),
       ),
     );
   }

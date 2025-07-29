@@ -10,11 +10,12 @@ import 'package:mira/widgets/icon_chip.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:path/path.dart' as path;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+// ignore: depend_on_referenced_packages
 import 'package:video_player/video_player.dart';
 import 'package:rxdart/rxdart.dart';
 
 class LibraryItem extends StatefulWidget {
-  LibraryItem({
+  const LibraryItem({
     required this.file,
     this.isSelected = false,
     this.useThumbnail = false,
@@ -234,7 +235,6 @@ class _LibraryItemState extends State<LibraryItem> {
   Future<void> _initializeVideo() async {
     final filePath = widget.file.path;
     if (filePath == null) return;
-    print('play ${filePath}');
     try {
       if (filePath.startsWith('http')) {
         _videoController = VideoPlayerController.networkUrl(
@@ -259,7 +259,6 @@ class _LibraryItemState extends State<LibraryItem> {
 
   final _positionSubject = BehaviorSubject<double>();
   StreamSubscription? _positionSubscription;
-  double _lastPosition = 0;
 
   @override
   void initState() {

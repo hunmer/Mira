@@ -13,11 +13,11 @@ class WebViewBrowser extends StatefulWidget {
   final int initialTabIndex;
 
   const WebViewBrowser({
-    Key? key,
+    super.key,
     this.initialUrls = const [],
     this.initialTabs = const [],
     this.initialTabIndex = 0,
-  }) : super(key: key);
+  });
 
   @override
   State<WebViewBrowser> createState() => _WebViewBrowserState();
@@ -45,6 +45,7 @@ class _WebViewBrowserState extends State<WebViewBrowser> {
 
   @override
   Widget build(BuildContext context) {
+    // ignore: deprecated_member_use
     return WillPopScope(
       child: Scaffold(
         appBar:

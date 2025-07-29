@@ -1,5 +1,3 @@
-import 'dart:typed_data';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_inappwebview/flutter_inappwebview.dart';
@@ -120,6 +118,7 @@ class _WebViewTabState extends State<WebViewTab> with WidgetsBindingObserver {
           pause();
           _webViewController?.pauseTimers();
         }
+        // ignore: empty_catches
       } catch (err) {}
     }
   }
