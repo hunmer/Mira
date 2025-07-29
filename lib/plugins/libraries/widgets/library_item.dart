@@ -4,15 +4,17 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:fvp/fvp.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/widgets/icon_chip.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:path/path.dart' as path;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:video_player/video_player.dart';
+import 'package:rxdart/rxdart.dart';
 
 class LibraryItem extends StatefulWidget {
-  const LibraryItem({
+  LibraryItem({
     required this.file,
     this.isSelected = false,
     this.useThumbnail = false,
@@ -215,11 +217,13 @@ class _LibraryItemState extends State<LibraryItem> {
   void dispose() {
     _videoController?.dispose();
     _hoverTimer?.cancel();
-    _positionUpdateTimer?.cancel();
+    _positionSubscription?.cancel();
+    _positionSubject.close();
     super.dispose();
   }
 
   void closeVideo() {
+    print('positon: close');
     setState(() {
       _isHovering = false;
       _isVideoReady = false;
@@ -254,19 +258,31 @@ class _LibraryItemState extends State<LibraryItem> {
     }
   }
 
-  Timer? _positionUpdateTimer;
+  final _positionSubject = BehaviorSubject<double>();
+  StreamSubscription? _positionSubscription;
   double _lastPosition = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // 使用throttleTime控制位置更新频率为50ms
+    _positionSubscription = _positionSubject.stream
+        .throttleTime(const Duration(milliseconds: 50))
+        .listen(_updateVideoPosition);
+  }
 
   void _updateVideoPosition(double position) {
     if (_videoController != null && _videoController!.value.isInitialized) {
       final duration = _videoController!.value.duration;
-      _videoController!.seekTo(duration * position);
+      _videoController!.fastSeekTo(duration * position);
+      _videoController!.play();
     }
   }
 
   void _handleMousePosition(PointerHoverEvent event) {
-    if (_videoController == null || !_videoController!.value.isInitialized)
+    if (_videoController == null || !_videoController!.value.isInitialized) {
       return;
+    }
 
     final renderBox =
         _mouseRegionKey.currentContext?.findRenderObject() as RenderBox?;
@@ -276,23 +292,15 @@ class _LibraryItemState extends State<LibraryItem> {
     final width = renderBox.size.width;
     final position = (localPosition.dx / width).clamp(0.0, 1.0);
 
-    _positionUpdateTimer ??= Timer(const Duration(milliseconds: 200), () {
-      _positionUpdateTimer = null;
-      _updateVideoPosition(position);
-    });
+    // 将位置更新事件发送到subject
+    _positionSubject.add(position);
   }
 
   void _handleHover(bool isHovering) {
-    final isMedia =
-        ['video', 'audio'].contains(widget.file.fileType) &&
-        (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
-
-    if (!isMedia) return;
-
     _hoverTimer?.cancel();
 
     if (isHovering) {
-      _hoverTimer = Timer(const Duration(milliseconds: 300), () {
+      _hoverTimer = Timer(const Duration(milliseconds: 500), () {
         if (mounted) {
           setState(() {
             _isHovering = true;
@@ -310,6 +318,10 @@ class _LibraryItemState extends State<LibraryItem> {
     String folderTitle,
     List<String> tagTitles,
   ) {
+    final isMedia =
+        ['video', 'audio'].contains(widget.file.fileType) &&
+        (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+
     return DragItemWidget(
       dragItemProvider: (request) async {
         final item = DragItem(
@@ -327,9 +339,9 @@ class _LibraryItemState extends State<LibraryItem> {
       child: DraggableWidget(
         child: MouseRegion(
           key: _mouseRegionKey,
-          onEnter: (_) => _handleHover(true),
-          onExit: (_) => _handleHover(false),
-          onHover: _handleMousePosition,
+          onEnter: (_) => isMedia ? _handleHover(true) : null,
+          onExit: (_) => isMedia ? _handleHover(false) : null,
+          onHover: (event) => isMedia ? _handleMousePosition(event) : null,
           child: GestureDetector(
             onSecondaryTapDown: (details) => widget.onLongPress(details),
             onLongPressDown:

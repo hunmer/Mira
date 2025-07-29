@@ -1,9 +1,13 @@
+import 'dart:io';
+
 class Library {
   final String id;
   String name;
   String icon;
   String type;
-  bool isLoading = false;
+  String socketServer;
+  String httpServer;
+  bool isLoading = false; // 缓存用
   Map<String, dynamic> customFields;
   final DateTime createdAt;
 
@@ -12,6 +16,8 @@ class Library {
     required this.name,
     required this.icon,
     required this.type,
+    this.socketServer = '',
+    this.httpServer = '',
     required this.customFields,
     required this.createdAt,
     this.isLoading = false, // 缓存用
@@ -24,6 +30,8 @@ class Library {
       name: map['name'],
       icon: map['icon'],
       type: map['type'],
+      socketServer: map['socketServer'],
+      httpServer: map['httpServer'],
       customFields: Map<String, dynamic>.from(map['customFields'] ?? {}),
       createdAt: DateTime.parse(map['createdAt']),
     );
@@ -36,16 +44,19 @@ class Library {
       'name': name,
       'icon': icon,
       'type': type,
+      'socketServer': socketServer,
+      'httpServer': httpServer,
       'customFields': customFields,
       'createdAt': createdAt.toIso8601String(),
     };
   }
 
-  bool get isLocal => !customFields.containsKey('server');
-  String get url =>
-      customFields.containsKey('server')
-          ? customFields['server']
-          : 'ws://localhost:8080';
+  bool get isLocal => type == 'local';
+  String get getHttpServer =>
+      httpServer.endsWith('/')
+          ? httpServer.substring(0, httpServer.length - 1)
+          : httpServer;
+  String get url => isLocal ? 'ws://localhost:8080' : socketServer;
   // 转换为JSON
   Map<String, dynamic> toJson() => toMap();
   // 从JSON转换

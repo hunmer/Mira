@@ -1,7 +1,6 @@
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
-import 'package:mira/core/utils/utils.dart';
 // ignore: library_prefixes
 import 'package:mira/core/utils/utils.dart' as Utils;
 import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
@@ -25,6 +24,7 @@ class LibraryGalleryBody extends StatefulWidget {
   final Function(LibraryFile) onFileSelected;
   final Function(LibraryFile) onFileOpen;
   final int imagesPerRow;
+  final ScrollController? scrollController;
 
   const LibraryGalleryBody({
     required this.isRecycleBin,
@@ -37,6 +37,7 @@ class LibraryGalleryBody extends StatefulWidget {
     required this.onFileSelected,
     required this.onFileOpen,
     required this.imagesPerRow,
+    this.scrollController,
     super.key,
   });
 
@@ -77,6 +78,7 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                   )
                   : const ScrollBehavior(),
           child: GridView.builder(
+            controller: widget.scrollController,
             gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
               crossAxisCount: crossAxisCount > 0 ? crossAxisCount : 1,
               crossAxisSpacing: spacing,

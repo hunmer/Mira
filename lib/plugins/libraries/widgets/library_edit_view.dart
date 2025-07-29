@@ -16,9 +16,8 @@ class _LibraryEditViewState extends State<LibraryEditView> {
   final _formKey = GlobalKey<FormState>();
   late LibraryType _selectedType;
   late final TextEditingController _nameController;
-  late final TextEditingController _serverController;
-  late final TextEditingController _usernameController;
-  late final TextEditingController _passwordController;
+  late final TextEditingController _httpServerController;
+  late final TextEditingController _socketServerController;
   late String _localPath;
   late bool _enableHash = false;
 
@@ -26,9 +25,8 @@ class _LibraryEditViewState extends State<LibraryEditView> {
   void initState() {
     super.initState();
     _nameController = TextEditingController();
-    _serverController = TextEditingController();
-    _usernameController = TextEditingController();
-    _passwordController = TextEditingController();
+    _httpServerController = TextEditingController();
+    _socketServerController = TextEditingController();
     _localPath = '';
 
     if (widget.library != null) {
@@ -40,9 +38,8 @@ class _LibraryEditViewState extends State<LibraryEditView> {
       if (_selectedType == LibraryType.local) {
         _localPath = library.customFields['path'] ?? '';
       } else {
-        _serverController.text = library.customFields['server'] ?? '';
-        _usernameController.text = library.customFields['username'] ?? '';
-        _passwordController.text = library.customFields['password'] ?? '';
+        _httpServerController.text = library.httpServer;
+        _socketServerController.text = library.socketServer;
       }
       _enableHash =
           library.customFields.containsKey('enableHash')
@@ -88,15 +85,17 @@ class _LibraryEditViewState extends State<LibraryEditView> {
         name: _nameController.text,
         icon: 'default',
         type: _selectedType == LibraryType.local ? 'local' : 'network',
+        httpServer:
+            _selectedType == LibraryType.network
+                ? _httpServerController.text
+                : '',
+        socketServer:
+            _selectedType == LibraryType.network
+                ? _socketServerController.text
+                : '',
         customFields: {
           if (_selectedType == LibraryType.local) 'path': _localPath,
           if (_selectedType == LibraryType.local) 'enableHash': _enableHash,
-          if (_selectedType == LibraryType.network)
-            'server': _serverController.text,
-          if (_selectedType == LibraryType.network)
-            'username': _usernameController.text,
-          if (_selectedType == LibraryType.network)
-            'password': _passwordController.text,
         },
         createdAt: DateTime.now(),
       );
@@ -180,7 +179,7 @@ class _LibraryEditViewState extends State<LibraryEditView> {
                 ),
               ] else ...[
                 TextFormField(
-                  controller: _serverController,
+                  controller: _httpServerController,
                   decoration: InputDecoration(
                     labelText: localizations.serverAddress,
                   ),
@@ -193,18 +192,8 @@ class _LibraryEditViewState extends State<LibraryEditView> {
                 ),
                 SizedBox(height: 8),
                 TextFormField(
-                  controller: _usernameController,
-                  decoration: InputDecoration(
-                    labelText: localizations.username,
-                  ),
-                ),
-                SizedBox(height: 8),
-                TextFormField(
-                  controller: _passwordController,
-                  decoration: InputDecoration(
-                    labelText: localizations.password,
-                  ),
-                  obscureText: true,
+                  controller: _socketServerController,
+                  decoration: InputDecoration(labelText: 'socket server'),
                 ),
               ],
             ],

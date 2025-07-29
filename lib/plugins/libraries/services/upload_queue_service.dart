@@ -41,9 +41,12 @@ class UploadQueueService {
           task.status = UploadStatus.uploading;
           _taskStatusController.add(task);
           try {
-            await plugin.libraryController
-                .getLibraryInst(library.id)!
-                .addFileFromPath(task.file.path);
+            final inst = plugin.libraryController.getLibraryInst(library.id)!;
+            if (library.isLocal) {
+              inst.addFileFromPath(task.file.path);
+            } else {
+              inst.uploadFile(task.file.path);
+            }
 
             _completedFiles++;
             _completedFileList.add(task.file);

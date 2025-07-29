@@ -52,6 +52,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   final ValueNotifier<List<LibraryTag>> _tags = ValueNotifier([]);
   bool _isFirstLoad = false;
   List<String> _eventSubscribes = [];
+  final ScrollController _scrollController = ScrollController();
 
   final ValueNotifier<Set<String>> _displayFieldsNotifier = ValueNotifier({});
   final ValueNotifier<Map<String, dynamic>> _filterOptionsNotifier =
@@ -159,6 +160,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   void dispose() {
     _progressSubscription?.cancel();
     _uploadQueue.dispose();
+    _scrollController.dispose();
     for (final key in _eventSubscribes) {
       EventManager.instance.unsubscribe(key);
     }
@@ -441,6 +443,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                       onFileSelected: _onFileSelected,
                       onFileOpen: _onFileOpen,
                       imagesPerRow: _imagesPerRowNotifier.value,
+                      scrollController: _scrollController,
                     );
                   },
                 ),
@@ -478,7 +481,13 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                 ..._paginationOptionsNotifier.value,
                 'page': page,
               };
-              _loadFiles();
+              _loadFiles().then((_) {
+                WidgetsBinding.instance.addPostFrameCallback((_) {
+                  if (_scrollController.hasClients) {
+                    _scrollController.jumpTo(0);
+                  }
+                });
+              });
             },
             visiblePagesCount: MediaQuery.of(context).size.width ~/ 200 + 2,
             buttonRadius: 10.0,

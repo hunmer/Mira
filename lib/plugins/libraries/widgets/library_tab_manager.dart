@@ -127,7 +127,7 @@ class LibraryTabManager {
     final data = await plugin.storage.readJson('tabs.json') ?? [];
     print('load data ${data.length}');
     tabDatas.clear();
-    for (var item in data) {
+    for (var item in (data is Iterable ? data : [])) {
       if (item is Map<String, dynamic>) {
         // 重置
         item['filter'] = {};

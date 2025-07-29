@@ -8,6 +8,7 @@ import 'package:mira/plugins/libraries/controllers/library_data_controller.dart'
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
+import 'package:background_downloader/background_downloader.dart';
 import 'services/websocket_server.dart';
 
 class LibrariesPlugin extends PluginBase {
@@ -32,6 +33,7 @@ class LibrariesPlugin extends PluginBase {
   late final LibraryTabManager tabManager; // 标签视图管理器
   late final FoldersTagsCache foldersTagsController; // 文件夹标签缓存
   late final LibrarySidebarView sidebarController;
+  late final FileDownloader fileDownloader;
 
   @override
   Future<void> registerToApp(
@@ -53,6 +55,12 @@ class LibrariesPlugin extends PluginBase {
     await tabManager.init();
     libraryController = LibraryDataController(plugin: this);
     server = WebSocketServer(8080);
+    fileDownloader = FileDownloader();
+    await fileDownloader.trackTasks();
+    fileDownloader.configureNotification(
+      running: TaskNotification('Downloading', 'file: {filename}'),
+      progressBar: true,
+    );
   }
 
   void dispose() {

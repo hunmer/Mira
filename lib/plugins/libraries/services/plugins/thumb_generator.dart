@@ -23,12 +23,13 @@ class ThumbGenerator {
     if (args is! ServerEventArgs) return;
 
     try {
-      final path = args.item['path'];
+      final item = args.item['result'];
+      final path = item['path'];
 
       final fileType = _getFileType(path);
       if (fileType == null) return;
 
-      final thumbPath = await _dbService.getItemThumbPath(args.item);
+      final thumbPath = await _dbService.getItemThumbPath(item);
       final thumbFile = File(thumbPath);
 
       if (!thumbFile.parent.existsSync()) {
@@ -44,9 +45,9 @@ class ThumbGenerator {
           break;
       }
 
-      args.item['thumbPath'] = thumbPath;
+      item['thumbPath'] = thumbPath;
       // 更新数据库中的thumb字段
-      await _dbService.updateFile(args.item['id'], {'thumb': 1});
+      await _dbService.updateFile(item['id'], {'thumb': 1});
       // 通知客户端缩略图已生成
       _dbService.getEventManager().broadcastToClients(
         'thumbnail::generated',

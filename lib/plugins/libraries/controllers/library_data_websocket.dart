@@ -1,5 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
+import 'package:path/path.dart' as path;
+import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_manager.dart';
@@ -421,6 +424,58 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       type: 'file',
       data: {'path': filePath},
     );
+  }
+
+  @override
+  Future<Map<String, dynamic>> uploadFile(String filePath) async {
+    final file = File(filePath);
+    if (!file.existsSync()) {
+      return {
+        'success': false,
+        'message': 'File does not exist',
+        'filePath': filePath,
+      };
+    }
+    final uploadUrl = '${library.getHttpServer}/api/libraries/upload';
+    try {
+      final action = 'create';
+      final type = 'file';
+      final task = UploadTask.fromFile(
+        file: file,
+        url: uploadUrl,
+        fileField: 'files', // 服务器接收文件的字段名
+        fields: {
+          // 模拟ws上传操作，方便其他插件正常处理
+          'sourcePath': filePath, // 用于回调检测是否上传成功
+          'libraryId': library.id,
+          'clientId': clientId,
+          'action': action,
+          'fields': jsonEncode(await getLibraryFieldValues(action, type)),
+          'payload': jsonEncode({'type': type, 'data': {}}),
+        }, // query字段
+        updates: Updates.statusAndProgress,
+      );
+      final result = await LibrariesPlugin.instance.fileDownloader.upload(task);
+      if (result.status == TaskStatus.complete) {
+        return {
+          'success': true,
+          'data':
+              result.responseBody != null
+                  ? jsonDecode(result.responseBody!)
+                  : {'status': 'success'},
+          'filePath': filePath,
+        };
+      } else {
+        return {
+          'success': false,
+          'message':
+              'Upload failed: ${result.exception?.toString() ?? 'Unknown error'}',
+          'filePath': filePath,
+        };
+      }
+    } catch (e) {
+      return {'success': false, 'message': e.toString(), 'filePath': filePath};
+    }
   }
 
   @override

@@ -26,17 +26,6 @@ class _LibraryFileInformationViewState
   @override
   void initState() {
     super.initState();
-    _nameController = TextEditingController(
-      text: path.basename(widget.file.path!),
-    );
-    _notesController = TextEditingController(text: widget.file.notes);
-    _ratingController = TextEditingController(
-      text: widget.file.rating?.toString() ?? '0',
-    );
-    _tagsController = TextEditingController(text: widget.file.tags.join(', '));
-    _folderIdController = TextEditingController(text: widget.file.folderId);
-    _referenceController = TextEditingController(text: widget.file.reference);
-    _urlController = TextEditingController(text: widget.file.url);
   }
 
   @override
@@ -53,6 +42,18 @@ class _LibraryFileInformationViewState
 
   @override
   Widget build(BuildContext context) {
+    _nameController = TextEditingController(
+      text: path.basename(widget.file.path!),
+    );
+    _notesController = TextEditingController(text: widget.file.notes);
+    _ratingController = TextEditingController(
+      text: widget.file.rating?.toString() ?? '0',
+    );
+    _tagsController = TextEditingController(text: widget.file.tags.join(', '));
+    _folderIdController = TextEditingController(text: widget.file.folderId);
+    _referenceController = TextEditingController(text: widget.file.reference);
+    _urlController = TextEditingController(text: widget.file.url);
+
     return Scaffold(
       // appBar: AppBar(
       //   title: Text(path.basename(widget.file.name)),

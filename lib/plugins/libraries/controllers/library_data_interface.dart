@@ -12,6 +12,7 @@ abstract class LibraryDataInterface {
   });
   Future<void> updateLibrary(String id, Map<String, dynamic> updates);
   Future<void> addFile(Map<String, dynamic> file);
+  Future<void> uploadFile(String filePath);
   Future<void> addFileFromPath(String filePath);
   Future<void> deleteFile(int id, {bool moveToRecycleBin = false});
   Future<void> recoverFile(int id);

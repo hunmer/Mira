@@ -82,6 +82,7 @@ dependencies:
   windows_taskbar: ^1.1.2
   giffy_dialog: ^2.3.0
   flutter_inappwebview: ^6.1.5
+  background_downloader: ^9.2.3
 
 dev_dependencies:
   flutter_test:
