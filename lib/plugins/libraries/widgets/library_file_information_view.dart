@@ -1,12 +1,21 @@
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
+import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:path/path.dart' as path;
 
 class LibraryFileInformationView extends StatefulWidget {
   final LibraryFile file;
+  final Library library;
+  final LibrariesPlugin plugin;
 
-  const LibraryFileInformationView({required this.file, super.key});
+  const LibraryFileInformationView({
+    required this.plugin,
+    required this.library,
+    required this.file,
+    super.key,
+  });
 
   @override
   State<LibraryFileInformationView> createState() =>
@@ -43,7 +52,7 @@ class _LibraryFileInformationViewState
   @override
   Widget build(BuildContext context) {
     _nameController = TextEditingController(
-      text: path.basename(widget.file.path!),
+      text: path.basename(widget.file.name),
     );
     _notesController = TextEditingController(text: widget.file.notes);
     _ratingController = TextEditingController(
@@ -53,21 +62,37 @@ class _LibraryFileInformationViewState
     _folderIdController = TextEditingController(text: widget.file.folderId);
     _referenceController = TextEditingController(text: widget.file.reference);
     _urlController = TextEditingController(text: widget.file.url);
-
+    final filePath = widget.file.path!;
     return Scaffold(
-      // appBar: AppBar(
-      //   title: Text(path.basename(widget.file.name)),
-      //   automaticallyImplyLeading: false,
-      //   actions: [
-      //     // IconButton(icon: const Icon(Icons.save), onPressed: _saveChanges),
-      //     IconButton(icon: const Icon(Icons.share), onPressed: () => {}),
-      //   ],
-      // ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Row(
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.save),
+                      onPressed: _saveChanges,
+                    ),
+                    if (!filePath.startsWith('http'))
+                      IconButton(
+                        icon: const Icon(Icons.folder_open),
+                        onPressed: () => openFileLocation(filePath),
+                        tooltip: '打开文件所在位置',
+                      ),
+                    IconButton(
+                      icon: const Icon(Icons.share),
+                      onPressed: () => {},
+                    ),
+                  ],
+                ),
+              ],
+            ),
+            const SizedBox(height: 16),
             Center(
               child:
                   widget.file.thumb != null
@@ -80,6 +105,50 @@ class _LibraryFileInformationViewState
                                 ? Colors.blue
                                 : null,
                       ),
+            ),
+            const SizedBox(height: 16),
+            Wrap(
+              spacing: 8,
+              children:
+                  widget.file.tags
+                      .map(
+                        (tag) => FutureBuilder<String>(
+                          future: widget.plugin.foldersTagsController
+                              .getTagTitleById(widget.library.id, tag),
+                          builder: (context, snapshot) {
+                            return InputChip(
+                              label: Text(snapshot.data ?? tag),
+                              onDeleted: () {
+                                setState(() {
+                                  widget.file.tags.remove(tag);
+                                  _tagsController.text = widget.file.tags.join(
+                                    ', ',
+                                  );
+                                });
+                              },
+                            );
+                          },
+                        ),
+                      )
+                      .toList(),
+            ),
+            const SizedBox(height: 16),
+            FutureBuilder<String>(
+              future: widget.plugin.foldersTagsController.getFolderTitleById(
+                widget.library.id,
+                widget.file.folderId,
+              ),
+              builder: (context, snapshot) {
+                return InputChip(
+                  label: Text(snapshot.data ?? widget.file.folderId),
+                  avatar: const Icon(Icons.folder),
+                  onDeleted: () {
+                    setState(() {
+                      _folderIdController.text = '';
+                    });
+                  },
+                );
+              },
             ),
             const SizedBox(height: 16),
             TextFormField(
@@ -99,16 +168,7 @@ class _LibraryFileInformationViewState
               keyboardType: TextInputType.number,
             ),
             const SizedBox(height: 16),
-            TextFormField(
-              controller: _tagsController,
-              decoration: const InputDecoration(labelText: '标签 (用逗号分隔)'),
-            ),
-            const SizedBox(height: 16),
-            TextFormField(
-              controller: _folderIdController,
-              decoration: const InputDecoration(labelText: '文件夹ID'),
-            ),
-            const SizedBox(height: 16),
+
             TextFormField(
               controller: _referenceController,
               decoration: const InputDecoration(labelText: '引用'),

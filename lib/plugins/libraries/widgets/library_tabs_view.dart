@@ -19,6 +19,7 @@ import 'package:mira/views/library_tabs_empty_view.dart';
 import 'package:rxdart/rxdart.dart';
 import '../models/library.dart';
 import 'package:dynamic_tabbar/dynamic_tabbar.dart';
+import 'package:mira/core/widgets/hotkey_settings_view.dart';
 
 class LibraryTabsView extends StatefulWidget {
   const LibraryTabsView({super.key});
@@ -201,7 +202,17 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                   onPressed: () => setState(() => _showSidebar = !_showSidebar),
                 ),
                 actions: [
-                  // settings
+                  IconButton(
+                    icon: const Icon(Icons.keyboard),
+                    tooltip: 'Shortcut Settings',
+                    onPressed: () {
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (context) => const HotKeySettingsView(),
+                        ),
+                      );
+                    },
+                  ),
                   IconButton(
                     icon: const Icon(Icons.settings),
                     onPressed: () => Navigator.pushNamed(context, '/settings'),

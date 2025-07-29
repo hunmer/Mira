@@ -133,8 +133,11 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                         () => showModalBottomSheet(
                           context: context,
                           builder:
-                              (context) =>
-                                  LibraryFileInformationView(file: file),
+                              (context) => LibraryFileInformationView(
+                                plugin: widget.plugin,
+                                library: widget.library,
+                                file: file,
+                              ),
                         ),
                     onSelectFolder: () async {
                       final result = await widget.plugin.libraryUIController

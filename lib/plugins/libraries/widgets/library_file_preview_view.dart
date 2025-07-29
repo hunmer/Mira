@@ -2,7 +2,9 @@ import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:fvp/fvp.dart' as fvp;
+import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:share_plus/share_plus.dart';
 // ignore: depend_on_referenced_packages
@@ -11,8 +13,15 @@ import 'package:mira/plugins/libraries/widgets/video_preview.dart';
 
 class LibraryFilePreviewView extends StatefulWidget {
   final LibraryFile file;
+  final Library library;
+  final LibrariesPlugin plugin;
 
-  const LibraryFilePreviewView({required this.file, super.key});
+  const LibraryFilePreviewView({
+    required this.file,
+    required this.library,
+    required this.plugin,
+    super.key,
+  });
 
   @override
   State<LibraryFilePreviewView> createState() => _LibraryFilePreviewViewState();
@@ -123,7 +132,11 @@ class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
               showModalBottomSheet(
                 context: context,
                 builder:
-                    (context) => LibraryFileInformationView(file: widget.file),
+                    (context) => LibraryFileInformationView(
+                      plugin: widget.plugin,
+                      library: widget.library,
+                      file: widget.file,
+                    ),
               );
             },
           ),

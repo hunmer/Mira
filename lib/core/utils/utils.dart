@@ -56,6 +56,24 @@ bool isDesktop() {
       (Platform.isWindows || Platform.isLinux || Platform.isMacOS);
 }
 
+// openFileLocation
+
+void openFileLocation(String filePath) async {
+  if (Platform.isWindows) {
+    // 构建命令
+    String command = 'explorer.exe "$filePath"';
+
+    // 执行命令
+    try {
+      await Process.run('cmd.exe', ['/c', command]);
+    } catch (e) {
+      print('Error opening file location: $e');
+    }
+  } else {
+    print('This function is currently only supported on Windows.');
+  }
+}
+
 String getFileType(String filename) {
   final extension = filename.split('.').last.toLowerCase();
   switch (extension) {

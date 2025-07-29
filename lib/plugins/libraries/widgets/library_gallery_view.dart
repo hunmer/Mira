@@ -6,6 +6,7 @@ import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_sort_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:number_pagination/number_pagination.dart';
 import 'package:mira/core/event/event.dart';
@@ -59,6 +60,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       ValueNotifier({});
   final ValueNotifier<Map<String, dynamic>> _paginationOptionsNotifier =
       ValueNotifier({});
+  final ValueNotifier<Map<String, dynamic>> _sortOptionsNotifier =
+      ValueNotifier({'sort': 'imported_at', 'order': 'desc'});
   final ValueNotifier<LibraryFile?> _selectedFileNotifier = ValueNotifier(null);
   final ValueNotifier<int> _imagesPerRowNotifier = ValueNotifier(
     0,
@@ -74,6 +77,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     );
     _displayFieldsNotifier.value = _tabManager.getLibraryDisplayFields(tabId);
     _filterOptionsNotifier.value = _tabManager.getLibraryFilter(tabId);
+    _sortOptionsNotifier.value = Map<String, dynamic>.from(
+      _tabManager.getSortOptions(tabId) ??
+          {'sort': 'imported_at', 'order': 'desc'},
+    );
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
     _tabData = _tabManager.getTabData(tabId);
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
@@ -113,6 +120,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         }
       }),
       EventManager.instance.subscribe('filter::updated', _onFilterUpdate),
+      EventManager.instance.subscribe('sort::updated', _onSortUpdate),
       EventManager.instance.subscribeOnce('library::connected', _doFirstLoad),
     ]);
   }
@@ -131,6 +139,19 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       if (widget.tabId == tabId) {
         _filterOptionsNotifier.value = Map<String, dynamic>.from(
           args.item['filter'],
+        );
+        _loadFiles();
+      }
+    }
+  }
+
+  //  系统内广播更新过滤器
+  void _onSortUpdate(EventArgs args) {
+    if (args is MapEventArgs) {
+      final tabId = args.item['tabId'];
+      if (widget.tabId == tabId) {
+        _sortOptionsNotifier.value = Map<String, dynamic>.from(
+          args.item['sort'],
         );
         _loadFiles();
       }
@@ -199,6 +220,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
     final filterOptions = _filterOptionsNotifier.value;
     final paginationOptions = _paginationOptionsNotifier.value;
+    final sortOptions = _sortOptionsNotifier.value;
 
     final query = {
       'recycled': _tabData!.isRecycleBin,
@@ -207,6 +229,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       'folder': filterOptions['folder'] ?? '',
       'offset': (paginationOptions['page']! - 1) * paginationOptions['perPage'],
       'limit': paginationOptions['perPage'],
+      'sort': sortOptions['sort'] ?? 'imported_at',
+      'order': sortOptions['order'] ?? 'desc',
     };
 
     try {
@@ -233,7 +257,12 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     if (Platform.isAndroid || Platform.isIOS) {
       showModalBottomSheet(
         context: context,
-        builder: (context) => LibraryFileInformationView(file: file),
+        builder:
+            (context) => LibraryFileInformationView(
+              plugin: widget.plugin,
+              library: widget.library,
+              file: file,
+            ),
       );
     }
   }
@@ -249,7 +278,12 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     } else {
       Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (context) => LibraryFilePreviewView(file: file),
+          builder:
+              (context) => LibraryFileInformationView(
+                plugin: widget.plugin,
+                library: widget.library,
+                file: file,
+              ),
         ),
       );
     }
@@ -257,6 +291,20 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   void _toggleSidebar() {
     _showSidebarNotifier.value = !_showSidebarNotifier.value;
+  }
+
+  void _showSortDialog() {
+    showDialog(
+      context: context,
+      builder:
+          (context) =>
+              LibrarySortDialog(initialSortOptions: _sortOptionsNotifier.value),
+    ).then((sortOptions) {
+      if (sortOptions != null && _sortOptionsNotifier.value != sortOptions) {
+        _sortOptionsNotifier.value = sortOptions;
+        _loadFiles();
+      }
+    });
   }
 
   @override
@@ -296,7 +344,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       _paginationOptionsNotifier.value['page'] = totalPages;
     }
     return Scaffold(
-      appBar: _buildAppBar(isRecycleBin),
       bottomSheet: LibraryGalleryBottomSheet(
         uploadProgress: _uploadProgressNotifier.value,
       ),
@@ -311,50 +358,69 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             VerticalDivider(width: 1),
             _buildFileDetailsSection(),
           ],
+          VerticalDivider(width: 1),
+          _buildAppBarActions(),
         ],
       ),
     );
   }
 
-  PreferredSizeWidget _buildAppBar(bool isRecycleBin) {
-    return LibraryGalleryAppBar(
-      title: widget.library.name,
-      isRecycleBin: isRecycleBin,
-      isSelectionMode: _isSelectionModeNotifier.value,
-      selectedCount: _selectedFileIds.value.length,
-      onSelectAll: _toggleSelectAll,
-      onExitSelection: _exitSelectionMode,
-      toggleSidebar: _toggleSidebar,
-      onFilter: () async {
-        final filterOptions = await showDialog<Map<String, dynamic>>(
-          context: context,
-          builder: (context) => FileFilterDialog(),
-        );
-        if (filterOptions != null &&
-            _filterOptionsNotifier.value != filterOptions) {
-          _filterOptionsNotifier.value = filterOptions;
-          _tabManager.setLibraryFilter(widget.tabId, filterOptions);
-        }
-      },
-      onEnterSelection: () {
-        _isSelectionModeNotifier.value = true;
-      },
-      onUpload: _showDropDialog,
-      uploadProgress: _uploadProgressNotifier.value,
-      displayFields: _displayFieldsNotifier.value,
-      onDisplayFieldsChanged: (newFields) {
-        if (_displayFieldsNotifier.value != newFields) {
-          _displayFieldsNotifier.value = newFields;
-          _tabManager.setLibraryDisplayFields(widget.tabId, newFields);
-        }
-      },
-      imagesPerRow: _imagesPerRowNotifier.value,
-      onImagesPerRowChanged: (count) {
-        if (_imagesPerRowNotifier.value != count) {
-          _imagesPerRowNotifier.value = count;
-        }
-      },
-      onRefresh: _refresh,
+  Widget _buildAppBarActions() {
+    final isRecycleBin = _tabData!.isRecycleBin;
+    return SizedBox(
+      width: 60,
+      child: Column(
+        children: [
+          Tooltip(
+            message: '刷新',
+            child: IconButton(icon: Icon(Icons.refresh), onPressed: _refresh),
+          ),
+          Tooltip(
+            message: '上传',
+            child: IconButton(
+              icon: Icon(Icons.upload),
+              onPressed: _showDropDialog,
+            ),
+          ),
+          Tooltip(
+            message: '排序',
+            child: IconButton(
+              icon: Icon(Icons.sort),
+              onPressed: _showSortDialog,
+            ),
+          ),
+          Tooltip(
+            message: '筛选',
+            child: IconButton(
+              icon: Icon(Icons.filter_alt),
+              onPressed: () async {
+                final filterOptions = await showDialog<Map<String, dynamic>>(
+                  context: context,
+                  builder: (context) => FileFilterDialog(),
+                );
+                if (filterOptions != null &&
+                    _filterOptionsNotifier.value != filterOptions) {
+                  _filterOptionsNotifier.value = filterOptions;
+                  _tabManager.setLibraryFilter(widget.tabId, filterOptions);
+                }
+              },
+            ),
+          ),
+          Tooltip(
+            message: '选择模式',
+            child: IconButton(
+              icon: Icon(Icons.select_all),
+              onPressed: () {
+                if (_isSelectionModeNotifier.value) {
+                  _exitSelectionMode();
+                } else {
+                  _isSelectionModeNotifier.value = true;
+                }
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -363,6 +429,13 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       width: 60,
       child: Column(
         children: [
+          Tooltip(
+            message: '显示/隐藏侧边栏',
+            child: IconButton(
+              icon: Icon(Icons.menu),
+              onPressed: _toggleSidebar,
+            ),
+          ),
           Tooltip(
             message: '收藏',
             child: IconButton(icon: Icon(Icons.favorite), onPressed: () {}),
@@ -508,7 +581,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         valueListenable: _selectedFileNotifier,
         builder: (context, selectedFile, _) {
           return selectedFile != null
-              ? LibraryFileInformationView(file: selectedFile)
+              ? LibraryFileInformationView(
+                plugin: widget.plugin,
+                library: widget.library,
+                file: selectedFile,
+              )
               : const Center(child: Text('请选择一个文件查看详情'));
         },
       ),

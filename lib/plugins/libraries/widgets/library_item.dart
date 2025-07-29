@@ -223,7 +223,6 @@ class _LibraryItemState extends State<LibraryItem> {
   }
 
   void closeVideo() {
-    print('positon: close');
     setState(() {
       _isHovering = false;
       _isVideoReady = false;

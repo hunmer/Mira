@@ -19,6 +19,7 @@ class LibraryTabData {
   String title;
   final DateTime createDate;
   Map<String, dynamic> pageOptions;
+  Map<String, dynamic> sortOptions;
   final Map<String, dynamic> filter;
   final Set<String> displayFields;
 
@@ -32,8 +33,17 @@ class LibraryTabData {
     this.isRecycleBin = false,
     required this.createDate,
     this.pageOptions = const {'page': 1, 'perPage': 1000},
+    this.sortOptions = const {'field': 'createdAt', 'order': 'desc'},
     this.filter = const {},
-    this.displayFields = const {},
+    this.displayFields = const {
+      'title',
+      'rating',
+      'notes',
+      'createdAt',
+      'tags',
+      'folder',
+      'size',
+    },
   });
 
   factory LibraryTabData.fromMap(Map<String, dynamic> map) {
@@ -153,15 +163,6 @@ class LibraryTabManager {
         library: library,
         isRecycleBin: isRecycleBin,
         createDate: DateTime.now(),
-        displayFields: {
-          'title',
-          'rating',
-          'notes',
-          'createdAt',
-          'tags',
-          'folder',
-          'size',
-        },
       ),
     );
     trySaveTabs();
@@ -279,6 +280,30 @@ class LibraryTabManager {
       return tabData.filter;
     } else {
       return {};
+    }
+  }
+
+  Map<String, dynamic> getSortOptions(String tabId) {
+    final tabData = getTabData(tabId);
+    if (tabData != null) {
+      return tabData.sortOptions;
+    } else {
+      return {'field': 'createdAt', 'order': 'desc'};
+    }
+  }
+
+  setSortOptions(String tabId, Map<String, dynamic> sortOptions) {
+    final tabData = getTabData(tabId);
+    if (tabData != null && tabId != null) {
+      setValue(tabId, 'sortOptions', sortOptions);
+      EventManager.instance.broadcast(
+        'sort::updated',
+        MapEventArgs({
+          'library': tabData.library,
+          'tabId': tabId,
+          'sort': sortOptions,
+        }),
+      );
     }
   }
 
