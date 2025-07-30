@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import '../../../../widgets/tree_view.dart';
 import 'folder_tree_widget.dart';
 
@@ -10,6 +11,7 @@ class AsyncTreeViewDialog extends StatefulWidget {
   final String title;
   final IconData? defaultIcon;
   final String? type;
+  final TreeSelectionMode selectionMode;
   final Function(List<String>)? onSelectionChanged;
 
   const AsyncTreeViewDialog({
@@ -17,6 +19,7 @@ class AsyncTreeViewDialog extends StatefulWidget {
     this.defaultIcon,
     this.type,
     required this.items,
+    this.selectionMode = TreeSelectionMode.single,
     this.onSelectionChanged,
     required this.library,
     required this.title,
@@ -28,7 +31,6 @@ class AsyncTreeViewDialog extends StatefulWidget {
 }
 
 class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
-  final GlobalKey<FolderTreeWidgetState> _treeWidgetStateKey = GlobalKey();
   late List<String> _selected = [];
   @override
   void initState() {
@@ -49,10 +51,10 @@ class _AsyncTreeViewDialogState extends State<AsyncTreeViewDialog> {
         child: FolderTreeWidget(
           selected: widget.selected,
           items: widget.items,
+          selectionMode: widget.selectionMode,
           library: widget.library,
           defaultIcon: widget.defaultIcon,
           type: widget.type,
-          key: _treeWidgetStateKey,
           onSelectionChanged: (List<String> vals) {
             _selected = vals;
             widget.onSelectionChanged?.call(vals);

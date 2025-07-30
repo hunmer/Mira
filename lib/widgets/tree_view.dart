@@ -3,7 +3,7 @@
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:checkable_treeview/checkable_treeview.dart';
+import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import 'circle_icon_picker.dart';
 
 class TreeItem {
@@ -79,6 +79,7 @@ class customTreeView extends StatefulWidget {
     required this.defaultIcon,
     required this.onSelectionChanged,
     this.selected = const [],
+    this.selectionMode = TreeSelectionMode.multiple,
     this.onAddNode,
     this.onDeleteNode,
   });
@@ -88,6 +89,7 @@ class customTreeView extends StatefulWidget {
   final bool showSelectAll;
   final IconData defaultIcon;
   final List<String> selected;
+  final TreeSelectionMode selectionMode;
   final void Function(TreeItem item)? onAddNode;
   final Function(List<String>) onSelectionChanged;
   final void Function(TreeItem item)? onDeleteNode;
@@ -214,13 +216,11 @@ class _customTreeViewState extends State<customTreeView> {
                   : LayoutBuilder(
                     builder: (context, constraints) {
                       return TreeView<String>(
-                        key: ValueKey(
-                          _treeNodes,
-                        ), // Force rebuild when nodes change
                         nodes: _treeNodes,
                         initialExpandedLevels:
                             99, // Ensure all nodes are expanded
                         showExpandCollapseButton: true,
+                        selectionMode: widget.selectionMode,
                         showSelectAll: widget.showSelectAll,
                         onSelectionChanged: (ids) {
                           widget.onSelectionChanged(List<String>.from(ids));

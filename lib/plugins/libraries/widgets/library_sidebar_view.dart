@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/folder_tree_widget.dart';
+import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import 'package:mira/widgets/tree_view.dart';
 import '../libraries_plugin.dart';
 import '../models/library.dart';
@@ -45,6 +46,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
           Expanded(
             child: FolderTreeWidget(
               title: '文件夹',
+              selectionMode: TreeSelectionMode.single,
               items:
                   widget.folders
                       .map((folder) => TreeItem.fromMap(folder.toMap()))
@@ -70,6 +72,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
           Expanded(
             child: FolderTreeWidget(
               title: '标签',
+              selectionMode: TreeSelectionMode.single,
               items:
                   widget.tags
                       .map((tag) => TreeItem.fromMap(tag.toMap()))

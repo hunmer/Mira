@@ -1,9 +1,9 @@
 // ignore_for_file: deprecated_member_use
-
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import '../../../../widgets/tree_view.dart';
 
 typedef OnAddNode = Future<void> Function(TreeItem node);
@@ -19,6 +19,7 @@ class FolderTreeWidget extends StatefulWidget {
   final String? type;
   final OnAddNode? onAddNode;
   final OnDeleteNode? onDeleteNode;
+  final TreeSelectionMode selectionMode;
   final Function(List<String>) onSelectionChanged;
 
   const FolderTreeWidget({
@@ -27,12 +28,12 @@ class FolderTreeWidget extends StatefulWidget {
     this.type,
     this.title,
     this.showSelectAll,
+    this.selectionMode = TreeSelectionMode.multiple,
     required this.items,
     required this.library,
     required this.onSelectionChanged,
     this.onAddNode,
     this.onDeleteNode,
-    super.key,
   });
 
   @override
@@ -42,6 +43,8 @@ class FolderTreeWidget extends StatefulWidget {
 class FolderTreeWidgetState extends State<FolderTreeWidget> {
   late Set<String> _selectedItems;
   late IconData _currentIcon;
+  customTreeView? _treeView;
+
   @override
   void initState() {
     super.initState();
@@ -49,9 +52,50 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
         widget.defaultIcon ??
         (widget.type == 'folders' ? Icons.folder : Icons.tag);
     _selectedItems = widget.selected ?? {};
+    _buildTreeView();
   }
 
-  // 屏蔽初始化监听，防止重复调用
+  @override
+  void didUpdateWidget(FolderTreeWidget oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // 更新选中项状态
+    if (oldWidget.selected != widget.selected) {
+      _selectedItems = widget.selected ?? {};
+    }
+    // 只在必要时重建树视图
+    if (oldWidget.items != widget.items ||
+        oldWidget.selected != widget.selected ||
+        oldWidget.defaultIcon != widget.defaultIcon) {
+      _buildTreeView();
+    }
+  }
+
+  void _buildTreeView() {
+    final mappedItems = getItems();
+    _treeView = customTreeView(
+      items: mappedItems,
+      defaultIcon: _currentIcon,
+      selectionMode: widget.selectionMode,
+      title: widget.title ?? '',
+      showSelectAll: widget.showSelectAll ?? true,
+      selected: _selectedItems.toList(),
+      onSelectionChanged: widget.onSelectionChanged,
+      onAddNode: (TreeItem node) async {
+        await _onAddNode(node);
+        if (widget.onAddNode != null) {
+          widget.onAddNode!(node);
+        }
+      },
+      onDeleteNode: (TreeItem node) async {
+        await _onDeleteNode(node);
+        if (widget.onDeleteNode != null) {
+          widget.onDeleteNode!(node);
+        }
+      },
+      key: ValueKey(mappedItems.length), // 使用长度作为key，避免过度重建
+    );
+  }
+
   @override
   void dispose() {
     super.dispose();
@@ -113,27 +157,6 @@ class FolderTreeWidgetState extends State<FolderTreeWidget> {
 
   @override
   Widget build(BuildContext context) {
-    final mappedItems = getItems();
-    return customTreeView(
-      items: mappedItems,
-      defaultIcon: _currentIcon,
-      title: widget.title ?? '',
-      showSelectAll: widget.showSelectAll ?? true,
-      selected: _selectedItems.toList(),
-      onSelectionChanged: widget.onSelectionChanged,
-      onAddNode: (TreeItem node) async {
-        await _onAddNode(node);
-        if (widget.onAddNode != null) {
-          widget.onAddNode!(node);
-        }
-      },
-      onDeleteNode: (TreeItem node) async {
-        await _onDeleteNode(node);
-        if (widget.onDeleteNode != null) {
-          widget.onDeleteNode!(node);
-        }
-      },
-      key: ValueKey(mappedItems), // 强制重建TreeView当items变化时
-    );
+    return _treeView ?? Container();
   }
 }

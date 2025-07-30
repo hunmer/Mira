@@ -1,6 +1,5 @@
 import 'dart:async';
 import 'dart:io';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
@@ -8,7 +7,6 @@ import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_sort_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:multi_value_listenable_builder/multi_value_listenable_builder.dart';
 import 'package:number_pagination/number_pagination.dart';
@@ -18,7 +16,6 @@ import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
-import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_body.dart';
 
