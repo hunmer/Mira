@@ -310,8 +310,15 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
-  Future<void> addFile(Map<String, dynamic> file) async {
-    await _sendRequest(action: 'create', type: 'file', data: file);
+  Future<void> addFile(
+    Map<String, dynamic> file,
+    Map<String, dynamic> metaData,
+  ) async {
+    await _sendRequest(
+      action: 'create',
+      type: 'file',
+      data: {...metaData, ...file},
+    );
   }
 
   @override
@@ -416,16 +423,25 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
-  Future<void> addFileFromPath(String filePath) async {
+  Future<void> addFileFromPath(
+    String filePath,
+    Map<String, dynamic> metaData,
+  ) async {
     await _sendRequest(
       action: 'create',
       type: 'file',
-      data: {'path': filePath},
+      data: {
+        ...metaData,
+        ...{'path': filePath},
+      },
     );
   }
 
   @override
-  Future<Map<String, dynamic>> uploadFile(String filePath) async {
+  Future<Map<String, dynamic>> uploadFile(
+    String filePath,
+    Map<String, dynamic> metaData,
+  ) async {
     final file = File(filePath);
     if (!file.existsSync()) {
       return {
@@ -449,7 +465,10 @@ class LibraryDataWebSocket implements LibraryDataInterface {
           'clientId': clientId,
           'action': action,
           'fields': jsonEncode(await getLibraryFieldValues(action, type)),
-          'payload': jsonEncode({'type': type, 'data': {}}),
+          'payload': jsonEncode({
+            'type': type,
+            'data': {...metaData, 'filePath': filePath},
+          }),
         }, // query字段
         updates: Updates.statusAndProgress,
       );

@@ -3,19 +3,24 @@
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:mira/core/utils/utils.dart';
+import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import 'package:path/path.dart' as path;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:collection/collection.dart';
 
 // ignore: must_be_immutable
 class FileDropView extends StatefulWidget {
   final LibrariesPlugin plugin;
+  final Library library;
   final String btnOk;
   final List<File> items;
-  late Function(List<File>) onFileAdded;
-  late Function(List<File>) onDone;
+  late Function(List<File>, Map<File, List<String>>, Map<File, String?>)
+  onFileAdded;
+  late Function(List<File>, Map<File, List<String>>, Map<File, String?>) onDone;
   late Function() onClear;
 
   FileDropView({
@@ -23,6 +28,7 @@ class FileDropView extends StatefulWidget {
     this.btnOk = '确定上传',
     required this.items,
     required this.plugin,
+    required this.library,
     required this.onFileAdded,
     required this.onDone,
     required this.onClear,
@@ -35,12 +41,26 @@ class FileDropView extends StatefulWidget {
 class FileDataSource extends AsyncDataTableSource {
   final List<File> files;
   final List<bool> selectedItems;
+  final Map<int, List<String>> fileTags;
+  final Map<int, String?> fileFolders;
   final Function(int, bool) onSelectChanged;
+  final Function(int) onSetTag;
+  final Function(int) onSetFolder;
+  final Function(int) onDelete;
+  final Future<String> Function(String) getTagTitle;
+  final Future<String> Function(String) getFolderTitle;
 
   FileDataSource({
     required this.files,
     required this.selectedItems,
+    required this.fileTags,
+    required this.fileFolders,
     required this.onSelectChanged,
+    required this.onSetTag,
+    required this.onSetFolder,
+    required this.onDelete,
+    required this.getTagTitle,
+    required this.getFolderTitle,
   }) {
     addListener(() {});
   }
@@ -48,6 +68,9 @@ class FileDataSource extends AsyncDataTableSource {
   DataRow? getRow(int index) {
     if (index >= files.length) return null;
     final file = files[index];
+    final tags = fileTags[index] ?? [];
+    final folderId = fileFolders[index];
+
     return DataRow2(
       selected: selectedItems[index],
       onSelectChanged: (value) => onSelectChanged(index, value ?? false),
@@ -65,8 +88,70 @@ class FileDataSource extends AsyncDataTableSource {
             },
           ),
         ),
-        DataCell(const Text('无')), // 标签 - 待实现
-        DataCell(const Text('无')), // 文件夹 - 待实现
+        DataCell(
+          tags.isEmpty
+              ? const Text('无')
+              : FutureBuilder<List<String>>(
+                future: Future.wait(
+                  tags.map((tagId) => getTagTitle(tagId)).toList(),
+                ),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Wrap(
+                      spacing: 4,
+                      children: [
+                        const Icon(Icons.tag, size: 16),
+                        const SizedBox(width: 4),
+                        Expanded(child: Text(snapshot.data!.join(', '))),
+                      ],
+                    );
+                  }
+                  return const Text('加载中...');
+                },
+              ),
+        ),
+        DataCell(
+          folderId == null
+              ? const Text('无')
+              : FutureBuilder<String>(
+                future: getFolderTitle(folderId),
+                builder: (context, snapshot) {
+                  if (snapshot.hasData) {
+                    return Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(Icons.folder, size: 16),
+                        const SizedBox(width: 4),
+                        Expanded(child: Text(snapshot.data!)),
+                      ],
+                    );
+                  }
+                  return const Text('加载中...');
+                },
+              ),
+        ),
+        DataCell(
+          Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              IconButton(
+                icon: const Icon(Icons.label, size: 16),
+                tooltip: '设置标签',
+                onPressed: () => onSetTag(index),
+              ),
+              IconButton(
+                icon: const Icon(Icons.folder, size: 16),
+                tooltip: '设置文件夹',
+                onPressed: () => onSetFolder(index),
+              ),
+              IconButton(
+                icon: const Icon(Icons.delete, size: 16),
+                tooltip: '删除',
+                onPressed: () => onDelete(index),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }
@@ -81,12 +166,15 @@ class FileDataSource extends AsyncDataTableSource {
     for (var index = firstRowIndex; index < end; index++) {
       if (index >= files.length) break;
       final file = files[index];
+      final tags = fileTags[index] ?? [];
+      final folderId = fileFolders[index];
+
       rows.add(
         DataRow2(
           selected: selectedItems[index],
           onSelectChanged: (value) {
             onSelectChanged(index, value ?? false);
-            notifyListeners(); // 添加这行以确保UI更新
+            // Remove notifyListeners() call to prevent full list refresh
           },
           cells: [
             DataCell(Text(path.basenameWithoutExtension(file.path))),
@@ -102,8 +190,75 @@ class FileDataSource extends AsyncDataTableSource {
                 },
               ),
             ),
-            DataCell(const Text('无')), // 标签 - 待实现
-            DataCell(const Text('无')), // 文件夹 - 待实现
+            DataCell(
+              tags.isEmpty
+                  ? const Text('无')
+                  : FutureBuilder<List<String>>(
+                    future: Future.wait(
+                      tags.map((tagId) => getTagTitle(tagId)).toList(),
+                    ),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Wrap(
+                          spacing: 4,
+                          children:
+                              snapshot.data!
+                                  .map(
+                                    (title) => Chip(
+                                      label: Text(title),
+                                      materialTapTargetSize:
+                                          MaterialTapTargetSize.shrinkWrap,
+                                    ),
+                                  )
+                                  .toList(),
+                        );
+                      }
+                      return const Text('加载中...');
+                    },
+                  ),
+            ),
+            DataCell(
+              folderId == null
+                  ? const Text('无')
+                  : FutureBuilder<String>(
+                    future: getFolderTitle(folderId),
+                    builder: (context, snapshot) {
+                      if (snapshot.hasData) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.folder, size: 16),
+                            const SizedBox(width: 4),
+                            Expanded(child: Text(snapshot.data!)),
+                          ],
+                        );
+                      }
+                      return const Text('加载中...');
+                    },
+                  ),
+            ),
+            DataCell(
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.label, size: 16),
+                    tooltip: '设置标签',
+                    onPressed: () => onSetTag(index),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.folder, size: 16),
+                    tooltip: '设置文件夹',
+                    onPressed: () => onSetFolder(index),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.delete, size: 16),
+                    tooltip: '删除',
+                    onPressed: () => onDelete(index),
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       );
@@ -117,11 +272,41 @@ class _FileDropViewState extends State<FileDropView>
   @override
   bool get wantKeepAlive => true;
   final List<bool> _selectedItems = [];
+  final Map<int, List<String>> _fileTags =
+      {}; // Store tags for each file by index
+  final Map<int, String?> _fileFolders =
+      {}; // Store folder for each file by index
   int _sortColumnIndex = 0;
   bool _sortAscending = true;
   final PaginatorController _paginatorController = PaginatorController();
   int _rowsPerPage = 50;
   int _initialRow = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    // Initialize selected items to match initial files
+    _selectedItems.addAll(List.filled(widget.items.length, true));
+  }
+
+  @override
+  void didUpdateWidget(FileDropView oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Update selected items when files change
+    while (_selectedItems.length < widget.items.length) {
+      _selectedItems.add(true);
+    }
+    while (_selectedItems.length > widget.items.length) {
+      _selectedItems.removeLast();
+    }
+
+    // Clean up tags and folders for removed files
+    final currentIndices = Set<int>.from(
+      List.generate(widget.items.length, (i) => i),
+    );
+    _fileTags.removeWhere((index, _) => !currentIndices.contains(index));
+    _fileFolders.removeWhere((index, _) => !currentIndices.contains(index));
+  }
 
   void _sort(int columnIndex, bool ascending) {
     setState(() {
@@ -162,8 +347,7 @@ class _FileDropViewState extends State<FileDropView>
     );
     if (result != null) {
       final files = result.paths.map((path) => File(path!)).toList();
-      _selectedItems.addAll(List.filled(result.paths.length, true));
-      widget.onFileAdded(files);
+      widget.onFileAdded(files, {}, {});
     }
   }
 
@@ -182,20 +366,132 @@ class _FileDropViewState extends State<FileDropView>
             .list(recursive: true)
             .where((entity) => entity is File)
             .toList();
-    _selectedItems.addAll(List.filled(files.length, true));
-    widget.onFileAdded(files.cast<File>());
+    widget.onFileAdded(files.cast<File>(), {}, {});
   }
 
   void _onDone() {
     final filesToUpload = <File>[];
+    final fileTags = <File, List<String>>{};
+    final fileFolders = <File, String?>{};
+
     for (int i = 0; i < widget.items.length; i++) {
-      if (_selectedItems[i]) {
-        filesToUpload.add(widget.items[i]);
+      if (i < _selectedItems.length && _selectedItems[i]) {
+        final file = widget.items[i];
+        filesToUpload.add(file);
+        fileTags[file] = _fileTags[i] ?? [];
+        fileFolders[file] = _fileFolders[i];
       }
     }
-    widget.onDone(filesToUpload);
+
+    widget.onDone(filesToUpload, fileTags, fileFolders);
     widget.onClear();
     _selectedItems.clear();
+    _fileTags.clear();
+    _fileFolders.clear();
+  }
+
+  Future<void> _onSetTag(int index) async {
+    final library =
+        widget.library ?? widget.plugin.dataController.libraries.firstOrNull;
+    if (library != null) {
+      final result = await widget.plugin.libraryUIController.showTagSelector(
+        library,
+        context,
+        selectionMode: TreeSelectionMode.multiple,
+      );
+      if (result != null && result.isNotEmpty) {
+        setState(() {
+          _fileTags[index] = result.map((tag) => tag.id).toList();
+        });
+      }
+    }
+  }
+
+  Future<void> _onSetFolder(int index) async {
+    final library =
+        widget.library ?? widget.plugin.dataController.libraries.firstOrNull;
+    if (library != null) {
+      final result = await widget.plugin.libraryUIController.showFolderSelector(
+        library,
+        context,
+      );
+      if (result != null && result.isNotEmpty) {
+        setState(() {
+          _fileFolders[index] = result.first.id;
+        });
+      }
+    }
+  }
+
+  void _onDeleteFile(int index) {
+    setState(() {
+      widget.items.removeAt(index);
+      _selectedItems.removeAt(index);
+
+      // Shift tags and folders for indices after the deleted item
+      final newFileTags = <int, List<String>>{};
+      final newFileFolders = <int, String?>{};
+
+      for (final entry in _fileTags.entries) {
+        if (entry.key < index) {
+          newFileTags[entry.key] = entry.value;
+        } else if (entry.key > index) {
+          newFileTags[entry.key - 1] = entry.value;
+        }
+      }
+
+      for (final entry in _fileFolders.entries) {
+        if (entry.key < index) {
+          newFileFolders[entry.key] = entry.value;
+        } else if (entry.key > index) {
+          newFileFolders[entry.key - 1] = entry.value;
+        }
+      }
+
+      _fileTags.clear();
+      _fileTags.addAll(newFileTags);
+      _fileFolders.clear();
+      _fileFolders.addAll(newFileFolders);
+    });
+  }
+
+  Future<void> _onSetAllTags() async {
+    final library =
+        widget.library ?? widget.plugin.dataController.libraries.firstOrNull;
+    if (library != null) {
+      final result = await widget.plugin.libraryUIController.showTagSelector(
+        library,
+        context,
+        selectionMode: TreeSelectionMode.multiple,
+      );
+      if (result != null && result.isNotEmpty) {
+        setState(() {
+          final tagIds = result.map((tag) => tag.id).toList();
+          for (int i = 0; i < widget.items.length; i++) {
+            _fileTags[i] = tagIds;
+          }
+        });
+      }
+    }
+  }
+
+  Future<void> _onSetAllFolders() async {
+    final library =
+        widget.library ?? widget.plugin.dataController.libraries.firstOrNull;
+    if (library != null) {
+      final result = await widget.plugin.libraryUIController.showFolderSelector(
+        library,
+        context,
+      );
+      if (result != null && result.isNotEmpty) {
+        setState(() {
+          final folderId = result.first.id;
+          for (int i = 0; i < widget.items.length; i++) {
+            _fileFolders[i] = folderId;
+          }
+        });
+      }
+    }
   }
 
   @override
@@ -230,8 +526,7 @@ class _FileDropViewState extends State<FileDropView>
                             try {
                               final file = File(path);
                               if (await file.exists()) {
-                                _selectedItems.add(true);
-                                widget.onFileAdded([file]);
+                                widget.onFileAdded([file], {}, {});
                               }
                             } catch (e) {
                               print('Error adding file: $e');
@@ -334,16 +629,30 @@ class _FileDropViewState extends State<FileDropView>
                           (columnIndex, ascending) =>
                               _sort(columnIndex, ascending),
                     ),
+                    DataColumn2(label: const Text('操作'), size: ColumnSize.S),
                   ],
                   sortColumnIndex: _sortColumnIndex,
                   sortAscending: _sortAscending,
                   source: FileDataSource(
                     files: widget.items,
                     selectedItems: _selectedItems,
+                    fileTags: _fileTags,
+                    fileFolders: _fileFolders,
                     onSelectChanged: (index, value) {
                       setState(() {
                         _selectedItems[index] = value;
                       });
+                    },
+                    onSetTag: _onSetTag,
+                    onSetFolder: _onSetFolder,
+                    onDelete: _onDeleteFile,
+                    getTagTitle: (tagId) {
+                      return widget.plugin.foldersTagsController
+                          .getTagTitleById(widget.library.id, tagId);
+                    },
+                    getFolderTitle: (folderId) {
+                      return widget.plugin.foldersTagsController
+                          .getFolderTitleById(widget.library.id, folderId);
                     },
                   ),
                   controller: _paginatorController,
@@ -357,7 +666,32 @@ class _FileDropViewState extends State<FileDropView>
                     '共 ${widget.items.length} 个文件',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
-                  ElevatedButton(onPressed: _onDone, child: Text(widget.btnOk)),
+                  Row(
+                    children: [
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.label),
+                        label: const Text('设置所有标签'),
+                        onPressed: _onSetAllTags,
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.folder),
+                        label: const Text('设置所有文件夹'),
+                        onPressed: _onSetAllFolders,
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton.icon(
+                        icon: const Icon(Icons.clear),
+                        label: const Text('清空'),
+                        onPressed: widget.onClear,
+                      ),
+                      const SizedBox(width: 8),
+                      ElevatedButton(
+                        onPressed: _onDone,
+                        child: Text(widget.btnOk),
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ],

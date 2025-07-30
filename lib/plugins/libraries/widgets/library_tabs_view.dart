@@ -42,6 +42,10 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     _tabManager = _plugin.tabManager;
     _loadTabDatas();
     init();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _tabManager.restoreActiveTab();
+    });
   }
 
   Future<void> init() async {
@@ -54,6 +58,8 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             final tabId = detail['tabId'];
             print('tab event: $event, tabId: $tabId');
             switch (event) {
+              case 'goto':
+                break;
               case 'active':
                 // 保证tab所属的library进行初始化连接
                 _tabManager.tryUpdate(tabId);
@@ -293,7 +299,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                                 return DynamicTabBarWidget(
                                   dynamicTabs: tabs,
                                   showBackIcon: true,
-                                  showNextIcon: true,
                                   isScrollable: true,
                                   trailing: IconButton(
                                     icon: const Icon(Icons.add),
@@ -313,10 +318,12 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                                           : null,
                                   onTabChanged: (index) {
                                     if (index != null) {
-                                      _tabManager.setActive(index);
+                                      _tabManager.onTabActived(index: index);
                                     }
                                   },
-                                  onTabControllerUpdated: (controller) {},
+                                  onTabControllerUpdated: (controller) {
+                                    _tabManager.tabController = controller;
+                                  },
                                 );
                               },
                             ),

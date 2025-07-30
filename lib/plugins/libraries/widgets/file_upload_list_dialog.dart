@@ -59,59 +59,93 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
     super.dispose();
   }
 
-  Future<void> _onUploadFiles(List<File> files) async {
-    await widget.uploadQueue.addFiles(files);
+  Future<void> _onUploadFiles(
+    List<File> files,
+    Map<File, List<String>> fileTags,
+    Map<File, String?> fileFolders,
+  ) async {
+    await widget.uploadQueue.addFiles(
+      files,
+      fileTags: fileTags,
+      fileFolders: fileFolders,
+    );
     _filesNotifier.value = [];
   }
 
-  Future<void> _onFileAdded(List<File> files) async {
-    _filesNotifier.value = [..._filesNotifier.value, ...files];
+  Future<void> _onFileAdded(
+    List<File> files,
+    Map<File, List<String>> fileTags,
+    Map<File, String?> fileFolders,
+  ) async {
+    final existingPaths = _filesNotifier.value.map((f) => f.path).toSet();
+    final newFiles =
+        files.where((f) => !existingPaths.contains(f.path)).toList();
+    _filesNotifier.value = [..._filesNotifier.value, ...newFiles];
   }
 
   @override
   Widget build(BuildContext context) {
-    return Dialog(
-      child: SizedBox(
-        width: MediaQuery.of(context).size.width * 0.8,
-        height: MediaQuery.of(context).size.height * 0.8,
-        child: Column(
-          children: [
-            TabBar(
-              controller: _tabController,
-              tabs: const [Tab(text: '文件接收'), Tab(text: '上传队列')],
-            ),
-            Expanded(
-              child: TabBarView(
-                controller: _tabController,
+    return WillPopScope(
+      onWillPop: () async => false, // 禁止返回键关闭
+      child: Dialog(
+        insetPadding: EdgeInsets.zero,
+        child: SizedBox(
+          width: MediaQuery.of(context).size.width * 0.8,
+          height: MediaQuery.of(context).size.height * 0.8,
+          child: Column(
+            children: [
+              // 顶部带关闭按钮的行
+              Row(
                 children: [
-                  // 文件接收Tab
-                  ValueListenableBuilder<List<File>>(
-                    valueListenable: _filesNotifier,
-                    builder: (context, files, child) {
-                      return FileDropView(
-                        plugin: widget.plugin,
-                        items: _filesNotifier.value,
-                        onFileAdded: _onFileAdded,
-                        onDone: _onUploadFiles,
-                        onClear: () {
-                          setState(() {
-                            _filesNotifier.value = [];
-                          });
-                        },
-                        btnOk: '开始上传',
-                        key: const PageStorageKey('fileDropView'),
-                      );
-                    },
+                  Expanded(
+                    child: TabBar(
+                      controller: _tabController,
+                      tabs: const [Tab(text: '文件接收'), Tab(text: '上传队列')],
+                    ),
                   ),
-                  // 上传队列Tab
-                  UploadQueueView(
-                    queueServer: widget.uploadQueue,
-                    key: const PageStorageKey('uploadQueueView'), // 保持状态
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: '关闭',
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                    },
                   ),
                 ],
               ),
-            ),
-          ],
+              Expanded(
+                child: TabBarView(
+                  controller: _tabController,
+                  children: [
+                    // 文件接收Tab
+                    ValueListenableBuilder<List<File>>(
+                      valueListenable: _filesNotifier,
+                      builder: (context, files, child) {
+                        return FileDropView(
+                          plugin: widget.plugin,
+                          library: widget.uploadQueue.library,
+                          items: _filesNotifier.value,
+                          onFileAdded: _onFileAdded,
+                          onDone: _onUploadFiles,
+                          onClear: () {
+                            setState(() {
+                              _filesNotifier.value = [];
+                            });
+                          },
+                          btnOk: '开始上传',
+                          key: const PageStorageKey('fileDropView'),
+                        );
+                      },
+                    ),
+                    // 上传队列Tab
+                    UploadQueueView(
+                      queueServer: widget.uploadQueue,
+                      key: const PageStorageKey('uploadQueueView'), // 保持状态
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

@@ -14,9 +14,17 @@ class QueueTask {
   final String id;
   final DateTime createdAt;
   final File file;
+  final List<String> tags;
+  final String? folderId;
   UploadStatus status;
-  QueueTask({required this.id, required this.file, required this.status})
-    : createdAt = DateTime.now();
+
+  QueueTask({
+    required this.id,
+    required this.file,
+    required this.status,
+    this.tags = const [],
+    this.folderId,
+  }) : createdAt = DateTime.now();
 }
 
 class UploadQueueService {
@@ -42,12 +50,12 @@ class UploadQueueService {
           _taskStatusController.add(task);
           try {
             final inst = plugin.libraryController.getLibraryInst(library.id)!;
+            final metaData = {'tags': task.tags, 'folder_id': task.folderId};
             if (library.isLocal) {
-              inst.addFileFromPath(task.file.path);
+              inst.addFileFromPath(task.file.path, metaData);
             } else {
-              inst.uploadFile(task.file.path);
+              inst.uploadFile(task.file.path, metaData);
             }
-
             _completedFiles++;
             _completedFileList.add(task.file);
           } catch (e) {
@@ -94,7 +102,11 @@ class UploadQueueService {
   List<File> get completedFiles => _completedFileList;
   List<File> get failedFiles => _failedFileList;
 
-  Future<List<QueueTask>> addFiles(List<File> files) async {
+  Future<List<QueueTask>> addFiles(
+    List<File> files, {
+    Map<File, List<String>>? fileTags,
+    Map<File, String?>? fileFolders,
+  }) async {
     _totalFiles += files.length;
     final tasks =
         files
@@ -103,6 +115,8 @@ class UploadQueueService {
                 id: DateTime.now().microsecondsSinceEpoch.toString(),
                 file: file,
                 status: UploadStatus.pending,
+                tags: fileTags?[file] ?? [],
+                folderId: fileFolders?[file],
               ),
             )
             .toList();

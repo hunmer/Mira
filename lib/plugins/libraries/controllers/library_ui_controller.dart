@@ -38,8 +38,9 @@ class LibraryUIController {
 
   Future<List<LibraryTag>> showTagSelector(
     Library library,
-    BuildContext context,
-  ) async {
+    BuildContext context, {
+    TreeSelectionMode? selectionMode,
+  }) async {
     final tags =
         await _plugin.libraryController
             .getLibraryInst(library.id)!
@@ -50,6 +51,7 @@ class LibraryUIController {
           (context) => AsyncTreeViewDialog(
             title: '选择标签',
             library: library,
+            selectionMode: selectionMode ?? TreeSelectionMode.single,
             selected: null,
             type: 'tags',
             items: tags.map((f) => TreeItem.fromMap(f)).toList(),

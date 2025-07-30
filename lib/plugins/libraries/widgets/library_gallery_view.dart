@@ -196,21 +196,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     );
   }
 
-  void _toggleSelectAll() {
-    if (_selectedFileIds.value.isEmpty) {
-      _selectedFileIds.value = _items.value.map((f) => f.id).toSet();
-    } else {
-      _selectedFileIds.value = <int>{};
-    }
-  }
-
-  void _exitSelectionMode() {
-    if (_selectedFileIds.value.isNotEmpty) {
-      _selectedFileIds.value = <int>{};
-    }
-    _isSelectionModeNotifier.value = false;
-  }
-
   Future<void> _loadFiles() async {
     if (!mounted) return;
     _isItemsLoadingNotifier.value = true;
@@ -377,7 +362,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                 margin: const EdgeInsets.all(8),
                 child: Padding(
                   padding: const EdgeInsets.all(8.0),
-                  child: _buildFileDetailsSection(),
+                  child: _buildMoreDetailsPage(),
                 ),
               ),
             ),
@@ -398,13 +383,19 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   Widget _buildAppBarActions() {
     return LibraryGalleryAppBar(
       title: widget.library.name,
+      getItems: () {
+        return _items.value;
+      },
+      getSelected: () {
+        return _selectedFileIds.value;
+      },
       isSelectionMode: _isSelectionModeNotifier.value,
       onToggleSelection:
           (bool enable) => _isSelectionModeNotifier.value = enable,
-      selectedCount: _selectedFileIds.value.length,
       isRecycleBin: _tabData!.isRecycleBin,
-      onSelectAll: _toggleSelectAll,
-      onExitSelection: _exitSelectionMode,
+      onSelectionChanged: (Set<int> selected) {
+        _selectedFileIds.value = selected;
+      },
       filterOptions: Map<String, dynamic>.from(_filterOptionsNotifier.value),
       onFilterChanged: (Map<String, dynamic> filterOptions) {
         if (filterOptions != null &&
@@ -447,6 +438,30 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               onPressed: _toggleSidebar,
             ),
           ),
+
+          Tooltip(
+            message: '文件夹列表',
+            child: IconButton(
+              icon: Icon(Icons.folder),
+              onPressed: () async {
+                final result = await widget.plugin.libraryUIController
+                    .showFolderSelector(widget.library, context);
+                if (result != null && result.isNotEmpty) {}
+              },
+            ),
+          ),
+          Tooltip(
+            message: '标签列表',
+            child: IconButton(
+              icon: Icon(Icons.label),
+              onPressed: () async {
+                final result = await widget.plugin.libraryUIController
+                    .showTagSelector(widget.library, context);
+                if (result != null && result.isNotEmpty) {}
+              },
+            ),
+          ),
+
           Tooltip(
             message: '收藏',
             child: IconButton(icon: Icon(Icons.favorite), onPressed: () {}),
@@ -585,20 +600,71 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     );
   }
 
-  Widget _buildFileDetailsSection() {
-    return Expanded(
-      flex: 1,
-      child: ValueListenableBuilder(
-        valueListenable: _selectedFileNotifier,
-        builder: (context, selectedFile, _) {
-          return selectedFile != null
-              ? LibraryFileInformationView(
-                plugin: widget.plugin,
-                library: widget.library,
-                file: selectedFile,
-              )
-              : const Center(child: Text('请选择一个文件查看详情'));
-        },
+  Widget _buildMoreDetailsPage() {
+    return DefaultTabController(
+      length: 2,
+      child: Column(
+        children: [
+          TabBar(
+            tabs: [
+              Tooltip(
+                message: '文件信息',
+                child: Tab(icon: Icon(Icons.info_outline)),
+              ),
+              Tooltip(
+                message: '选中文件列表',
+                child: Tab(icon: Icon(Icons.list_alt)),
+              ),
+            ],
+          ),
+          Expanded(
+            child: TabBarView(
+              physics: const NeverScrollableScrollPhysics(),
+              children: [
+                // 文件信息 Tab
+                ValueListenableBuilder<LibraryFile?>(
+                  valueListenable: _selectedFileNotifier,
+                  builder: (context, selectedFile, _) {
+                    return selectedFile != null
+                        ? LibraryFileInformationView(
+                          plugin: widget.plugin,
+                          library: widget.library,
+                          file: selectedFile,
+                        )
+                        : const Center(child: Text('请选择一个文件查看详情'));
+                  },
+                ),
+                // 选中文件列表 Tab
+                ValueListenableBuilder<Set<int>>(
+                  valueListenable: _selectedFileIds,
+                  builder: (context, selectedIds, _) {
+                    final selectedFiles =
+                        _items.value
+                            .where((file) => selectedIds.contains(file.id))
+                            .toList();
+                    if (selectedFiles.isEmpty) {
+                      return const Center(child: Text('未选中文件'));
+                    }
+                    return ListView.builder(
+                      itemCount: selectedFiles.length,
+                      itemBuilder: (context, index) {
+                        final file = selectedFiles[index];
+                        return ListTile(
+                          leading: Icon(Icons.insert_drive_file),
+                          title: Text(file.name),
+                          subtitle: Text('ID: ${file.id}'),
+                          onTap: () {
+                            _selectedFileNotifier.value = file;
+                          },
+                        );
+                      },
+                    );
+                  },
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }

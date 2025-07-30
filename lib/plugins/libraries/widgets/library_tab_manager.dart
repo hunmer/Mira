@@ -106,6 +106,7 @@ class LibraryTabData {
 }
 
 class LibraryTabManager {
+  late TabController tabController;
   final List<LibraryTabData> tabDatas = [];
   final ValueNotifier<int> currentIndex;
   late final LibrariesPlugin plugin;
@@ -114,8 +115,11 @@ class LibraryTabManager {
   late final bool autoSave;
   bool _isLoaded = false;
   List<String> getTabIds() => tabDatas.map((item) => item.id).toList();
+
   Future<bool> get isLoaded async {
-    await loadfromjson();
+    if (!_isLoaded) {
+      await loadfromjson();
+    }
     return _isLoaded;
   }
 
@@ -140,8 +144,8 @@ class LibraryTabManager {
     for (var item in (data is Iterable ? data : [])) {
       if (item is Map<String, dynamic>) {
         // 重置
-        item['filter'] = {};
-        item['displayFields'] = [];
+        // item['filter'] = {};
+        // item['displayFields'] = [];
         item['pageOptions'] = {'page': 1, 'perPage': 1000};
         final tabData = LibraryTabData.fromMap(item);
         tabDatas.add(tabData);
@@ -150,9 +154,20 @@ class LibraryTabManager {
     _isLoaded = true;
   }
 
+  // restore active tab
+  Future<void> restoreActiveTab() async {
+    if (tabDatas.isEmpty) {
+      return;
+    }
+    final activeTab = tabDatas.firstWhereOrNull((item) => item.isActive);
+    if (activeTab != null) {
+      setTabActive(index: tabDatas.indexOf(activeTab));
+    }
+  }
+
   // loadfromjson
   Future<void> loadfromjson() async {
-    if (!_isLoaded && autoSave) await readfromjson();
+    if (autoSave) await readfromjson();
   }
 
   // 添加tab
@@ -339,19 +354,33 @@ class LibraryTabManager {
         : null;
   }
 
-  setTabActive(String tabId) {
+  Future<void> setTabActive({int? index, String? tabId}) async {
+    if (tabId != null) {
+      index = getTabIds().indexOf(tabId);
+    }
+    tabController.animateTo(index ?? 0);
+  }
+
+  Future<void> onTabActived({int? index, String? tabId}) async {
+    if (tabId != null) {
+      index = getTabIds().indexOf(tabId);
+    }
+    if (index == null || index >= tabDatas.length || index < 0) {
+      return;
+    }
+    final tabData = tabDatas.elementAt(index);
+
     if (currentIndex.value != -1) {
       onTabEvent('unactive', currentIndex.value);
     }
-    final index = getTabIds().indexOf(tabId);
-    if (index != -1) {
-      currentIndex.value = index;
-      onTabEvent('active', index);
+    // 遍历所有tabData，将isActive设置为false
+    for (final item in tabDatas) {
+      item.isActive = false;
     }
-  }
+    tabData.isActive = true;
+    trySaveTabs();
 
-  setActive(int index) {
-    final tabData = tabDatas.elementAt(index);
-    setTabActive(tabData.id);
+    currentIndex.value = index;
+    onTabEvent('active', index);
   }
 }
