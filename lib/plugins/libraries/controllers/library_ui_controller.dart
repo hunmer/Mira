@@ -4,6 +4,7 @@ import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/folder_tree_dialog.dart';
+import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import 'package:mira/widgets/tree_view.dart';
 
 class LibraryUIController {
@@ -27,6 +28,7 @@ class LibraryUIController {
             library: library,
             selected: null,
             type: 'folders',
+            selectionMode: TreeSelectionMode.single,
             items: folders.map((f) => TreeItem.fromMap(f)).toList(),
           ),
     );
@@ -39,7 +41,9 @@ class LibraryUIController {
     BuildContext context,
   ) async {
     final tags =
-        await _plugin.libraryController.getLibraryInst(library.id)!.getTags();
+        await _plugin.libraryController
+            .getLibraryInst(library.id)!
+            .getAllTags();
     final result = await showDialog<List<TreeItem>>(
       context: context,
       builder:

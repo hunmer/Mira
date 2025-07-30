@@ -22,7 +22,6 @@ abstract class LibraryDataInterface {
   Future<void> addFolder(Map<String, dynamic> folder);
   Future<void> deleteFolder(String id);
   Future<List<Map<String, dynamic>>> findFolders({Map<String, dynamic>? query});
-  Future<List<Map<String, dynamic>>> getFolders();
   Future<List<Map<String, dynamic>>> getAllFolders();
   Future<List<Map<String, dynamic>>> getAllTags();
   Future<void> updateFolder({required String id, bool? deleted, String? name});
@@ -30,8 +29,6 @@ abstract class LibraryDataInterface {
   Future<void> addTag(Map<String, dynamic> tag);
   Future<void> deleteTag(String id);
   Future<List<Map<String, dynamic>>> findTags({Map<String, dynamic>? query});
-  Future<List<Map<String, dynamic>>> getTags();
-
   Future<LibraryFile> getFile(int id);
   Future<void> updateFile(int id, Map<String, dynamic> updates);
   Future<List<Map<String, dynamic>>> getFileFolders(int fileId);

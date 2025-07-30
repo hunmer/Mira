@@ -477,27 +477,15 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   @override
-  Future<List<Map<String, dynamic>>> getFolders() async {
-    final response = await _sendRequest(action: 'read', type: 'folder');
-    return response is List ? List<Map<String, dynamic>>.from(response) : [];
-  }
-
-  @override
   Future<List<Map<String, dynamic>>> getAllFolders() async {
     final response = await _sendRequest(action: 'all', type: 'folder');
-    return List<Map<String, dynamic>>.from(response['folders']);
-  }
-
-  @override
-  Future<List<Map<String, dynamic>>> getTags() async {
-    final response = await _sendRequest(action: 'read', type: 'tag');
-    return response is List ? List<Map<String, dynamic>>.from(response) : [];
+    return List<Map<String, dynamic>>.from(response);
   }
 
   @override
   Future<List<Map<String, dynamic>>> getAllTags() async {
     final response = await _sendRequest(action: 'all', type: 'tag');
-    return List<Map<String, dynamic>>.from(response['tags']);
+    return List<Map<String, dynamic>>.from(response);
   }
 
   @override
@@ -557,9 +545,9 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   @override
   Future<List<Map<String, dynamic>>> getFileFolders(int id) async {
     final response = await _sendRequest(
-      action: 'read',
-      type: 'file_folder',
-      data: {'id': id},
+      action: 'file_get',
+      type: 'folder',
+      data: {'fileId': id},
     );
     return response is List ? List<Map<String, dynamic>>.from(response) : [];
   }
@@ -567,9 +555,9 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   @override
   Future<List<Map<String, dynamic>>> getFileTags(int id) async {
     final response = await _sendRequest(
-      action: 'read',
-      type: 'file_tag',
-      data: {'id': id},
+      action: 'file_get',
+      type: 'tag',
+      data: {'fileId': id},
     );
     return response is List ? List<Map<String, dynamic>>.from(response) : [];
   }
@@ -577,18 +565,18 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   @override
   Future<void> setFileFolders(int id, String folderId) async {
     await _sendRequest(
-      action: 'update',
-      type: 'file_folder',
-      data: {'id': id, 'data': folderId},
+      action: 'file_set',
+      type: 'folder',
+      data: {'fileId': id, 'folder': folderId},
     );
   }
 
   @override
   Future<void> setFileTags(int id, List<String> tagIds) async {
     await _sendRequest(
-      action: 'update',
-      type: 'file_tag',
-      data: {'id': id, 'data': tagIds},
+      action: 'file_set',
+      type: 'tag',
+      data: {'fileId': id, 'tags': tagIds},
     );
   }
 
