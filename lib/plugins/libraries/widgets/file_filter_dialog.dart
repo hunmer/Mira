@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 
 class FileFilterDialog extends StatefulWidget {
-  const FileFilterDialog({super.key});
+  final Map<String, dynamic> filterOptions;
+
+  const FileFilterDialog({
+    super.key,
+    this.filterOptions = const {},
+  });
 
   @override
   // ignore: library_private_types_in_public_api
@@ -9,24 +14,24 @@ class FileFilterDialog extends StatefulWidget {
 }
 
 class _FileFilterDialogState extends State<FileFilterDialog> {
-  late String nameFilter;
-  late DateTimeRange? dateRangeFilter;
-  late int? minSizeFilter;
-  late int? maxSizeFilter;
-  late Set<String> selectedTags;
-  late int? minRatingFilter;
-  late String? typeFilter;
+  String nameFilter = '';
+  DateTimeRange? dateRangeFilter;
+  int? minSizeFilter;
+  int? maxSizeFilter;
+  Set<String> selectedTags = {};
+  int? minRatingFilter;
+  String? typeFilter;
 
   @override
   void initState() {
     super.initState();
-    nameFilter = '';
-    dateRangeFilter = null;
-    minSizeFilter = null;
-    maxSizeFilter = null;
-    selectedTags = {};
-    minRatingFilter = null;
-    typeFilter = null;
+    nameFilter = widget.filterOptions['name'] ?? nameFilter;
+    dateRangeFilter = widget.filterOptions['dateRange'] ?? dateRangeFilter;
+    minSizeFilter = widget.filterOptions['minSize'] ?? minSizeFilter;
+    maxSizeFilter = widget.filterOptions['maxSize'] ?? maxSizeFilter;
+    selectedTags = Set.from(widget.filterOptions['tags'] ?? selectedTags);
+    minRatingFilter = widget.filterOptions['minRating'] ?? minRatingFilter;
+    typeFilter = widget.filterOptions['type'] ?? typeFilter;
   }
 
   Map<String, dynamic> _getFilterOptions() {

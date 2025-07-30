@@ -10,6 +10,7 @@ import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_a
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_sort_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
+import 'package:multi_value_listenable_builder/multi_value_listenable_builder.dart';
 import 'package:number_pagination/number_pagination.dart';
 import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
@@ -20,37 +21,6 @@ import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_body.dart';
-
-class _MultiValueNotifier extends ValueNotifier<void> {
-  final List<ValueNotifier> notifiers;
-  final List<VoidCallback> listeners = [];
-  int _version = 0;
-
-  _MultiValueNotifier(this.notifiers) : super(null) {
-    for (final notifier in notifiers) {
-      listener() {
-        _version++;
-        _handleChange();
-      }
-
-      notifier.addListener(listener);
-      listeners.add(listener);
-    }
-  }
-
-  void _handleChange() {
-    // ignore: void_checks
-    value = _version;
-  }
-
-  @override
-  void dispose() {
-    for (int i = 0; i < notifiers.length; i++) {
-      notifiers[i].removeListener(listeners[i]);
-    }
-    super.dispose();
-  }
-}
 
 class LibraryGalleryView extends StatefulWidget {
   final LibrariesPlugin plugin;
@@ -389,11 +359,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       isRecycleBin: _tabData!.isRecycleBin,
       onSelectAll: _toggleSelectAll,
       onExitSelection: _exitSelectionMode,
-      onFilter: () async {
-        final filterOptions = await showDialog<Map<String, dynamic>>(
-          context: context,
-          builder: (context) => FileFilterDialog(),
-        );
+      filterOptions: Map<String, dynamic>.from(_filterOptionsNotifier.value),
+      onFilterChanged: (Map<String, dynamic> filterOptions) {
         if (filterOptions != null &&
             _filterOptionsNotifier.value != filterOptions) {
           _filterOptionsNotifier.value = filterOptions;
@@ -403,8 +370,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       onEnterSelection: () => _isSelectionModeNotifier.value = true,
       onUpload: _showDropDialog,
       uploadProgress: _uploadProgressNotifier.value,
-      displayFields: _displayFieldsNotifier.value,
-      onDisplayFieldsChanged: (fields) {
+      displayFields: Set<String>.from(_displayFieldsNotifier.value),
+      onDisplayFieldsChanged: (Set<String> fields) {
         _displayFieldsNotifier.value = fields;
       },
       imagesPerRow: _imagesPerRowNotifier.value,
@@ -460,30 +427,24 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
         return Expanded(
           flex: screenWidth < 600 ? 6 : (screenWidth > 1300 ? 1 : 2),
-          child: ValueListenableBuilder(
-            valueListenable: _tags,
-            builder: (context, tags, _) {
-              return ValueListenableBuilder(
-                valueListenable: _folders,
-                builder: (context, folders, _) {
-                  return ValueListenableBuilder(
-                    valueListenable: _filterOptionsNotifier,
-                    builder: (context, filterOptions, _) {
-                      return LibrarySidebarView(
-                        plugin: widget.plugin,
-                        library: widget.library,
-                        tabId: widget.tabId,
-                        tags: tags,
-                        tagsSelected: filterOptions['tags'] ?? [],
-                        folders: folders,
-                        folderSelected:
-                            filterOptions['folder'] is String
-                                ? [filterOptions['folder']]
-                                : [],
-                      );
-                    },
-                  );
-                },
+          child: MultiValueListenableBuilder(
+            valueListenables: [_tags, _folders, _filterOptionsNotifier],
+            builder: (context, values, _) {
+              final tags = values[0] as List<LibraryTag>;
+              final folders = values[1] as List<LibraryFolder>;
+              final filterOptions = values[2] as Map<String, dynamic>;
+
+              return LibrarySidebarView(
+                plugin: widget.plugin,
+                library: widget.library,
+                tabId: widget.tabId,
+                tags: tags,
+                tagsSelected: filterOptions['tags'] ?? [],
+                folders: folders,
+                folderSelected:
+                    filterOptions['folder'] is String
+                        ? [filterOptions['folder']]
+                        : [],
               );
             },
           ),
@@ -500,26 +461,26 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           Expanded(
             child: Stack(
               children: [
-                ValueListenableBuilder(
-                  valueListenable: _MultiValueNotifier([
+                MultiValueListenableBuilder(
+                  valueListenables: [
                     _items,
                     _isSelectionModeNotifier,
                     _selectedFileIds,
                     _displayFieldsNotifier,
                     _imagesPerRowNotifier,
-                  ]),
-                  builder: (context, _, __) {
+                  ],
+                  builder: (context, values, _) {
                     return LibraryGalleryBody(
                       plugin: widget.plugin,
                       library: widget.library,
                       isRecycleBin: isRecycleBin,
-                      displayFields: _displayFieldsNotifier.value,
-                      items: _items.value,
-                      isSelectionMode: _isSelectionModeNotifier.value,
-                      selectedFileIds: _selectedFileIds.value,
+                      displayFields: values[3] as Set<String>,
+                      items: values[0] as List<LibraryFile>,
+                      isSelectionMode: values[1] as bool,
+                      selectedFileIds: values[2] as Set<int>,
                       onFileSelected: _onFileSelected,
                       onFileOpen: _onFileOpen,
-                      imagesPerRow: _imagesPerRowNotifier.value,
+                      imagesPerRow: values[4] as int,
                       scrollController: _scrollController,
                     );
                   },

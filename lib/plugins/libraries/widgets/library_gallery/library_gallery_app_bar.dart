@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_xlider/flutter_xlider.dart';
 import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
+import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_sort_dialog.dart';
 
 class LibraryGalleryAppBar extends StatefulWidget
@@ -9,14 +10,15 @@ class LibraryGalleryAppBar extends StatefulWidget
   final bool isSelectionMode;
   final bool isRecycleBin;
   final int selectedCount;
+  final Map<String, dynamic> filterOptions;
   final VoidCallback onSelectAll;
   final VoidCallback onExitSelection;
-  final VoidCallback onFilter;
+  final Function(Map<String, dynamic>) onFilterChanged;
   final VoidCallback onEnterSelection;
   final VoidCallback onUpload;
   final double uploadProgress;
   final Set<String> displayFields;
-  final ValueChanged<Set<String>> onDisplayFieldsChanged;
+  final Function(Set<String>) onDisplayFieldsChanged;
   final int imagesPerRow;
   final ValueChanged<int> onImagesPerRowChanged;
   final VoidCallback onRefresh;
@@ -27,10 +29,11 @@ class LibraryGalleryAppBar extends StatefulWidget
     required this.title,
     required this.isSelectionMode,
     required this.selectedCount,
+    required this.filterOptions,
     required this.isRecycleBin,
     required this.onSelectAll,
     required this.onExitSelection,
-    required this.onFilter,
+    required this.onFilterChanged,
     required this.onEnterSelection,
     required this.onUpload,
     required this.uploadProgress,
@@ -53,22 +56,23 @@ class LibraryGalleryAppBar extends StatefulWidget
 
 class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
   late final ValueNotifier<int> _imageRows;
+  late final ValueNotifier<Set<String>> _fields;
+  late final ValueNotifier<Map<String, dynamic>> _filterOptions;
 
   @override
   void initState() {
     super.initState();
     _imageRows = ValueNotifier(widget.imagesPerRow);
+    _fields = ValueNotifier(widget.displayFields);
+    _filterOptions = ValueNotifier(widget.filterOptions);
   }
 
   @override
   void dispose() {
     _imageRows.dispose();
+    _fields.dispose();
+    _filterOptions.dispose();
     super.dispose();
-  }
-
-  void _handleImagesPerRowChange(int count) {
-    _imageRows.value = count;
-    widget.onImagesPerRowChanged(count);
   }
 
   @override
@@ -95,15 +99,28 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
                   Stack(
                     children: [
                       IconButton(
-                        icon: const Icon(Icons.filter_list),
-                        onPressed: widget.onFilter,
+                        icon: const Icon(Icons.filter_alt),
+                        onPressed: () async {
+                          final filterOptions =
+                              await showDialog<Map<String, dynamic>>(
+                                context: context,
+                                builder:
+                                    (context) => FileFilterDialog(
+                                      filterOptions: _filterOptions.value,
+                                    ),
+                              );
+                          if (filterOptions != null) {
+                            _filterOptions.value = filterOptions;
+                            widget.onFilterChanged(filterOptions);
+                          }
+                        },
                       ),
                     ],
                   ),
                   Tooltip(
                     message: '筛选',
                     child: IconButton(
-                      icon: Icon(Icons.filter_alt),
+                      icon: Icon(Icons.filter_list),
                       onPressed: () async {
                         widget.onSortChanged(
                           await showDialog(
@@ -192,9 +209,9 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
                                       lowerValue,
                                       upperValue,
                                     ) {
-                                      _handleImagesPerRowChange(
-                                        lowerValue.toInt(),
-                                      );
+                                      final count = lowerValue.toInt();
+                                      _imageRows.value = count;
+                                      widget.onImagesPerRowChanged(count);
                                     },
                                   ),
                                 ],
@@ -232,33 +249,26 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
                                         builder: (context, setState) {
                                           return CheckboxListTile(
                                             title: Text(field),
-                                            value: widget.displayFields
-                                                .contains(field),
+                                            value: _fields.value.contains(
+                                              field,
+                                            ),
                                             onChanged: (checked) {
                                               setState(() {
-                                                if (checked == true) {
-                                                  widget.displayFields.add(
-                                                    field,
-                                                  );
+                                                if (checked!) {
+                                                  _fields.value.add(field);
                                                 } else {
-                                                  widget.displayFields.remove(
-                                                    field,
-                                                  );
+                                                  _fields.value.remove(field);
                                                 }
+                                                widget.onDisplayFieldsChanged(
+                                                  Set<String>.from(
+                                                    _fields.value,
+                                                  ),
+                                                );
                                               });
                                             },
                                           );
                                         },
                                       ),
-                                    TextButton(
-                                      onPressed: () {
-                                        widget.onDisplayFieldsChanged(
-                                          widget.displayFields,
-                                        );
-                                        Navigator.pop(context);
-                                      },
-                                      child: Text('确定'),
-                                    ),
                                   ],
                                 ),
                               ),

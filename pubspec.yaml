@@ -85,6 +85,7 @@ dependencies:
   background_downloader: ^9.2.3
   hotkey_manager: ^0.2.3
   flutter_bloc: ^9.1.1
+  multi_value_listenable_builder: ^0.0.2
 
 dev_dependencies:
   flutter_test:
