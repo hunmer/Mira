@@ -3,10 +3,7 @@ import 'package:flutter/material.dart';
 class FileFilterDialog extends StatefulWidget {
   final Map<String, dynamic> filterOptions;
 
-  const FileFilterDialog({
-    super.key,
-    this.filterOptions = const {},
-  });
+  const FileFilterDialog({super.key, this.filterOptions = const {}});
 
   @override
   // ignore: library_private_types_in_public_api
@@ -22,6 +19,11 @@ class _FileFilterDialogState extends State<FileFilterDialog> {
   int? minRatingFilter;
   String? typeFilter;
 
+  // TextEditingControllers
+  late TextEditingController nameController;
+  late TextEditingController minSizeController;
+  late TextEditingController maxSizeController;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +34,23 @@ class _FileFilterDialogState extends State<FileFilterDialog> {
     selectedTags = Set.from(widget.filterOptions['tags'] ?? selectedTags);
     minRatingFilter = widget.filterOptions['minRating'] ?? minRatingFilter;
     typeFilter = widget.filterOptions['type'] ?? typeFilter;
+
+    // Initialize TextEditingControllers with values from filterOptions
+    nameController = TextEditingController(text: nameFilter);
+    minSizeController = TextEditingController(
+      text: minSizeFilter != null ? minSizeFilter.toString() : '',
+    );
+    maxSizeController = TextEditingController(
+      text: maxSizeFilter != null ? maxSizeFilter.toString() : '',
+    );
+  }
+
+  @override
+  void dispose() {
+    nameController.dispose();
+    minSizeController.dispose();
+    maxSizeController.dispose();
+    super.dispose();
   }
 
   Map<String, dynamic> _getFilterOptions() {
@@ -92,6 +111,11 @@ class _FileFilterDialogState extends State<FileFilterDialog> {
                         selectedTags.clear();
                         minRatingFilter = null;
                         typeFilter = null;
+
+                        // Clear TextEditingControllers
+                        nameController.clear();
+                        minSizeController.clear();
+                        maxSizeController.clear();
                       });
                     },
                     child: const Text('Clear all'),
@@ -99,6 +123,7 @@ class _FileFilterDialogState extends State<FileFilterDialog> {
                 ),
               ),
             TextField(
+              controller: nameController,
               decoration: InputDecoration(
                 labelText: 'Name contains',
                 border: const OutlineInputBorder(),
@@ -107,7 +132,10 @@ class _FileFilterDialogState extends State<FileFilterDialog> {
                         ? IconButton(
                           icon: const Icon(Icons.clear, size: 20),
                           onPressed: () {
-                            setState(() => nameFilter = '');
+                            setState(() {
+                              nameFilter = '';
+                              nameController.clear();
+                            });
                             FocusScope.of(context).unfocus();
                           },
                         )
@@ -141,6 +169,7 @@ class _FileFilterDialogState extends State<FileFilterDialog> {
               children: [
                 Expanded(
                   child: TextField(
+                    controller: minSizeController,
                     decoration: InputDecoration(
                       labelText: 'Min size (KB)',
                       border: const OutlineInputBorder(),
@@ -149,7 +178,10 @@ class _FileFilterDialogState extends State<FileFilterDialog> {
                               ? IconButton(
                                 icon: const Icon(Icons.clear, size: 20),
                                 onPressed: () {
-                                  setState(() => minSizeFilter = null);
+                                  setState(() {
+                                    minSizeFilter = null;
+                                    minSizeController.clear();
+                                  });
                                   FocusScope.of(context).unfocus();
                                 },
                               )
@@ -166,6 +198,7 @@ class _FileFilterDialogState extends State<FileFilterDialog> {
                 const SizedBox(width: 16),
                 Expanded(
                   child: TextField(
+                    controller: maxSizeController,
                     decoration: InputDecoration(
                       labelText: 'Max size (KB)',
                       border: const OutlineInputBorder(),
@@ -174,7 +207,10 @@ class _FileFilterDialogState extends State<FileFilterDialog> {
                               ? IconButton(
                                 icon: const Icon(Icons.clear, size: 20),
                                 onPressed: () {
-                                  setState(() => maxSizeFilter = null);
+                                  setState(() {
+                                    maxSizeFilter = null;
+                                    maxSizeController.clear();
+                                  });
                                   FocusScope.of(context).unfocus();
                                 },
                               )
@@ -227,6 +263,11 @@ class _FileFilterDialogState extends State<FileFilterDialog> {
               selectedTags.clear();
               minRatingFilter = null;
               typeFilter = null;
+
+              // Clear TextEditingControllers
+              nameController.clear();
+              minSizeController.clear();
+              maxSizeController.clear();
             });
           },
           child: const Text('Reset'),

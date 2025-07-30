@@ -200,13 +200,13 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     if (_selectedFileIds.value.isEmpty) {
       _selectedFileIds.value = _items.value.map((f) => f.id).toSet();
     } else {
-      _selectedFileIds.value.clear();
+      _selectedFileIds.value = <int>{};
     }
   }
 
   void _exitSelectionMode() {
     if (_selectedFileIds.value.isNotEmpty) {
-      _selectedFileIds.value.clear();
+      _selectedFileIds.value = <int>{};
     }
     _isSelectionModeNotifier.value = false;
   }
@@ -250,6 +250,16 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void _onFileSelected(LibraryFile file) {
+    final fileId = file.id;
+    if (_isSelectionModeNotifier.value) {
+      final currentSelection = Set<int>.from(_selectedFileIds.value);
+      if (currentSelection.contains(fileId)) {
+        currentSelection.remove(fileId);
+      } else {
+        currentSelection.add(fileId);
+      }
+      _selectedFileIds.value = currentSelection;
+    }
     _selectedFileNotifier.value = file;
     if (Platform.isAndroid || Platform.isIOS) {
       showModalBottomSheet(
@@ -266,24 +276,16 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   void _onFileOpen(LibraryFile file) {
     final fileId = file.id;
-    if (_isSelectionModeNotifier.value) {
-      if (_selectedFileIds.value.contains(fileId)) {
-        _selectedFileIds.value.remove(fileId);
-      } else {
-        _selectedFileIds.value.add(fileId);
-      }
-    } else {
-      Navigator.of(context).push(
-        MaterialPageRoute(
-          builder:
-              (context) => LibraryFileInformationView(
-                plugin: widget.plugin,
-                library: widget.library,
-                file: file,
-              ),
-        ),
-      );
-    }
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder:
+            (context) => LibraryFileInformationView(
+              plugin: widget.plugin,
+              library: widget.library,
+              file: file,
+            ),
+      ),
+    );
   }
 
   void _toggleSidebar() {
@@ -326,23 +328,68 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       );
       _paginationOptionsNotifier.value['page'] = totalPages;
     }
+    final color = Theme.of(context).primaryColor;
     return Scaffold(
       bottomSheet: LibraryGalleryBottomSheet(
         uploadProgress: _uploadProgressNotifier.value,
       ),
       body: Row(
         children: [
-          _buildQuickActions(),
-          VerticalDivider(width: 1),
-          _buildSidebarSection(screenWidth),
-          VerticalDivider(width: 1),
-          _buildMainContent(isRecycleBin, screenWidth),
-          if (screenWidth > 800) ...[
-            VerticalDivider(width: 1),
-            _buildFileDetailsSection(),
-          ],
-          VerticalDivider(width: 1),
-          _buildAppBarActions(),
+          // Quick Actions
+          Card(
+            elevation: 4,
+            margin: const EdgeInsets.all(8),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _buildQuickActions(),
+            ),
+          ),
+          // Sidebar Section
+          Flexible(
+            flex: screenWidth < 600 ? 6 : (screenWidth > 1300 ? 1 : 2),
+            child: Card(
+              elevation: 4,
+              margin: const EdgeInsets.all(8),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: _buildSidebarSection(screenWidth),
+              ),
+            ),
+          ),
+          // Main Content
+          Flexible(
+            flex: 4,
+            child: Card(
+              elevation: 4,
+              margin: const EdgeInsets.all(8),
+              child: Padding(
+                padding: const EdgeInsets.all(8.0),
+                child: _buildMainContent(isRecycleBin, screenWidth),
+              ),
+            ),
+          ),
+          // File Details Section (only for wide screens)
+          if (screenWidth > 800)
+            Flexible(
+              flex: 1,
+              child: Card(
+                elevation: 4,
+                margin: const EdgeInsets.all(8),
+                child: Padding(
+                  padding: const EdgeInsets.all(8.0),
+                  child: _buildFileDetailsSection(),
+                ),
+              ),
+            ),
+          // AppBar Actions
+          Card(
+            elevation: 4,
+            margin: const EdgeInsets.all(8),
+            child: Padding(
+              padding: const EdgeInsets.all(8.0),
+              child: _buildAppBarActions(),
+            ),
+          ),
         ],
       ),
     );
@@ -352,6 +399,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     return LibraryGalleryAppBar(
       title: widget.library.name,
       isSelectionMode: _isSelectionModeNotifier.value,
+      onToggleSelection:
+          (bool enable) => _isSelectionModeNotifier.value = enable,
       selectedCount: _selectedFileIds.value.length,
       isRecycleBin: _tabData!.isRecycleBin,
       onSelectAll: _toggleSelectAll,
@@ -361,10 +410,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         if (filterOptions != null &&
             _filterOptionsNotifier.value != filterOptions) {
           _filterOptionsNotifier.value = filterOptions;
-          _tabManager.setLibraryFilter(widget.tabId, filterOptions);
+          _tabManager.updateFilter(widget.tabId, filterOptions);
         }
       },
-      onEnterSelection: () => _isSelectionModeNotifier.value = true,
+
       onUpload: _showDropDialog,
       uploadProgress: _uploadProgressNotifier.value,
       displayFields: Set<String>.from(_displayFieldsNotifier.value),

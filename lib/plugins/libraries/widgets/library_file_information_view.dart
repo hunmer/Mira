@@ -64,8 +64,10 @@ class _LibraryFileInformationViewState
     _urlController = TextEditingController(text: widget.file.url);
     final filePath = widget.file.path!;
     return Scaffold(
+      backgroundColor: Colors.transparent,
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
+        physics: const BouncingScrollPhysics(),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [

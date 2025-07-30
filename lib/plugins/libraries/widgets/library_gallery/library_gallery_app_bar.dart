@@ -7,14 +7,14 @@ import 'package:mira/plugins/libraries/widgets/library_sort_dialog.dart';
 class LibraryGalleryAppBar extends StatefulWidget
     implements PreferredSizeWidget {
   final String title;
-  final bool isSelectionMode;
+  bool isSelectionMode;
   final bool isRecycleBin;
   final int selectedCount;
   final Map<String, dynamic> filterOptions;
   final VoidCallback onSelectAll;
   final VoidCallback onExitSelection;
   final Function(Map<String, dynamic>) onFilterChanged;
-  final VoidCallback onEnterSelection;
+  final Function(bool) onToggleSelection;
   final VoidCallback onUpload;
   final double uploadProgress;
   final Set<String> displayFields;
@@ -25,16 +25,16 @@ class LibraryGalleryAppBar extends StatefulWidget
   final Map<String, dynamic> sortOptions;
   final ValueChanged<Map<String, dynamic>> onSortChanged;
 
-  const LibraryGalleryAppBar({
+  LibraryGalleryAppBar({
     required this.title,
-    required this.isSelectionMode,
+    this.isSelectionMode = false,
     required this.selectedCount,
     required this.filterOptions,
     required this.isRecycleBin,
     required this.onSelectAll,
     required this.onExitSelection,
     required this.onFilterChanged,
-    required this.onEnterSelection,
+    required this.onToggleSelection,
     required this.onUpload,
     required this.uploadProgress,
     required this.displayFields,
@@ -136,7 +136,10 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
                   ),
                   IconButton(
                     icon: const Icon(Icons.check_box),
-                    onPressed: widget.onEnterSelection,
+                    onPressed: () {
+                      widget.isSelectionMode = !widget.isSelectionMode;
+                      widget.onToggleSelection(widget.isSelectionMode);
+                    },
                   ),
                   if (!widget.isRecycleBin)
                     Stack(

@@ -272,8 +272,6 @@ class LibraryTabManager {
     }
   }
 
-  setLibraryFilter(String tabId, Map<String, dynamic> filter) {}
-
   Map<String, dynamic> getLibraryFilter(String tabId) {
     final tabData = getTabData(tabId);
     if (tabData != null) {
