@@ -319,7 +319,7 @@ class _LibraryItemState extends State<LibraryItem> {
     final isMedia =
         ['video', 'audio'].contains(widget.file.fileType) &&
         (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
-
+    var filePath = widget.file.path;
     return DragItemWidget(
       dragItemProvider: (request) async {
         final item = DragItem(
@@ -327,9 +327,16 @@ class _LibraryItemState extends State<LibraryItem> {
           suggestedName: widget.file.name,
         );
         if ((Platform.isLinux || Platform.isMacOS || Platform.isWindows) &&
-            widget.file.path != null) {
-          final path = filePathToUri(widget.file.path!);
-          item.add(Formats.fileUri(Uri.tryParse(path)!));
+            filePath != null) {
+          if (filePath!.startsWith('\\')) {
+            // windows smb路径需要转义
+            filePath = filePath!.replaceAll('\\', '\\\\');
+          } else {
+            filePath = filePathToUri(filePath!);
+          }
+          final uri = Uri.parse(filePath!);
+          final fileUri = Formats.fileUri(uri);
+          item.add(fileUri);
         }
         return item;
       },

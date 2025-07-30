@@ -12,13 +12,20 @@ bool isValidPhoneNumber(String phone) {
 }
 
 String filePathToUri(String windowsPath) {
-  // 替换反斜杠为正斜杠
-  String uriPath = windowsPath.replaceAll(r'\', '/');
-  // 确保路径以file://开头
-  if (!uriPath.startsWith('file://')) {
-    uriPath = 'file:///$uriPath';
+  // 检查是否是UNC路径（网络共享，如 \\192.168.31.3\share\file）
+  if (windowsPath.startsWith(r'\\')) {
+    // 替换反斜杠为正斜杠，去掉开头的两个反斜杠
+    String uriPath = windowsPath.replaceAll(r'\', '/').replaceFirst('//', '');
+    // SMB file uri 需要 file://///host/share/path
+    return 'file://///$uriPath';
+  } else {
+    // 普通本地路径
+    String uriPath = windowsPath.replaceAll(r'\', '/');
+    if (!uriPath.startsWith('file://')) {
+      uriPath = 'file:///$uriPath';
+    }
+    return uriPath;
   }
-  return uriPath;
 }
 
 String formatFileSize(int bytes) {

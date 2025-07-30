@@ -302,9 +302,17 @@ class TreeViewState<T> extends State<TreeView<T>> {
                   const SizedBox(width: 4),
                   Expanded(
                     child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
-                        node.label,
+                        Flexible(
+                          flex: 1,
+                          fit: FlexFit.tight,
+                          child: Container(
+                            constraints: const BoxConstraints(
+                              maxWidth: 100, // 限制label最大宽度
+                            ),
+                            child: node.label,
+                          ),
+                        ),
                         if (node.trailing != null)
                           Padding(
                             padding: const EdgeInsetsDirectional.only(end: 12),
