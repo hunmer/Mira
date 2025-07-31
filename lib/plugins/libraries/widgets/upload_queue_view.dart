@@ -1,6 +1,9 @@
+import 'dart:async';
+
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:flutter_queue_it/flutter_queue_it.dart';
+import 'package:mira/core/utils/taskbar.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:path/path.dart' as path;
@@ -19,6 +22,34 @@ class _UploadQueueViewState extends State<UploadQueueView>
   @override
   bool get wantKeepAlive => true;
   bool _queueRunning = false;
+  StreamSubscription<Map<String, int>>? _progressSubscription;
+  StreamSubscription<QueueTask>? _taskStatusSubscription;
+
+  @override
+  void initState() {
+    super.initState();
+    _progressSubscription = widget.queueServer.progressStream.listen((
+      progress,
+    ) {
+      Taskbar.setProgress(progress['total'] as int, progress['done'] as int);
+    });
+    _taskStatusSubscription = widget.queueServer.taskStatusStream.listen((
+      task,
+    ) {
+      final taskId = task.id;
+      final status = task.status;
+      if (taskId != null && status != null) {
+        setState(() {});
+      }
+    });
+  }
+
+  @override
+  void dispose() {
+    _taskStatusSubscription?.cancel();
+    _progressSubscription?.cancel();
+    super.dispose();
+  }
 
   void _toggleRunning() {
     setState(() {
@@ -127,14 +158,6 @@ class _UploadQueueViewState extends State<UploadQueueView>
             ],
           ),
         );
-
-        // return ListView.builder(
-        //   itemCount: items.length,
-        //   itemBuilder: (context, index) {
-        //     final item = items[index];
-        //     return ListTile(title: Text('Item status: ${item.status.name}'));
-        //   },
-        // );
       },
     );
   }

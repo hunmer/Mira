@@ -27,6 +27,8 @@ import 'core/storage/storage_manager.dart';
 import 'core/config_manager.dart';
 import 'screens/route.dart';
 import 'screens/settings_screen/controllers/auto_update_controller.dart'; // 自动更新控制器
+import 'package:media_kit/media_kit.dart'; // Provides [Player], [Media], [Playlist] etc.
+import 'package:media_kit_video/media_kit_video.dart';
 
 // 全局导航键
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -40,9 +42,7 @@ late PermissionController _permissionController;
 void main() async {
   // 确保Flutter绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
-
-  // 初始化 MediaKit
-  // MediaKit.ensureInitialized();
+  MediaKit.ensureInitialized();
 
   // 设置首选方向为竖屏
   await SystemChrome.setPreferredOrientations([

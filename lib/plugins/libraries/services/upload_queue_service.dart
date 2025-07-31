@@ -4,6 +4,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_manager.dart';
+import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:queue_it/queue_it.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
@@ -89,7 +90,7 @@ class UploadQueueService {
     final filePath = args.item['path'];
     for (final item in queue.items()) {
       final task = item.data;
-      if (task.file.path == filePath) {
+      if (areFilePathsEqual(task.file.path, filePath)) {
         task.status = UploadStatus.completed;
         _taskStatusController.add(task);
         break;

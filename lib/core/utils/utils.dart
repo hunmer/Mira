@@ -40,6 +40,12 @@ dynamic convertSetsToLists(dynamic value) {
   return value;
 }
 
+bool areFilePathsEqual(String path1, String path2) {
+  String normalize(String path) =>
+      path.replaceAll(r'\', '/').replaceAll(RegExp(r'/+'), '/').toLowerCase();
+  return normalize(path1) == normalize(path2);
+}
+
 String formatFileSize(int bytes) {
   if (bytes <= 0) return '0 B';
   const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];

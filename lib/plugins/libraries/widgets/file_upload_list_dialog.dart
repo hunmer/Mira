@@ -29,32 +29,16 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
   final ValueNotifier<List<File>> _filesNotifier = ValueNotifier([]);
-  StreamSubscription<Map<String, int>>? _progressSubscription;
-  StreamSubscription<QueueTask>? _taskStatusSubscription;
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
     _filesNotifier.value = List.from(widget.initialFiles);
-    _progressSubscription = widget.uploadQueue.progressStream.listen((
-      progress,
-    ) {
-      Taskbar.setProgress(progress['total'] as int, progress['done'] as int);
-    });
-    _taskStatusSubscription = widget.uploadQueue.taskStatusStream.listen((
-      task,
-    ) {
-      final taskId = task.id;
-      final status = task.status;
-      if (taskId != null && status != null) {}
-    });
   }
 
   @override
   void dispose() {
-    _taskStatusSubscription?.cancel();
-    _progressSubscription?.cancel();
     _tabController.dispose();
     super.dispose();
   }

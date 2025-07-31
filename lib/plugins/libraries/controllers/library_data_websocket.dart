@@ -19,9 +19,31 @@ import 'library_data_interface.dart';
 enum LibraryStatus { open, closed, error, connected }
 
 class LibraryDataWebSocket implements LibraryDataInterface {
+  final Library library;
+  final String clientId = const Uuid().v4();
+  final StreamController<LibraryStatus> _event =
+      StreamController<LibraryStatus>.broadcast();
+  final StorageManager storage;
+  late WebSocketChannel channel;
+  final Map<String, Completer<dynamic>> _responseHandlers = {};
+  late List<Map<String, dynamic>> _requiredFields = const [];
+  late Map<String, dynamic> _fieldsData;
+  late StreamSubscription _streamSubscription;
+  final LibrariesPlugin _plugin =
+      PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
+  bool _isDialogShown = false;
+  bool isConnecting = false;
+
   LibraryDataWebSocket(this.storage, this.library) {
-    connect();
-    channel.stream.listen(
+    channel = createChannel();
+  }
+
+  WebSocketChannel createChannel() {
+    print('开始连接');
+    final newChannel = WebSocketChannel.connect(
+      Uri.parse('${library.url}?clientId=$clientId&libraryId=${library.id}'),
+    );
+    _streamSubscription = newChannel.stream.listen(
       _handleResponse,
       onError: (error) {
         _event.add(LibraryStatus.error);
@@ -34,29 +56,21 @@ class LibraryDataWebSocket implements LibraryDataInterface {
         reconnect();
       },
     );
-  }
-
-  void connect() {
-    channel = WebSocketChannel.connect(Uri.parse(library.url));
+    return newChannel;
   }
 
   void reconnect() {
-    print('重新连接');
-    connect();
+    print('尝试重新连接');
+    isConnecting = false;
+    if (channel != null) {
+      channel.sink.close();
+      _streamSubscription.cancel();
+    }
+    Future.delayed(const Duration(seconds: 3), () {
+      channel = createChannel();
+      checkConnection(); // 重连需要重新确定服务器状态
+    });
   }
-
-  final Library library;
-  final String clientId = const Uuid().v4();
-  final StreamController<LibraryStatus> _event =
-      StreamController<LibraryStatus>.broadcast();
-  final StorageManager storage;
-  late final WebSocketChannel channel;
-  final Map<String, Completer<dynamic>> _responseHandlers = {};
-  late List<Map<String, dynamic>> _requiredFields = const [];
-  late Map<String, dynamic> _fieldsData;
-  final LibrariesPlugin _plugin =
-      PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
-  bool _isDialogShown = false;
 
   Future<dynamic> _sendRequest({
     required String action,
@@ -151,12 +165,15 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   Future<void> checkConnection() async {
     // 发送给服务端，需要保证library已经加载
     // 服务端会返回connected消息并且被客户端获取，所有这里不需要获取结果
+    // if (!isConnecting) { // 热重载不会重置isConnecting=false
+    print('尝试连接');
     _fieldsData = await loadFields();
     await _sendRequest(
       action: 'open',
       type: 'library',
       data: {'library': library.toJson()},
     );
+    // }
   }
 
   String _generateRequestId() {
@@ -210,12 +227,13 @@ class LibraryDataWebSocket implements LibraryDataInterface {
             }
             return;
           case 'try_connect': // 尝试连接
-            print('尝试连接');
+            print('连接收到服务器消息');
             _requiredFields = List<Map<String, dynamic>>.from(data['fields']);
             _sendRequest(action: 'connect', type: 'library');
             break;
           case 'connected': // 初次连接
             print('连接成功');
+            isConnecting = true;
             _event.add(LibraryStatus.connected);
             EventManager.instance.broadcast(
               'library::connected',
@@ -264,6 +282,9 @@ class LibraryDataWebSocket implements LibraryDataInterface {
           case 'file::deleted': // 文件删除
           case 'file::folder': // 设置文件文件夹
           case 'file::tags': // 设置文件标签
+          case 'file::recovered': // 文件恢复结果
+          case 'file::setTag': // 设置文件标签
+          case 'file::setFolder': // 设置文件文件夹
             EventManager.instance.broadcast(
               'file::changed',
               MapEventArgs({

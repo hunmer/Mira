@@ -1,7 +1,6 @@
-import 'dart:io';
 import 'package:flutter/material.dart';
-// ignore: depend_on_referenced_packages
-import 'package:video_player/video_player.dart';
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 
 class VideoPreview extends StatefulWidget {
   final String videoPath;
@@ -13,7 +12,8 @@ class VideoPreview extends StatefulWidget {
 }
 
 class _VideoPreviewState extends State<VideoPreview> {
-  late VideoPlayerController _controller;
+  late final Player _player;
+  late final VideoController _videoController;
   bool _isPlaying = false;
   bool _isInitialized = false;
   double _playbackSpeed = 1.0;
@@ -28,26 +28,31 @@ class _VideoPreviewState extends State<VideoPreview> {
   }
 
   Future<void> _initPlayer() async {
-    _controller = VideoPlayerController.file(File(widget.videoPath))
-      ..addListener(() {
-        if (_controller.value.isInitialized) {
-          setState(() {
-            _currentPosition = _controller.value.position;
-            _totalDuration = _controller.value.duration;
-          });
-        }
-      });
+    _player = Player();
+    _videoController = VideoController(_player);
 
-    await _controller.initialize();
+    _player.stream.position.listen((position) {
+      setState(() => _currentPosition = position);
+    });
+
+    _player.stream.duration.listen((duration) {
+      setState(() => _totalDuration = duration);
+    });
+
+    _player.stream.playing.listen((playing) {
+      setState(() => _isPlaying = playing);
+    });
+
+    await _player.open(Media(widget.videoPath));
     setState(() {
       _isInitialized = true;
-      _controller.setVolume(_volume);
+      _player.setVolume(_volume);
     });
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _player.dispose();
     super.dispose();
   }
 
@@ -63,7 +68,7 @@ class _VideoPreviewState extends State<VideoPreview> {
             setState(() {
               _currentPosition = Duration(milliseconds: value.toInt());
             });
-            _controller.seekTo(_currentPosition);
+            _player.seek(_currentPosition);
           },
         ),
         Row(
@@ -75,7 +80,7 @@ class _VideoPreviewState extends State<VideoPreview> {
               onPressed: () {
                 setState(() {
                   _isPlaying = !_isPlaying;
-                  _isPlaying ? _controller.play() : _controller.pause();
+                  _isPlaying ? _player.pause() : _player.play();
                 });
               },
             ),
@@ -93,7 +98,7 @@ class _VideoPreviewState extends State<VideoPreview> {
                 if (speed != null) {
                   setState(() {
                     _playbackSpeed = speed;
-                    _controller.setPlaybackSpeed(speed);
+                    _player.setRate(speed);
                   });
                 }
               },
@@ -106,7 +111,7 @@ class _VideoPreviewState extends State<VideoPreview> {
               onChanged: (value) {
                 setState(() {
                   _volume = value;
-                  _controller.setVolume(value);
+                  _player.setVolume(value);
                 });
               },
             ),
@@ -123,10 +128,7 @@ class _VideoPreviewState extends State<VideoPreview> {
         Expanded(
           child:
               _isInitialized
-                  ? AspectRatio(
-                    aspectRatio: _controller.value.aspectRatio,
-                    child: VideoPlayer(_controller),
-                  )
+                  ? Video(controller: _videoController)
                   : const Center(child: CircularProgressIndicator()),
         ),
         _buildControls(),

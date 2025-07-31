@@ -315,6 +315,7 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
                                         'tags',
                                         'folder',
                                         'size',
+                                        'ext',
                                       ])
                                         StatefulBuilder(
                                           builder: (context, setState) {

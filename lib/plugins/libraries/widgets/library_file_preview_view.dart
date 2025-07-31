@@ -1,15 +1,15 @@
 import 'dart:io';
 
 import 'package:flutter/material.dart';
-import 'package:fvp/fvp.dart' as fvp;
+import 'package:media_kit/media_kit.dart';
+import 'package:media_kit_video/media_kit_video.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:share_plus/share_plus.dart';
 // ignore: depend_on_referenced_packages
-import 'package:video_player/video_player.dart';
-import 'package:mira/plugins/libraries/widgets/video_preview.dart';
+// 移除 video_player 相关依赖，使用 media_kit
 
 class LibraryFilePreviewView extends StatefulWidget {
   final LibraryFile file;
@@ -28,22 +28,24 @@ class LibraryFilePreviewView extends StatefulWidget {
 }
 
 class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
-  late VideoPlayerController _controller;
-  bool _isPlaying = false;
+  Player? _player;
+  VideoController? _videoController;
   bool _isInitialized = false;
 
   @override
   void initState() {
     super.initState();
     _initPlayer();
-    fvp.registerWith();
   }
 
   Future<void> _initPlayer() async {
     final fileType = _getFileType(widget.file.name);
     if (fileType == 'video' || fileType == 'audio') {
-      _controller = VideoPlayerController.file(File(widget.file.path!));
-      await _controller.initialize();
+      _player = Player();
+      await _player!.open(Media(widget.file.path!));
+      if (fileType == 'video') {
+        _videoController = VideoController(_player!);
+      }
       setState(() => _isInitialized = true);
     }
   }
@@ -62,28 +64,39 @@ class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
 
     switch (fileType) {
       case 'video':
-        return _isInitialized
-            ? VideoPreview(videoPath: widget.file.path!)
+        return _isInitialized && _videoController != null
+            ? AspectRatio(
+              aspectRatio: 16 / 9,
+              child: Video(controller: _videoController!),
+            )
             : const Center(child: CircularProgressIndicator());
       case 'audio':
-        return Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.audiotrack, size: 64),
-            const SizedBox(height: 16),
-            _isInitialized
-                ? IconButton(
-                  icon: Icon(_isPlaying ? Icons.pause : Icons.play_arrow),
-                  onPressed: () {
-                    setState(() {
-                      _isPlaying = !_isPlaying;
-                      _isPlaying ? _controller.play() : _controller.pause();
-                    });
-                  },
-                )
-                : const CircularProgressIndicator(),
-          ],
-        );
+        return _isInitialized && _player != null
+            ? Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Icon(Icons.audiotrack, size: 64),
+                const SizedBox(height: 16),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    IconButton(
+                      icon: const Icon(Icons.play_arrow),
+                      onPressed: () => _player!.play(),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.pause),
+                      onPressed: () => _player!.pause(),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.stop),
+                      onPressed: () => _player!.stop(),
+                    ),
+                  ],
+                ),
+              ],
+            )
+            : const Center(child: CircularProgressIndicator());
       case 'image':
         return InteractiveViewer(
           maxScale: 5.0,
@@ -112,9 +125,7 @@ class _LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
 
   @override
   void dispose() {
-    if (_isInitialized) {
-      _controller.dispose();
-    }
+    _player?.dispose();
     super.dispose();
   }
 

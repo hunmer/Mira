@@ -143,12 +143,22 @@ class LibraryTabManager {
     if (_autoSave) await readfromjson();
   }
 
+  // updateTitle
+  void updateTitle(String tabId, String title) {
+    final index = getTabIds().indexOf(tabId);
+    if (index != -1) {
+      tabDatas[index] = tabDatas[index].copyWith(title: title);
+      trySaveTabs();
+    }
+  }
+
   // 添加tab
-  void addTab(Library library, {bool isRecycleBin = false}) {
+  void addTab(Library library, {String title = '', bool isRecycleBin = false}) {
     tabDatas.add(
       LibraryTabData(
         id: Uuid().v4(),
         library: library,
+        title: title,
         isRecycleBin: isRecycleBin,
         createDate: DateTime.now(),
         stored: {
@@ -164,13 +174,13 @@ class LibraryTabManager {
             'tags',
             'folder',
             'size',
+            'ext',
           ],
         },
       ),
     );
+    onTabEvent('add', getCurrentIndex());
     trySaveTabs();
-    currentIndex.value = tabDatas.length - 1;
-    onTabEvent('add', currentIndex.value);
   }
 
   void closeTab(String tabId) {
@@ -199,7 +209,7 @@ class LibraryTabManager {
     int newIndex = -1;
     switch (event) {
       case 'close':
-        if (currentIndex.value == index) {
+        if (getCurrentIndex() == index && len > 0) {
           newIndex = index == 0 ? len - 1 : index - 1;
         }
         break;
@@ -276,7 +286,7 @@ class LibraryTabManager {
     tabDatas.clear();
     onTabEventStream.add({'event': 'clear'});
     trySaveTabs();
-    currentIndex.value = 0;
+    setCurrentIndex(0);
   }
 
   updateFilter(String tabId, Map<String, dynamic> filter) {
@@ -319,7 +329,7 @@ class LibraryTabManager {
 
   String? getCurrentTabId() {
     final tabIds = getTabIds();
-    final index = currentIndex.value;
+    final index = getCurrentIndex();
     return tabIds.isNotEmpty && index < tabIds.length && index != -1
         ? tabIds[index]
         : null;
@@ -327,9 +337,21 @@ class LibraryTabManager {
 
   Future<void> setTabActive({int? index, String? tabId}) async {
     if (tabId != null) {
-      index = getTabIds().indexOf(tabId);
+      setCurrentIndex(getTabIds().indexOf(tabId));
+    } else if (index != null) {
+      setCurrentIndex(index);
     }
-    tabController.animateTo(index ?? 0);
+  }
+
+  setCurrentIndex(int index) {
+    if (index < 0 || index >= tabDatas.length) {
+      return;
+    }
+    tabController.animateTo(index);
+  }
+
+  int getCurrentIndex() {
+    return tabController.index;
   }
 
   Future<void> onTabActived({int? index, String? tabId}) async {
@@ -339,20 +361,20 @@ class LibraryTabManager {
     if (index == null || index >= tabDatas.length || index < 0) {
       return;
     }
-    final tabData = tabDatas.elementAt(index);
-
-    if (currentIndex.value != -1) {
-      onTabEvent('unactive', currentIndex.value);
+    final lastIndex = getCurrentIndex();
+    if (lastIndex != -1) {
+      onTabEvent('unactive', lastIndex);
     }
+
     // 遍历所有tabData，将isActive设置为false
     for (final item in tabDatas) {
       item.isActive = false;
     }
+    final tabData = tabDatas.elementAt(index);
     tabData.isActive = true;
-    trySaveTabs();
-
-    currentIndex.value = index;
+    setCurrentIndex(index);
     onTabEvent('active', index);
+    trySaveTabs();
   }
 
   void dispose() {

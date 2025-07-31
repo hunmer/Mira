@@ -7,6 +7,7 @@ import 'package:mira/core/event/event_throttle.dart';
 import 'package:mira/core/plugin_manager.dart';
 // ignore: library_prefixes
 import 'package:mira/core/utils/utils.dart' as Utils;
+import 'package:mira/core/widgets/dynamic_tabbar.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
@@ -18,7 +19,6 @@ import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:mira/views/library_tabs_empty_view.dart';
 import 'package:rxdart/rxdart.dart';
 import '../models/library.dart';
-import 'package:dynamic_tabbar/dynamic_tabbar.dart';
 import 'package:mira/core/widgets/hotkey_settings_view.dart';
 
 class LibraryTabsView extends StatefulWidget {
@@ -49,28 +49,28 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   }
 
   Future<void> init() async {
-    final chanedStream = EventThrottle(duration: Duration(milliseconds: 1000));
+    final chanedStream = EventThrottle(
+      duration: Duration(seconds: 1),
+    ); // 广播更新节流
     _subscriptions.addAll([
-      _tabManager.onTabEventStream.stream
-          .throttleTime(Duration(microseconds: 500))
-          .listen((detail) async {
-            final event = detail['event'];
-            final tabId = detail['tabId'];
-            print('tab event: $event, tabId: $tabId');
-            switch (event) {
-              case 'goto':
-                break;
-              case 'active':
-                // 保证tab所属的library进行初始化连接
-                _tabManager.tryUpdate(tabId);
-                break;
-              case 'close':
-              case 'add':
-              case 'clear':
-                _loadTabDatas();
-                break;
-            }
-          }),
+      _tabManager.onTabEventStream.stream.listen((detail) async {
+        final event = detail['event'];
+        final tabId = detail['tabId'];
+        print('tab event: $event, tabId: $tabId');
+        switch (event) {
+          case 'goto':
+            break;
+          case 'active':
+            // 保证tab所属的library进行初始化连接
+            _tabManager.tryUpdate(tabId);
+            break;
+          case 'close':
+          case 'add':
+          case 'clear':
+            _loadTabDatas();
+            break;
+        }
+      }),
       chanedStream.stream.listen((EventArgs args) {
         //  服务器广播文件更新
         if (args is MapEventArgs) {
@@ -298,6 +298,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                                     }).toList();
                                 return DynamicTabBarWidget(
                                   dynamicTabs: tabs,
+                                  enableAnimation: false,
                                   showBackIcon: true,
                                   isScrollable: true,
                                   trailing: IconButton(

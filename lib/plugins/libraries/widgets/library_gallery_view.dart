@@ -354,9 +354,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           // Quick Actions
           Card(
             elevation: 4,
-            margin: const EdgeInsets.all(8),
+            margin: const EdgeInsets.all(6),
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(6.0),
               child: _buildQuickActions(),
             ),
           ),
@@ -365,9 +365,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             flex: screenWidth < 600 ? 6 : (screenWidth > 1300 ? 1 : 2),
             child: Card(
               elevation: 4,
-              margin: const EdgeInsets.all(8),
+              margin: const EdgeInsets.all(6),
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(6.0),
                 child: _buildSidebarSection(screenWidth),
               ),
             ),
@@ -377,9 +377,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             flex: 4,
             child: Card(
               elevation: 4,
-              margin: const EdgeInsets.all(8),
+              margin: const EdgeInsets.all(6),
               child: Padding(
-                padding: const EdgeInsets.all(8.0),
+                padding: const EdgeInsets.all(6.0),
                 child: _buildMainContent(isRecycleBin, screenWidth),
               ),
             ),
@@ -390,9 +390,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               flex: 1,
               child: Card(
                 elevation: 4,
-                margin: const EdgeInsets.all(8),
+                margin: const EdgeInsets.all(6),
                 child: Padding(
-                  padding: const EdgeInsets.all(8.0),
+                  padding: const EdgeInsets.all(6.0),
                   child: _buildMoreDetailsPage(),
                 ),
               ),
@@ -400,9 +400,9 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           // AppBar Actions
           Card(
             elevation: 4,
-            margin: const EdgeInsets.all(8),
+            margin: const EdgeInsets.all(6),
             child: Padding(
-              padding: const EdgeInsets.all(8.0),
+              padding: const EdgeInsets.all(6.0),
               child: _buildAppBarActions(),
             ),
           ),
@@ -505,7 +505,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             child: IconButton(
               icon: Icon(Icons.delete),
               onPressed: () {
-                _tabManager.addTab(widget.library, isRecycleBin: true);
+                _tabManager.addTab(
+                  widget.library,
+                  isRecycleBin: true,
+                  title: '回收站',
+                );
               },
             ),
           ),
