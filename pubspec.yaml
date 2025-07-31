@@ -64,6 +64,7 @@ dependencies:
   sqlite3: ^2.7.7
   super_drag_and_drop: ^0.9.1
   video_thumbnail: ^0.5.6
+  fvp: ^0.33.0
   stash: ^5.2.0
   stash_memory: ^5.2.0
   flutter_context_menu: ^0.2.4
@@ -73,6 +74,7 @@ dependencies:
   queue_it: ^0.9.0
   flutter_queue_it: ^0.9.0
   flutter_xlider: ^3.5.0
+  dynamic_tabbar: ^1.0.9
   rxdart: ^0.28.0
   shelf_router: ^1.1.4
   cached_network_image: ^3.4.1
@@ -83,9 +85,6 @@ dependencies:
   hotkey_manager: ^0.2.3
   flutter_bloc: ^9.1.1
   multi_value_listenable_builder: ^0.0.2
-  media_kit: ^1.1.11 # Primary package.
-  media_kit_video: ^1.2.5 # For video rendering.
-  media_kit_libs_video: ^1.0.5 # Native video dependencies.
 
 dev_dependencies:
   flutter_test:
@@ -100,18 +99,6 @@ dependency_overrides:
     git:
       url: https://github.com/miguelpruivo/flutter_file_picker.git
       ref: master
-  media_kit: 
-    git:
-      url: https://github.com/media-kit/media-kit
-      path: media_kit
-  media_kit_video: 
-    git:
-      url: https://github.com/media-kit/media-kit
-      path: media_kit_video
-  media_kit_libs_video: 
-    git:
-      url: https://github.com/media-kit/media-kit
-      path: libs/universal/media_kit_libs_video
 
 flutter:
   uses-material-design: true

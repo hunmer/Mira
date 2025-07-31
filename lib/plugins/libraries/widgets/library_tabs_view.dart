@@ -17,7 +17,6 @@ import 'package:mira/plugins/libraries/widgets/library_tabs_context_menu.dart'
 import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:mira/views/library_tabs_empty_view.dart';
-import 'package:rxdart/rxdart.dart';
 import '../models/library.dart';
 import 'package:mira/core/widgets/hotkey_settings_view.dart';
 
@@ -32,7 +31,7 @@ class LibraryTabsView extends StatefulWidget {
 class _LibraryTabsViewState extends State<LibraryTabsView> {
   late LibrariesPlugin _plugin;
   late LibraryTabManager _tabManager;
-  late final ValueNotifier<List<LibraryTabData>> _tabDatas = ValueNotifier([]);
+  late ValueNotifier<List<LibraryTabData>> _tabDatas = ValueNotifier([]);
   final List<StreamSubscription> _subscriptions = [];
 
   @override
@@ -103,7 +102,11 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   }
 
   void _loadTabDatas() {
-    _tabDatas.value = _tabManager.tabDatas.toList();
+    _tabDatas.value = List<LibraryTabData>.from(_tabManager.tabDatas);
+    if (_tabDatas.value.length == 1) {
+      // bug：初次打开不显示...
+      setState(() {});
+    }
   }
 
   @override

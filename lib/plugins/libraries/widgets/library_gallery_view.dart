@@ -5,6 +5,7 @@ import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_file_preview_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
@@ -295,7 +296,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     Navigator.of(context).push(
       MaterialPageRoute(
         builder:
-            (context) => LibraryFileInformationView(
+            (context) => LibraryFilePreviewView(
               plugin: widget.plugin,
               library: widget.library,
               file: file,

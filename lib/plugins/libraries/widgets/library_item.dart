@@ -4,14 +4,14 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:media_kit/media_kit.dart';
-import 'package:media_kit_video/media_kit_video.dart';
+import 'package:fvp/fvp.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/widgets/icon_chip.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:path/path.dart' as path;
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
-// 移除 video_player 相关依赖，使用 media_kit
+// ignore: depend_on_referenced_packages
+import 'package:video_player/video_player.dart';
 import 'package:rxdart/rxdart.dart';
 
 class LibraryItem extends StatefulWidget {
@@ -43,13 +43,12 @@ class LibraryItem extends StatefulWidget {
 }
 
 class _LibraryItemState extends State<LibraryItem> {
-  Player? _player;
-  VideoController? _videoController;
+  VideoPlayerController? _videoController;
   bool _isHovering = false;
   bool _isVideoReady = false;
   Timer? _hoverTimer;
   bool _isLoadError = false;
-  double _volume = 1.0;
+  double _volume = 0;
   final GlobalKey _mouseRegionKey = GlobalKey();
 
   Widget _buildFileIcon() {
@@ -73,8 +72,8 @@ class _LibraryItemState extends State<LibraryItem> {
           alignment: Alignment.bottomCenter,
           children: [
             AspectRatio(
-              aspectRatio: 16 / 9,
-              child: Video(controller: _videoController!),
+              aspectRatio: _videoController!.value.aspectRatio,
+              child: VideoPlayer(_videoController!),
             ),
             Positioned(
               top: 8,
@@ -82,8 +81,8 @@ class _LibraryItemState extends State<LibraryItem> {
               child: GestureDetector(
                 onTap: () {
                   setState(() {
-                    _volume = _volume == 0 ? 1.0 : 0.0;
-                    _player?.setVolume(_volume);
+                    _volume = _volume == 0 ? 1 : 0;
+                    _videoController?.setVolume(_volume);
                   });
                 },
                 child: Icon(
@@ -93,13 +92,18 @@ class _LibraryItemState extends State<LibraryItem> {
                 ),
               ),
             ),
+            VideoProgressIndicator(
+              _videoController!,
+              allowScrubbing: true,
+              padding: const EdgeInsets.all(2),
+            ),
           ],
         );
       }
     } else {
       return widget.useThumbnail && widget.file.thumb != null
           ? buildImageFromUrl(widget.file.thumb!)
-          : const Icon(Icons.insert_drive_file, size: 48);
+          : Icon(Icons.insert_drive_file, size: 48);
     }
   }
 
@@ -212,7 +216,7 @@ class _LibraryItemState extends State<LibraryItem> {
 
   @override
   void dispose() {
-    _player?.dispose();
+    _videoController?.dispose();
     _hoverTimer?.cancel();
     _positionSubscription?.cancel();
     _positionSubject.close();
@@ -223,10 +227,8 @@ class _LibraryItemState extends State<LibraryItem> {
     setState(() {
       _isHovering = false;
       _isVideoReady = false;
-      _player?.dispose();
-      _player = null;
+      _videoController?.dispose();
       _videoController = null;
-      _isLoadError = false;
     });
   }
 
@@ -234,21 +236,24 @@ class _LibraryItemState extends State<LibraryItem> {
     final filePath = widget.file.path;
     if (filePath == null) return;
     try {
-      _player = Player();
-      await _player!.open(Media(filePath));
-      _videoController = VideoController(_player!);
-      await _player!.setVolume(_volume);
-      await _player!.setRate(1.0);
-      await _player!.play();
+      if (filePath.startsWith('http')) {
+        _videoController = VideoPlayerController.networkUrl(
+          Uri.parse(filePath),
+        );
+      } else {
+        _videoController = VideoPlayerController.file(File(filePath));
+      }
+      await _videoController!.initialize();
       if (mounted) {
         setState(() {
           _isVideoReady = true;
         });
+        await _videoController!.setLooping(true);
+        await _videoController!.setVolume(_volume);
+        await _videoController!.play();
       }
     } catch (err) {
-      setState(() {
-        _isLoadError = true;
-      });
+      _isLoadError = true;
     }
   }
 
@@ -258,21 +263,22 @@ class _LibraryItemState extends State<LibraryItem> {
   @override
   void initState() {
     super.initState();
-    // 这里保留进度条相关逻辑，实际 media_kit 需自定义进度条实现
+    // 使用throttleTime控制位置更新频率为50ms
     _positionSubscription = _positionSubject.stream
         .throttleTime(const Duration(milliseconds: 50))
         .listen(_updateVideoPosition);
   }
 
   void _updateVideoPosition(double position) {
-    // media_kit: 需自定义进度条和跳转逻辑
-    // 可通过 _player?.seek(Duration) 实现
-    // 这里只做示例，实际需获取 duration
-    // if (_player != null) _player!.seek(...);
+    if (_videoController != null && _videoController!.value.isInitialized) {
+      final duration = _videoController!.value.duration;
+      _videoController!.fastSeekTo(duration * position);
+      _videoController!.play();
+    }
   }
 
   void _handleMousePosition(PointerHoverEvent event) {
-    if (_videoController == null) {
+    if (_videoController == null || !_videoController!.value.isInitialized) {
       return;
     }
 
@@ -367,10 +373,7 @@ class _LibraryItemState extends State<LibraryItem> {
                       },
                     ),
                   ),
-
-                  ...(widget.displayFields.contains('ext')
-                      ? [_buildFileExtensionBadge()]
-                      : []),
+                  _buildFileExtensionBadge(),
                   _buildSelectedIndicator(),
                 ],
               ),

@@ -84,7 +84,7 @@ class LibraryTabData {
 }
 
 class LibraryTabManager {
-  late TabController tabController;
+  late TabController? tabController;
   final List<LibraryTabData> tabDatas = [];
   final ValueNotifier<int> currentIndex;
   late final LibrariesPlugin plugin;
@@ -179,7 +179,7 @@ class LibraryTabManager {
         },
       ),
     );
-    onTabEvent('add', getCurrentIndex());
+    onTabEvent('add', tabDatas.length - 1);
     trySaveTabs();
   }
 
@@ -347,11 +347,11 @@ class LibraryTabManager {
     if (index < 0 || index >= tabDatas.length) {
       return;
     }
-    tabController.animateTo(index);
+    tabController?.animateTo(index);
   }
 
   int getCurrentIndex() {
-    return tabController.index;
+    return tabController?.index ?? 0;
   }
 
   Future<void> onTabActived({int? index, String? tabId}) async {
