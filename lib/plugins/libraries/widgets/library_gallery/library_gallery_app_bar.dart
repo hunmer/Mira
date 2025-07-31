@@ -266,11 +266,7 @@ class _LibraryGalleryAppBarState extends State<LibraryGalleryAppBar> {
                                       ),
                                     ),
                                     FlutterSlider(
-                                      values: [
-                                        _imageRows.value == 0
-                                            ? 3.0
-                                            : _imageRows.value.toDouble(),
-                                      ],
+                                      values: [_imageRows.value.toDouble()],
                                       max: 20,
                                       min: 0,
                                       onDragging: (

@@ -71,13 +71,39 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     final tabId = widget.tabId;
     _tabManager = widget.plugin.tabManager;
     _paginationOptionsNotifier.value = Map<String, dynamic>.from(
-      _tabManager.getPageOptions(tabId),
+      _tabManager.getStoredValue(tabId, 'paginationOptions', {
+        'page': 1,
+        'perPage': 1000,
+      }),
     );
-    _displayFieldsNotifier.value = _tabManager.getLibraryDisplayFields(tabId);
-    _filterOptionsNotifier.value = _tabManager.getLibraryFilter(tabId);
+    _displayFieldsNotifier.value = Set<String>.from(
+      _tabManager.getStoredValue(tabId, 'displayFields', <String>{}),
+    );
+    _filterOptionsNotifier.value = Map<String, dynamic>.from(
+      _tabManager.getStoredValue(tabId, 'filter', {
+        'name': '',
+        'tags': [],
+        'folder': '',
+      }),
+    );
     _sortOptionsNotifier.value = Map<String, dynamic>.from(
-      _tabManager.getSortOptions(tabId),
+      _tabManager.getStoredValue(tabId, 'sortOptions', {
+        'sort': 'imported_at',
+        'order': 'desc',
+      }),
     );
+    _imagesPerRowNotifier.value =
+        _tabManager.getStoredValue(tabId, 'imagesPerRow', 0) as int;
+    _displayFieldsNotifier.value = Set<String>.from(
+      _tabManager.getStoredValue(tabId, 'displayFields', <String>{}),
+    );
+    _sortOptionsNotifier.value = Map<String, dynamic>.from(
+      _tabManager.getStoredValue(tabId, 'sortOptions', {
+        'sort': 'imported_at',
+        'order': 'desc',
+      }),
+    );
+
     _uploadQueue = UploadQueueService(widget.plugin, widget.library);
     _tabData = _tabManager.getTabData(tabId);
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
@@ -134,6 +160,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     if (args is MapEventArgs) {
       final tabId = args.item['tabId'];
       if (widget.tabId == tabId) {
+        // 重置页面
+        _paginationOptionsNotifier.value = {
+          ..._paginationOptionsNotifier.value,
+          'page': 1,
+        };
         _filterOptionsNotifier.value = Map<String, dynamic>.from(
           args.item['filter'],
         );
@@ -410,16 +441,19 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       displayFields: Set<String>.from(_displayFieldsNotifier.value),
       onDisplayFieldsChanged: (Set<String> fields) {
         _displayFieldsNotifier.value = fields;
+        _tabManager.setStoreValue(widget.tabId, 'displayFields', fields);
       },
       imagesPerRow: _imagesPerRowNotifier.value,
       onImagesPerRowChanged: (count) {
         _imagesPerRowNotifier.value = count;
+        _tabManager.setStoreValue(widget.tabId, 'imagesPerRow', count);
       },
       onRefresh: _refresh,
       sortOptions: _sortOptionsNotifier.value,
       onSortChanged: (sortOptions) {
         if (sortOptions != null && _sortOptionsNotifier.value != sortOptions) {
           _sortOptionsNotifier.value = sortOptions;
+          _tabManager.setStoreValue(widget.tabId, 'sortOptions', sortOptions);
           _loadFiles();
         }
       },
@@ -563,6 +597,21 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     );
   }
 
+  void _toPage(int page) {
+    print('Page changed to: $page');
+    _paginationOptionsNotifier.value = {
+      ..._paginationOptionsNotifier.value,
+      'page': page,
+    };
+    _loadFiles().then((_) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (_scrollController.hasClients) {
+          _scrollController.jumpTo(0);
+        }
+      });
+    });
+  }
+
   Widget _buildPagination() {
     return ValueListenableBuilder<int>(
       valueListenable: _totalItemsNotifier,
@@ -576,17 +625,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             currentPage: paginationOptions['page'],
             totalPages: totalPages,
             onPageChanged: (page) {
-              _paginationOptionsNotifier.value = {
-                ..._paginationOptionsNotifier.value,
-                'page': page,
-              };
-              _loadFiles().then((_) {
-                WidgetsBinding.instance.addPostFrameCallback((_) {
-                  if (_scrollController.hasClients) {
-                    _scrollController.jumpTo(0);
-                  }
-                });
-              });
+              _toPage(page);
             },
             visiblePagesCount: MediaQuery.of(context).size.width ~/ 200 + 2,
             buttonRadius: 10.0,

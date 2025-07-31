@@ -55,15 +55,9 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
               library: widget.library,
               showSelectAll: false,
               onSelectionChanged: (ids) {
-                if (ids != null && ids.isNotEmpty) {
-                  widget.plugin.tabManager.updateFilter(widget.tabId, {
-                    'folder': ids.first,
-                  });
-                } else {
-                  widget.plugin.tabManager.updateFilter(widget.tabId, {
-                    'folder': '',
-                  });
-                }
+                widget.plugin.tabManager.updateFilter(widget.tabId, {
+                  'folder': ids != null && ids.isNotEmpty ? ids.first : '',
+                });
               },
               type: 'folders',
             ),

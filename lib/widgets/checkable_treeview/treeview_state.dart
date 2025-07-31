@@ -174,7 +174,7 @@ class TreeViewState<T> extends State<TreeView<T>> {
         // 单选模式下，先取消所有选中状态
         _setAllNodesSelection(false);
         // 然后选中当前节点
-        _updateNodeAndDescendants(node, isSelected ?? true);
+        _updateNodeAndDescendants(node, isSelected!);
       } else {
         if (isSelected == null) {
           _handlePartialSelection(node);
@@ -244,11 +244,7 @@ class TreeViewState<T> extends State<TreeView<T>> {
             cursor: SystemMouseCursors.click,
             child: InkWell(
               onTap: () {
-                if (widget.selectionMode == TreeSelectionMode.single) {
-                  _updateNodeSelection(node, true);
-                } else {
-                  _updateNodeSelection(node, !node._isSelected);
-                }
+                _updateNodeSelection(node, !node._isSelected);
               },
               child: Row(
                 children: [
@@ -276,6 +272,7 @@ class TreeViewState<T> extends State<TreeView<T>> {
                             ? Radio<bool>(
                               value: true,
                               groupValue: node._isSelected,
+                              toggleable: true,
                               onChanged: (bool? value) {
                                 _updateNodeSelection(node, value ?? false);
                               },

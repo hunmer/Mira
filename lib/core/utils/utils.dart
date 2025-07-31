@@ -28,6 +28,18 @@ String filePathToUri(String windowsPath) {
   }
 }
 
+// Helper to convert any Set in the stored map to List for JSON serialization
+dynamic convertSetsToLists(dynamic value) {
+  if (value is Map) {
+    return value.map((k, v) => MapEntry(k, convertSetsToLists(v)));
+  } else if (value is Set) {
+    return value.toList();
+  } else if (value is List) {
+    return value.map(convertSetsToLists).toList();
+  }
+  return value;
+}
+
 String formatFileSize(int bytes) {
   if (bytes <= 0) return '0 B';
   const suffixes = ['B', 'KB', 'MB', 'GB', 'TB'];
