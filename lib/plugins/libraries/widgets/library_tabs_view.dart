@@ -170,12 +170,17 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                     title: Tab(
                       child: GestureDetector(
                         onSecondaryTapDown:
-                            (details) => _showContextMenu(
-                              context,
-                              details.globalPosition,
-                              tabData.library,
-                              tabData.id,
-                            ),
+                            (details) => {
+                              if (details.globalPosition != null)
+                                {
+                                  _showContextMenu(
+                                    context,
+                                    details.globalPosition,
+                                    tabData.library,
+                                    tabData.id,
+                                  ),
+                                },
+                            },
                         child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
@@ -252,12 +257,18 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                                         title: Tab(
                                           child: GestureDetector(
                                             onSecondaryTapDown:
-                                                (details) => _showContextMenu(
-                                                  context,
-                                                  details.globalPosition,
-                                                  tabData.library,
-                                                  tabData.id,
-                                                ),
+                                                (details) => {
+                                                  if (details.globalPosition !=
+                                                      null)
+                                                    {
+                                                      _showContextMenu(
+                                                        context,
+                                                        details.globalPosition,
+                                                        tabData.library,
+                                                        tabData.id,
+                                                      ),
+                                                    },
+                                                },
                                             child: Row(
                                               mainAxisSize: MainAxisSize.min,
                                               children: [

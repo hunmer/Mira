@@ -67,7 +67,13 @@ class _LibraryListViewState extends State<LibraryListView> {
                 child: InkWell(
                   onTap: () => _onLibrarySelected(library),
                   onSecondaryTapDown: (details) {
-                    _showContextMenu(context, details.globalPosition, library);
+                    if (details.globalPosition != null) {
+                      _showContextMenu(
+                        context,
+                        details.globalPosition,
+                        library,
+                      );
+                    }
                   },
                   child: Padding(
                     padding: EdgeInsets.all(12),

@@ -21,6 +21,7 @@ class _LibraryEditViewState extends State<LibraryEditView> {
   late final TextEditingController _socketServerController;
   late final TextEditingController _nasRelativePathController;
   late final TextEditingController _nasSmbPathController;
+  late final TextEditingController _idController;
   late String _localPath;
   late bool _enableHash = false;
 
@@ -32,9 +33,11 @@ class _LibraryEditViewState extends State<LibraryEditView> {
     _socketServerController = TextEditingController();
     _nasRelativePathController = TextEditingController();
     _nasSmbPathController = TextEditingController();
+    _idController = TextEditingController();
     _localPath = '';
 
     if (widget.library != null) {
+      _idController.text = widget.library!.id;
       final library = widget.library!;
       _nameController.text = library.name;
 
@@ -59,6 +62,12 @@ class _LibraryEditViewState extends State<LibraryEditView> {
               : false;
     } else {
       _selectedType = LibraryType.local;
+    }
+
+    if (kIsWeb) {
+      // 在Web环境中，禁用本地路径选择
+      _selectedType = LibraryType.network;
+      _localPath = '';
     }
   }
 
@@ -109,8 +118,10 @@ class _LibraryEditViewState extends State<LibraryEditView> {
 
       final library = Library(
         id:
-            widget.library?.id ??
-            DateTime.now().millisecondsSinceEpoch.toString(),
+            _idController.text.isNotEmpty
+                ? _idController.text
+                : widget.library?.id ??
+                    DateTime.now().millisecondsSinceEpoch.toString(),
         name: _nameController.text,
         icon: 'default',
         type: libraryType,
@@ -148,6 +159,11 @@ class _LibraryEditViewState extends State<LibraryEditView> {
           key: _formKey,
           child: Column(
             children: [
+              TextFormField(
+                controller: _idController,
+                decoration: InputDecoration(labelText: 'ID (可选)'),
+              ),
+              SizedBox(height: 16),
               TextFormField(
                 controller: _nameController,
                 decoration: InputDecoration(

@@ -116,6 +116,9 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                 },
                 onLongPress: (details) {
                   final file = widget.items[index];
+                  if (details.globalPosition == null) {
+                    return;
+                  }
                   LibraryFileContextMenu.show(
                     context: context,
                     plugin: widget.plugin,
