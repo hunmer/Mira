@@ -95,6 +95,16 @@ class LibraryLocalDataController {
         customFields: {},
         createdAt: DateTime.parse("2025-07-29T16:38:49.874467"),
       ),
+      Library(
+        id: "1753984872000",
+        name: "远程测试用",
+        icon: "default",
+        type: "network",
+        socketServer: "ws://185.242.234.93:8081/",
+        httpServer: "http://185.242.234.93:3000/",
+        createdAt: DateTime.now(),
+        customFields: {},
+      ),
     ];
   }
 
