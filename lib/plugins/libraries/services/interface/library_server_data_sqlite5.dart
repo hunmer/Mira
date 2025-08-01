@@ -3,16 +3,16 @@
 import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:mira/plugins/libraries/services/plugins/thumb_generator.dart1';
+import 'package:mira/plugins/libraries/services/plugins/thumb_generator.dart';
 import 'package:mira/plugins/libraries/services/server_event_manager.dart';
 import 'package:mira/plugins/libraries/services/websocket_server.dart';
 import 'package:path/path.dart' as path;
-import 'package:path_provider/path_provider.dart';
-// ignore: depend_on_referenced_packages
-import 'package:xxh3/xxh3.dart';
-// ignore: depend_on_referenced_packages
-import 'package:sqlite3/sqlite3.dart';
+// Web-compatible imports using local stub implementations
+import '../../../../stubs/xxh3.dart';
+import '../../../../stubs/sqlite3.dart';
+import '../../../../core/storage/storage_manager.dart';
 import 'library_server_data_interface.dart';
 
 class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
@@ -631,8 +631,8 @@ class LibraryServerDataSQLite5 implements LibraryServerDataInterface {
   }
 
   Future<String> getLibraryPath() async {
-    if (Platform.isAndroid) {
-      return (await getApplicationDocumentsDirectory()).path;
+    if (kIsWeb || Platform.isAndroid) {
+      return (await StorageManager.getApplicationDocumentsDirectory()).path;
     }
     return config['customFields']['path'];
   }

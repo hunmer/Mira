@@ -6,8 +6,8 @@ import 'package:mira/plugins/libraries/services/websocket_server.dart';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
 import 'package:image/image.dart' as img;
 import 'package:path/path.dart' as path;
-// ignore: depend_on_referenced_packages
-import 'package:video_thumbnail/video_thumbnail.dart';
+// Web-compatible import using local stub implementation
+import '../../../../stubs/video_thumbnail.dart';
 
 class ThumbGenerator {
   // ignore: unused_field

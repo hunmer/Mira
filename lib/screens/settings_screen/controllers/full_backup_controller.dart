@@ -3,6 +3,7 @@
 import 'dart:io';
 import 'dart:async'; // 添加 StreamController 和 TimeoutException 的导入
 import 'dart:typed_data'; // 添加 Uint8List 的导入
+import 'package:flutter/foundation.dart';
 import 'package:mira/core/storage/storage_manager.dart';
 import 'package:mira/l10n/app_localizations.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +24,15 @@ class FullBackupController {
 
   // 获取当前有效的 context，如果 _mounted 为 false，则返回 null
   BuildContext? get _safeContext => _mounted ? _originalContext : null;
+
+  /// 获取临时目录 - Web兼容
+  Future<Directory> _getTemporaryDirectory() async {
+    if (kIsWeb) {
+      // 在web环境中创建虚拟目录对象
+      return Directory('mira_temp');
+    }
+    return await getTemporaryDirectory();
+  }
 
   Future<void> _initPackageInfo() async {
     await PackageInfo.fromPlatform();
@@ -74,7 +84,7 @@ class FullBackupController {
       final timestamp = DateTime.now().toIso8601String().replaceAll(':', '-');
 
       // 创建一个临时目录来存储压缩文件
-      final tempDir = await getTemporaryDirectory();
+      final tempDir = await _getTemporaryDirectory();
       final archivePath = '${tempDir.path}/full_backup_$timestamp.zip';
 
       // 创建一个 ZipEncoder 实例

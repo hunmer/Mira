@@ -7,7 +7,6 @@ import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:provider/provider.dart';
 import 'package:mira/core/theme_controller.dart';
-import 'package:mira/core/utils/logger_util.dart';
 import 'package:mira/plugins/login/l10n/login_localizations.dart';
 import 'package:mira/screens/settings_screen/controllers/permission_controller.dart';
 import 'package:mira/screens/settings_screen/l10n/log_settings_localizations.dart';
@@ -34,7 +33,6 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 late final StorageManager globalStorage;
 late final ConfigManager globalConfigManager;
 late final PluginManager globalPluginManager;
-LoggerUtil? logger;
 late PermissionController _permissionController;
 
 void main() async {
@@ -64,14 +62,6 @@ void main() async {
     // 获取插件管理器单例实例并初始化
     globalPluginManager = PluginManager();
     await globalPluginManager.setStorageManager(globalStorage);
-
-    logger = LoggerUtil();
-    // 设置全局错误处理器
-    FlutterError.onError = (details) {
-      logger?.log(details.exceptionAsString(), level: 'ERROR');
-      debugPrint(details.toString());
-    };
-
     // 注册内置插件
     final plugins = [LibrariesPlugin()];
 
@@ -80,7 +70,7 @@ void main() async {
       try {
         await globalPluginManager.registerPlugin(plugin);
       } catch (e) {
-        logger?.log('插件注册失败: ${plugin.id} - $e', level: 'ERROR');
+        print('插件注册失败: ${plugin.id} - $e');
       }
     }
 
@@ -102,7 +92,6 @@ void main() async {
       );
     });
   } catch (e) {
-    logger?.log('初始化失败: $e', level: 'ERROR');
     debugPrint('初始化失败: $e');
   }
 

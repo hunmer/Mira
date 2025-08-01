@@ -2,7 +2,6 @@ import 'package:provider/provider.dart';
 import 'package:mira/core/services/backup_service.dart';
 import 'package:mira/core/theme_controller.dart';
 import 'package:mira/l10n/app_localizations.dart';
-import 'package:mira/screens/settings_screen/log_settings_screen.dart';
 import 'package:flutter/material.dart';
 import './controllers/settings_screen_controller.dart';
 import './widgets/webdav_settings_dialog.dart';
@@ -246,24 +245,6 @@ class _SettingsScreenState extends State<SettingsScreen> {
               SettingsScreenLocalizations.of(context).checkUpdateSubtitle,
             ),
             onTap: _controller.checkForUpdates,
-          ),
-          ListTile(
-            leading: const Icon(Icons.assignment),
-            title: Text(
-              SettingsScreenLocalizations.of(context).logSettingsTitle,
-            ),
-            subtitle: Text(
-              SettingsScreenLocalizations.of(context).logSettingsSubtitle,
-            ),
-            trailing: const Icon(Icons.arrow_forward_ios),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => const LogSettingsScreen(),
-                ),
-              );
-            },
           ),
           const Divider(),
           ListTile(

@@ -18,7 +18,7 @@ import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:mira/views/library_tabs_empty_view.dart';
 import '../models/library.dart';
-import 'package:mira/core/widgets/hotkey_settings_view.dart1';
+import 'package:mira/core/widgets/hotkey_settings_view.dart';
 
 class LibraryTabsView extends StatefulWidget {
   const LibraryTabsView({super.key});

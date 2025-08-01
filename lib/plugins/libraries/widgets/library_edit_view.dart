@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
@@ -161,9 +162,7 @@ class _LibraryEditViewState extends State<LibraryEditView> {
               ),
               SizedBox(height: 16),
               // Only allow network type on web
-              Theme.of(context).platform ==
-                      TargetPlatform
-                          .fuchsia // Fuchsia is used as a placeholder for web in Flutter's platform detection
+              kIsWeb // Fuchsia is used as a placeholder for web in Flutter's platform detection
                   ? DropdownButtonFormField<LibraryType>(
                     value: LibraryType.network,
                     items: [

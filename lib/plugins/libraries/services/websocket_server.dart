@@ -3,15 +3,14 @@
 import 'dart:io';
 import 'dart:convert';
 import 'package:mira/plugins/libraries/services/interface/library_server_data_interface.dart';
-import 'package:mira/plugins/libraries/services/interface/library_server_data_sqlite5.dart1';
+import 'package:mira/plugins/libraries/services/interface/library_server_data_sqlite5.dart';
 import 'package:mira/plugins/libraries/services/library_service.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/services/websocket_router.dart';
 import 'package:web_socket_channel/web_socket_channel.dart';
-// ignore: depend_on_referenced_packages
-import 'package:shelf/shelf_io.dart' as shelf_io;
-// ignore: depend_on_referenced_packages
-import 'package:shelf_web_socket/shelf_web_socket.dart';
+// Web-compatible imports using local stub implementations
+import '../../../stubs/shelf_io.dart' as shelf_io;
+import '../../../stubs/shelf_web_socket.dart';
 
 class WebSocketServer {
   final int port;
