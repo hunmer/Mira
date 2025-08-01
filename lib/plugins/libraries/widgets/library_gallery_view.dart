@@ -525,80 +525,74 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       builder: (context, showSidebar, _) {
         if (!showSidebar) return SizedBox.shrink();
 
-        return Expanded(
-          flex: screenWidth < 600 ? 6 : (screenWidth > 1300 ? 1 : 2),
-          child: MultiValueListenableBuilder(
-            valueListenables: [_tags, _folders, _filterOptionsNotifier],
-            builder: (context, values, _) {
-              final tags = values[0] as List<LibraryTag>;
-              final folders = values[1] as List<LibraryFolder>;
-              final filterOptions = values[2] as Map<String, dynamic>;
+        return MultiValueListenableBuilder(
+          valueListenables: [_tags, _folders, _filterOptionsNotifier],
+          builder: (context, values, _) {
+            final tags = values[0] as List<LibraryTag>;
+            final folders = values[1] as List<LibraryFolder>;
+            final filterOptions = values[2] as Map<String, dynamic>;
 
-              return LibrarySidebarView(
-                plugin: widget.plugin,
-                library: widget.library,
-                tabId: widget.tabId,
-                tags: tags,
-                tagsSelected: List<String>.from(filterOptions['tags'] ?? []),
-                folders: folders,
-                folderSelected:
-                    filterOptions['folder'] is String
-                        ? [filterOptions['folder']]
-                        : [],
-              );
-            },
-          ),
+            return LibrarySidebarView(
+              plugin: widget.plugin,
+              library: widget.library,
+              tabId: widget.tabId,
+              tags: tags,
+              tagsSelected: List<String>.from(filterOptions['tags'] ?? []),
+              folders: folders,
+              folderSelected:
+                  filterOptions['folder'] is String
+                      ? [filterOptions['folder']]
+                      : [],
+            );
+          },
         );
       },
     );
   }
 
   Widget _buildMainContent(bool isRecycleBin, double screenWidth) {
-    return Expanded(
-      flex: 4,
-      child: Column(
-        children: [
-          Expanded(
-            child: Stack(
-              children: [
-                MultiValueListenableBuilder(
-                  valueListenables: [
-                    _items,
-                    _isSelectionModeNotifier,
-                    _selectedFileIds,
-                    _displayFieldsNotifier,
-                    _imagesPerRowNotifier,
-                  ],
-                  builder: (context, values, _) {
-                    return LibraryGalleryBody(
-                      plugin: widget.plugin,
-                      library: widget.library,
-                      isRecycleBin: isRecycleBin,
-                      displayFields: values[3] as Set<String>,
-                      items: values[0] as List<LibraryFile>,
-                      isSelectionMode: values[1] as bool,
-                      selectedFileIds: values[2] as Set<int>,
-                      onFileSelected: _onFileSelected,
-                      onFileOpen: _onFileOpen,
-                      imagesPerRow: values[4] as int,
-                      scrollController: _scrollController,
-                    );
-                  },
-                ),
-                ValueListenableBuilder(
-                  valueListenable: _isItemsLoadingNotifier,
-                  builder: (context, isLoading, _) {
-                    return isLoading
-                        ? Center(child: CircularProgressIndicator())
-                        : SizedBox.shrink();
-                  },
-                ),
-              ],
-            ),
+    return Column(
+      children: [
+        Expanded(
+          child: Stack(
+            children: [
+              MultiValueListenableBuilder(
+                valueListenables: [
+                  _items,
+                  _isSelectionModeNotifier,
+                  _selectedFileIds,
+                  _displayFieldsNotifier,
+                  _imagesPerRowNotifier,
+                ],
+                builder: (context, values, _) {
+                  return LibraryGalleryBody(
+                    plugin: widget.plugin,
+                    library: widget.library,
+                    isRecycleBin: isRecycleBin,
+                    displayFields: values[3] as Set<String>,
+                    items: values[0] as List<LibraryFile>,
+                    isSelectionMode: values[1] as bool,
+                    selectedFileIds: values[2] as Set<int>,
+                    onFileSelected: _onFileSelected,
+                    onFileOpen: _onFileOpen,
+                    imagesPerRow: values[4] as int,
+                    scrollController: _scrollController,
+                  );
+                },
+              ),
+              ValueListenableBuilder(
+                valueListenable: _isItemsLoadingNotifier,
+                builder: (context, isLoading, _) {
+                  return isLoading
+                      ? Center(child: CircularProgressIndicator())
+                      : SizedBox.shrink();
+                },
+              ),
+            ],
           ),
-          _buildPagination(),
-        ],
-      ),
+        ),
+        _buildPagination(),
+      ],
     );
   }
 
