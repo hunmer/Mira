@@ -17,8 +17,10 @@ class LibraryDataController {
       await plugin.foldersTagsController.createFolderCache(library.id);
       await plugin.foldersTagsController.createTagCache(library.id);
 
-      if (library.isLocal && !plugin.server.connecting) {
-        await plugin.server.start(library.customFields['path']);
+      if (library.isLocal &&
+          plugin.server != null &&
+          !plugin.server!.connecting) {
+        await plugin.server!.start(library.customFields['path']);
       }
 
       final inst = LibraryDataWebSocket(plugin.storage, library);

@@ -29,6 +29,10 @@ class LibrariesLocalizations {
   String get selectFolder => 'Select Folder';
   String get serverAddress => 'Server Address';
   String get serverRequired => 'Server is required';
+  String get relativePath => 'Relative Path';
+  String get smbPath => 'SMB Path';
+  String get relativePathRequired => 'Relative path is required';
+  String get smbPathRequired => 'SMB path is required';
   String get username => 'Username';
   String get password => 'Password';
 

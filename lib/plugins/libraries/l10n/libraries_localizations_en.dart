@@ -8,6 +8,14 @@ class LibrariesLocalizationsEn extends LibrariesLocalizations {
   @override
   String get editLibrary => 'Edit Library';
   @override
+  String get relativePath => 'Relative Path';
+  @override
+  String get smbPath => 'SMB Path';
+  @override
+  String get relativePathRequired => 'Relative path is required';
+  @override
+  String get smbPathRequired => 'SMB path is required';
+  @override
   String get filesTitle => 'Files';
   @override
   String get fileName => 'File Name';

@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mira/core/event/event_args.dart';
+import 'package:mira/core/event/event_debounce.dart';
 import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/event/event_throttle.dart';
 import 'package:mira/core/plugin_manager.dart';
@@ -48,7 +49,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   }
 
   Future<void> init() async {
-    final chanedStream = EventThrottle(
+    final chanedStream = EventDebouncer(
       duration: Duration(seconds: 1),
     ); // 广播更新节流
     _subscriptions.addAll([
@@ -116,7 +117,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
       subscription.cancel();
     }
     _tabManager.dispose();
-    _plugin.server.stop();
+    _plugin.server?.stop();
   }
 
   bool _showSidebar = false;

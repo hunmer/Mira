@@ -387,7 +387,30 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   @override
   Future<List<LibraryFile>> getFiles() async {
     final result = await _sendRequest(action: 'read', type: 'file');
-    return (result as List).map((json) => LibraryFile.fromMap(json)).toList();
+    return (result as List).map((json) => convertLibraryFile(json)).toList();
+  }
+
+  LibraryFile convertLibraryFile(Map<String, dynamic> json) {
+    return LibraryFile.fromMap({
+      ...json,
+      ...{
+        'path': convertRelatvePath(json['path']),
+        'thumb': convertRelatvePath(json['thumb']),
+      },
+    });
+  }
+
+  String convertRelatvePath(String filePath) {
+    final relativePath = library.customFields['relativePath'];
+    if (relativePath != null &&
+        relativePath.isNotEmpty &&
+        filePath.startsWith(relativePath)) {
+      return filePath.replaceFirst(
+        relativePath,
+        library.customFields['smbPath'],
+      );
+    }
+    return filePath;
   }
 
   @override
@@ -404,7 +427,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       return {
         'result':
             (result['result'] as List)
-                .map((json) => LibraryFile.fromMap(json))
+                .map((json) => convertLibraryFile(json))
                 .toList(),
         'total': result['total'] as int? ?? 0,
         'offset': result['offset'] as int? ?? 0,
@@ -570,7 +593,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       type: 'file',
       data: {'id': id},
     );
-    return LibraryFile.fromMap(result);
+    return convertLibraryFile(result);
   }
 
   @override

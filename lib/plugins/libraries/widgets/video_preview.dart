@@ -28,15 +28,16 @@ class _VideoPreviewState extends State<VideoPreview> {
   }
 
   Future<void> _initPlayer() async {
-    _controller = VideoPlayerController.file(File(widget.videoPath))
-      ..addListener(() {
-        if (_controller.value.isInitialized) {
-          setState(() {
-            _currentPosition = _controller.value.position;
-            _totalDuration = _controller.value.duration;
-          });
-        }
-      });
+    _controller = VideoPlayerController.file(
+      File(widget.videoPath.replaceAll('//', '\\\\')),
+    )..addListener(() {
+      if (_controller.value.isInitialized) {
+        setState(() {
+          _currentPosition = _controller.value.position;
+          _totalDuration = _controller.value.duration;
+        });
+      }
+    });
 
     await _controller.initialize();
     setState(() {

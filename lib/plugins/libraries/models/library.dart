@@ -30,7 +30,7 @@ class Library {
       type: map['type'],
       socketServer: map['socketServer'],
       httpServer: map['httpServer'],
-      customFields: Map<String, dynamic>.from(map['customFields'] ?? {}),
+      customFields: Map<String, dynamic>.from(map['customFields']),
       createdAt: DateTime.parse(map['createdAt']),
     );
   }

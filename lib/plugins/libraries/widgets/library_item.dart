@@ -1,5 +1,3 @@
-import 'dart:io';
-
 import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
@@ -13,6 +11,9 @@ import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 // ignore: depend_on_referenced_packages
 import 'package:video_player/video_player.dart';
 import 'package:rxdart/rxdart.dart';
+
+// Conditional imports for web compatibility
+import 'dart:io' show File if (dart.library.html) 'dart:html';
 
 class LibraryItem extends StatefulWidget {
   const LibraryItem({
@@ -241,7 +242,17 @@ class _LibraryItemState extends State<LibraryItem> {
           Uri.parse(filePath),
         );
       } else {
-        _videoController = VideoPlayerController.file(File(filePath));
+        // Only use File for non-web platforms
+        if (kIsWeb) {
+          // For web, treat local paths as network URLs
+          _videoController = VideoPlayerController.networkUrl(
+            Uri.parse(filePath),
+          );
+        } else {
+          _videoController = VideoPlayerController.file(
+            File(filePath.replaceAll('//', '\\\\')),
+          );
+        }
       }
       await _videoController!.initialize();
       if (mounted) {
@@ -317,8 +328,7 @@ class _LibraryItemState extends State<LibraryItem> {
     List<String> tagTitles,
   ) {
     final isMedia =
-        ['video', 'audio'].contains(widget.file.fileType) &&
-        (Platform.isWindows || Platform.isMacOS || Platform.isLinux);
+        ['video', 'audio'].contains(widget.file.fileType) && !kIsWeb;
     var filePath = widget.file.path;
     return DragItemWidget(
       dragItemProvider: (request) async {
@@ -326,8 +336,8 @@ class _LibraryItemState extends State<LibraryItem> {
           localData: {'fileId': widget.file.id},
           suggestedName: widget.file.name,
         );
-        if ((Platform.isLinux || Platform.isMacOS || Platform.isWindows) &&
-            filePath != null) {
+        if (!kIsWeb && filePath != null) {
+          filePath = filePath!.replaceAll('//', '\\\\');
           if (filePath!.startsWith('\\')) {
             // windows smb路径需要转义
             filePath = filePath!.replaceAll('\\', '\\\\');

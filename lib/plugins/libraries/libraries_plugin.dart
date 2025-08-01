@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
@@ -29,7 +30,7 @@ class LibrariesPlugin extends PluginBase {
   late final LibraryUIController libraryUIController; // 弹出组件
   late final LibraryDataController libraryController; // 数据库
   late final LibraryLocalDataController dataController; // 本地数据
-  late final WebSocketServer server; // 后端服务器
+  WebSocketServer? server; // 后端服务器 (Web平台不启用)
   late final LibraryTabManager tabManager; // 标签视图管理器
   late final FoldersTagsCache foldersTagsController; // 文件夹标签缓存
   late final LibrarySidebarView sidebarController;
@@ -54,7 +55,10 @@ class LibrariesPlugin extends PluginBase {
     tabManager = LibraryTabManager(ValueNotifier<int>(-1));
     await tabManager.init();
     libraryController = LibraryDataController(plugin: this);
-    server = WebSocketServer(8080);
+    // 仅在非Web平台启用WebSocketServer
+    if (!kIsWeb) {
+      server = WebSocketServer(8080);
+    }
     fileDownloader = FileDownloader();
     await fileDownloader.trackTasks();
     fileDownloader.configureNotification(
@@ -65,6 +69,6 @@ class LibrariesPlugin extends PluginBase {
 
   void dispose() {
     libraryController.close();
-    server.stop();
+    server?.stop(); // 仅在server存在时停止
   }
 }
