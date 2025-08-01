@@ -33,7 +33,6 @@ class FoldersTagsCache {
   }
 
   Future<FolderCache> createFolderCache(String libraryId) async {
-    print('Initializing folder cache for library: $libraryId');
     final cache = FolderCache(libraryId);
     await cache.init();
     folder_caches.add(cache);
@@ -41,7 +40,6 @@ class FoldersTagsCache {
   }
 
   Future<TagCache> createTagCache(String libraryId) async {
-    print('Initializing tag cache for library: $libraryId');
     final cache = TagCache(libraryId);
     await cache.init();
     tag_caches.add(cache);

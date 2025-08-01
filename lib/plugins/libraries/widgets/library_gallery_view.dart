@@ -539,7 +539,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                 library: widget.library,
                 tabId: widget.tabId,
                 tags: tags,
-                tagsSelected: filterOptions['tags'] ?? [],
+                tagsSelected: List<String>.from(filterOptions['tags'] ?? []),
                 folders: folders,
                 folderSelected:
                     filterOptions['folder'] is String

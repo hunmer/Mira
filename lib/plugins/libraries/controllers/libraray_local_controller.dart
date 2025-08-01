@@ -37,7 +37,6 @@ class LibraryLocalDataController {
   /// 列举所有库记录
   Future<List<Library>> listLibraries() async {
     final jsonData = await plugin.storage.readJson('libraries');
-    if (jsonData == null) return [];
     if (jsonData is List) {
       return jsonData
           .map((json) => Library.fromJson(json as Map<String, dynamic>))
@@ -46,7 +45,44 @@ class LibraryLocalDataController {
     if (jsonData is Map && jsonData.isNotEmpty) {
       return [Library.fromJson(jsonData as Map<String, dynamic>)];
     }
-    return [];
+    return [
+      Library(
+        id: "1753984872018",
+        name: "人物素材",
+        icon: "default",
+        type: "network",
+        socketServer: "ws://192.168.31.3:8081/",
+        httpServer: "http://192.168.31.3:3000/",
+        customFields: {
+          'relativePath': "/library/",
+          'smbPath': "//192.168.31.3/文件共享/",
+        },
+        createdAt: DateTime.now(),
+      ),
+      Library(
+        id: "1753984872019",
+        name: "影视素材",
+        icon: "default",
+        type: "network",
+        socketServer: "ws://192.168.31.3:8081/",
+        httpServer: "http://192.168.31.3:3000/",
+        customFields: {
+          'relativePath': "/library/",
+          'smbPath': "//192.168.31.3/文件共享/",
+        },
+        createdAt: DateTime.now(),
+      ),
+      Library(
+        id: "1753778329874",
+        name: "本地人物素材",
+        icon: "default",
+        type: "network",
+        socketServer: "ws://127.0.0.1:8081/",
+        httpServer: "http://127.0.0.1:3000/",
+        customFields: {},
+        createdAt: DateTime.parse("2025-07-29T16:38:49.874467"),
+      ),
+    ];
   }
 
   /// 更新库记录

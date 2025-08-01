@@ -1,9 +1,12 @@
 // ignore_for_file: deprecated_member_use
 
+import 'dart:async';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/widgets/checkable_treeview/treeview.dart';
+import 'package:rxdart/rxdart.dart';
+import 'package:lpinyin/lpinyin.dart';
 import 'circle_icon_picker.dart';
 
 class TreeItem {
@@ -103,6 +106,8 @@ class _customTreeViewState extends State<customTreeView> {
   List<TreeNode<String>> _treeNodes = [];
   final TextEditingController _searchController = TextEditingController();
   bool _showSearch = false;
+  final BehaviorSubject<String> _searchSubject = BehaviorSubject<String>();
+  late StreamSubscription _searchSubscription;
 
   @override
   void initState() {
@@ -115,6 +120,22 @@ class _customTreeViewState extends State<customTreeView> {
       }
     }
     _buildTree();
+
+    // Setup debounced search
+    _searchSubscription = _searchSubject
+        .debounceTime(const Duration(milliseconds: 300))
+        .distinct()
+        .listen((searchText) {
+          _filterTree(searchText);
+        });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    _searchSubject.close();
+    _searchSubscription.cancel();
+    super.dispose();
   }
 
   void _buildTree() {
@@ -184,7 +205,7 @@ class _customTreeViewState extends State<customTreeView> {
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(vertical: 8),
                     ),
-                    onChanged: (value) => setState(() => _filterTree(value)),
+                    onChanged: (value) => _searchSubject.add(value),
                   ),
                 ),
               ),
@@ -194,7 +215,7 @@ class _customTreeViewState extends State<customTreeView> {
                   setState(() {
                     _showSearch = false;
                     _searchController.clear();
-                    _buildTree();
+                    _searchSubject.add(''); // Clear search through subject
                   });
                 },
               ),
@@ -438,13 +459,44 @@ class _customTreeViewState extends State<customTreeView> {
       return;
     }
 
+    final searchLower = searchText.toLowerCase();
     final filtered =
-        widget.items
-            .where(
-              (item) =>
-                  item.title.toLowerCase().contains(searchText.toLowerCase()),
-            )
-            .toList();
+        widget.items.where((item) {
+          final title = item.title;
+          final titleLower = title.toLowerCase();
+
+          // 1. 直接文字匹配
+          if (titleLower.contains(searchLower)) {
+            return true;
+          }
+
+          // 2. 拼音搜索
+          try {
+            // 获取完整拼音（不带音调）
+            final fullPinyin =
+                PinyinHelper.getPinyinE(
+                  title,
+                  separator: "",
+                  format: PinyinFormat.WITHOUT_TONE,
+                ).toLowerCase();
+
+            // 获取拼音首字母
+            final shortPinyin =
+                PinyinHelper.getShortPinyin(title).toLowerCase();
+
+            // 获取首字完整拼音
+            final firstWordPinyin =
+                PinyinHelper.getFirstWordPinyin(title).toLowerCase();
+
+            // 检查是否匹配拼音搜索
+            return fullPinyin.contains(searchLower) ||
+                shortPinyin.contains(searchLower) ||
+                firstWordPinyin.contains(searchLower);
+          } catch (e) {
+            // 如果拼音转换失败，只进行文字匹配
+            return false;
+          }
+        }).toList();
 
     final Set<TreeItem> itemsToShow = {};
 

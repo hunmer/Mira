@@ -338,7 +338,7 @@ class _LibraryItemState extends State<LibraryItem> {
           suggestedName: widget.file.name,
         );
         if (!kIsWeb && filePath != null) {
-          filePath = filePath!.replaceAll('//', '\\\\');
+          filePath = filePath!.replaceAll('//', '\\\\').replaceAll('#', '%23');
           if (filePath!.startsWith('\\')) {
             // windows smb路径需要转义
             filePath = filePath!.replaceAll('\\', '\\\\');

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart' show kIsWeb;
-// ignore: deprecated_member_use, avoid_web_libraries_in_flutter
-import 'dart:html' as html show window, document, KeyboardEvent, Event;
+// Conditional import for web compatibility
+import 'hotkey_service_stub.dart' as html if (dart.library.html) 'dart:html';
 
 // Web平台自定义热键实现
 class WebHotKeyManager {
