@@ -4,7 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_debounce.dart';
 import 'package:mira/core/event/event_manager.dart';
-import 'package:mira/core/event/event_throttle.dart';
 import 'package:mira/core/plugin_manager.dart';
 // ignore: library_prefixes
 import 'package:mira/core/utils/utils.dart' as Utils;
@@ -19,7 +18,7 @@ import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:mira/views/library_tabs_empty_view.dart';
 import '../models/library.dart';
-import 'package:mira/core/widgets/hotkey_settings_view.dart';
+import 'package:mira/core/widgets/hotkey_settings_view.dart1';
 
 class LibraryTabsView extends StatefulWidget {
   const LibraryTabsView({super.key});
@@ -32,7 +31,7 @@ class LibraryTabsView extends StatefulWidget {
 class _LibraryTabsViewState extends State<LibraryTabsView> {
   late LibrariesPlugin _plugin;
   late LibraryTabManager _tabManager;
-  late ValueNotifier<List<LibraryTabData>> _tabDatas = ValueNotifier([]);
+  late final ValueNotifier<List<LibraryTabData>> _tabDatas = ValueNotifier([]);
   final List<StreamSubscription> _subscriptions = [];
 
   @override

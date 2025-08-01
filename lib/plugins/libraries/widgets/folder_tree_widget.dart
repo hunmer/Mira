@@ -23,6 +23,7 @@ class FolderTreeWidget extends StatefulWidget {
   final Function(List<String>) onSelectionChanged;
 
   const FolderTreeWidget({
+    super.key,
     this.selected,
     this.defaultIcon,
     this.type,

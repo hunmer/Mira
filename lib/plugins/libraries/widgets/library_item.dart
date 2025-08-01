@@ -7,6 +7,7 @@ import 'package:mira/core/utils/utils.dart';
 import 'package:mira/widgets/icon_chip.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:path/path.dart' as path;
+// ignore: depend_on_referenced_packages
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 // ignore: depend_on_referenced_packages
 import 'package:video_player/video_player.dart';

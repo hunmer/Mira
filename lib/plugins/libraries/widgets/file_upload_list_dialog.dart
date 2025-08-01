@@ -1,7 +1,6 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:mira/core/utils/taskbar.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'dart:io';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
@@ -69,6 +68,7 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
 
   @override
   Widget build(BuildContext context) {
+    // ignore: deprecated_member_use
     return WillPopScope(
       onWillPop: () async => false, // 禁止返回键关闭
       child: Dialog(

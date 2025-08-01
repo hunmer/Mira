@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';

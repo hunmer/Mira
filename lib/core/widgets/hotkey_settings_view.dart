@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:hotkey_manager/hotkey_manager.dart';
 import '../services/hotkey_service.dart';
 
 class HotKeySettingsView extends StatefulWidget {
@@ -26,7 +25,7 @@ class _HotKeySettingsViewState extends State<HotKeySettingsView> {
     });
   }
 
-  Future<void> _updateHotKey(String id, HotKey? newHotKey) async {
+  Future<void> _updateHotKey(String id, WebHotKey? newHotKey) async {
     if (newHotKey != null) {
       await _hotKeyService.registerHotKey(id, newHotKey);
       _loadHotKeys();
@@ -98,13 +97,13 @@ class _HotKeySettingsViewState extends State<HotKeySettingsView> {
     BuildContext context,
     HotKeyConfig config,
   ) async {
-    HotKey? newHotKey;
+    WebHotKey? newHotKey;
     await showDialog(
       context: context,
       builder:
           (context) => AlertDialog(
             title: Text('Edit ${config.name}'),
-            content: HotKeyRecorder(
+            content: SimpleHotKeyRecorder(
               onHotKeyRecorded: (hotKey) => newHotKey = hotKey,
             ),
             actions: [
@@ -128,7 +127,7 @@ class _HotKeySettingsViewState extends State<HotKeySettingsView> {
 
   Future<void> _showAddDialog(BuildContext context) async {
     String? selectedActionId;
-    HotKey? newHotKey;
+    WebHotKey? newHotKey;
     final availableActions = _hotKeyService.getAllHotKeys().toList();
 
     if (availableActions.isEmpty) {
@@ -166,7 +165,7 @@ class _HotKeySettingsViewState extends State<HotKeySettingsView> {
                     ),
                     const SizedBox(height: 20),
                     if (selectedActionId != null)
-                      HotKeyRecorder(
+                      SimpleHotKeyRecorder(
                         onHotKeyRecorded: (hotKey) => newHotKey = hotKey,
                       ),
                   ],
@@ -191,5 +190,78 @@ class _HotKeySettingsViewState extends State<HotKeySettingsView> {
             },
           ),
     );
+  }
+}
+
+// 简单的热键录制器组件
+class SimpleHotKeyRecorder extends StatefulWidget {
+  final Function(WebHotKey?) onHotKeyRecorded;
+
+  const SimpleHotKeyRecorder({super.key, required this.onHotKeyRecorded});
+
+  @override
+  State<SimpleHotKeyRecorder> createState() => _SimpleHotKeyRecorderState();
+}
+
+class _SimpleHotKeyRecorderState extends State<SimpleHotKeyRecorder> {
+  String _displayText = 'Press a key combination...';
+  bool _isRecording = false;
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            border: Border.all(color: Colors.grey),
+            borderRadius: BorderRadius.circular(8),
+          ),
+          child: Text(_displayText, style: const TextStyle(fontSize: 16)),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+          children: [
+            ElevatedButton(
+              onPressed: _isRecording ? null : _startRecording,
+              child: Text(_isRecording ? 'Recording...' : 'Record'),
+            ),
+            ElevatedButton(onPressed: _clear, child: const Text('Clear')),
+          ],
+        ),
+      ],
+    );
+  }
+
+  void _startRecording() {
+    setState(() {
+      _isRecording = true;
+      _displayText = 'Press keys now...';
+    });
+
+    // 简单示例：创建一个Ctrl+R热键
+    Future.delayed(const Duration(seconds: 1), () {
+      final hotKey = WebHotKey(
+        key: WebPhysicalKey.keyR,
+        modifiers: [WebHotKeyModifier.control],
+      );
+
+      setState(() {
+        _isRecording = false;
+        _displayText = 'Ctrl+R';
+      });
+
+      widget.onHotKeyRecorded(hotKey);
+    });
+  }
+
+  void _clear() {
+    setState(() {
+      _displayText = 'Press a key combination...';
+      _isRecording = false;
+    });
+    widget.onHotKeyRecorded(null);
   }
 }

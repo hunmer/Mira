@@ -5,6 +5,7 @@ import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/widgets/file_filter_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_sort_dialog.dart';
 
+// ignore: must_be_immutable
 class LibraryGalleryAppBar extends StatefulWidget
     implements PreferredSizeWidget {
   final String title;

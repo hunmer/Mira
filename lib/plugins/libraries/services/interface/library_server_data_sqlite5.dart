@@ -4,12 +4,14 @@ import 'dart:convert';
 import 'dart:io';
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
-import 'package:mira/plugins/libraries/services/plugins/thumb_generator.dart';
+import 'package:mira/plugins/libraries/services/plugins/thumb_generator.dart1';
 import 'package:mira/plugins/libraries/services/server_event_manager.dart';
 import 'package:mira/plugins/libraries/services/websocket_server.dart';
 import 'package:path/path.dart' as path;
 import 'package:path_provider/path_provider.dart';
+// ignore: depend_on_referenced_packages
 import 'package:xxh3/xxh3.dart';
+// ignore: depend_on_referenced_packages
 import 'package:sqlite3/sqlite3.dart';
 import 'library_server_data_interface.dart';
 

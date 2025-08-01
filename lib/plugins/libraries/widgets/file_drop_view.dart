@@ -5,12 +5,12 @@ import 'package:data_table_2/data_table_2.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import 'package:path/path.dart' as path;
+// ignore: depend_on_referenced_packages
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
-import 'package:collection/collection.dart';
 
 // ignore: must_be_immutable
 class FileDropView extends StatefulWidget {
@@ -391,8 +391,7 @@ class _FileDropViewState extends State<FileDropView>
   }
 
   Future<void> _onSetTag(int index) async {
-    final library =
-        widget.library ?? widget.plugin.dataController.libraries.firstOrNull;
+    final library = widget.library;
     if (library != null) {
       final result = await widget.plugin.libraryUIController.showTagSelector(
         library,
@@ -408,8 +407,7 @@ class _FileDropViewState extends State<FileDropView>
   }
 
   Future<void> _onSetFolder(int index) async {
-    final library =
-        widget.library ?? widget.plugin.dataController.libraries.firstOrNull;
+    final library = widget.library;
     if (library != null) {
       final result = await widget.plugin.libraryUIController.showFolderSelector(
         library,
@@ -456,8 +454,7 @@ class _FileDropViewState extends State<FileDropView>
   }
 
   Future<void> _onSetAllTags() async {
-    final library =
-        widget.library ?? widget.plugin.dataController.libraries.firstOrNull;
+    final library = widget.library;
     if (library != null) {
       final result = await widget.plugin.libraryUIController.showTagSelector(
         library,
@@ -476,8 +473,7 @@ class _FileDropViewState extends State<FileDropView>
   }
 
   Future<void> _onSetAllFolders() async {
-    final library =
-        widget.library ?? widget.plugin.dataController.libraries.firstOrNull;
+    final library = widget.library;
     if (library != null) {
       final result = await widget.plugin.libraryUIController.showFolderSelector(
         library,

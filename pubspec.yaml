@@ -45,37 +45,39 @@ dependencies:
   swipeable_tile: ^2.0.1
   flutter_sliding_box: ^1.1.5
   web_socket_channel: ^3.0.3
-  crypto: ^3.0.6
-  xxh3: ^1.2.0
   tab_container: ^3.5.3
   flex_color_scheme: ^8.2.0
-  shelf_web_socket: ^3.0.0
   cupertino_sidebar: ^1.0.1
-  http_multi_server: ^3.2.2
-  sqlite3: ^2.7.7
-  super_drag_and_drop: ^0.9.1
-  video_thumbnail: ^0.5.6
   fvp: ^0.33.0
   stash: ^5.2.0
   stash_memory: ^5.2.0
   flutter_context_menu: ^0.2.4
   number_pagination: ^1.1.6
-  sqlite3_flutter_libs: ^0.5.36
   data_table_2: ^2.6.0
   queue_it: ^0.9.0
   flutter_queue_it: ^0.9.0
   flutter_xlider: ^3.5.0
   dynamic_tabbar: ^1.0.9
-  shelf_router: ^1.1.4
   cached_network_image: ^3.4.1
-  windows_taskbar: ^1.1.2
   giffy_dialog: ^2.3.0
   flutter_inappwebview: ^6.1.5
   background_downloader: ^9.2.3
-  hotkey_manager: ^0.2.3
   multi_value_listenable_builder: ^0.0.2
   package_info_plus: ^8.3.0
   rxdart: ^0.28.0
+  super_drag_and_drop: ^0.9.1
+
+
+  # web不支持的
+  # shelf_router: ^1.1.4
+  # windows_taskbar: ^1.1.2
+  # hotkey_manager: ^0.2.3
+  # shelf_web_socket: ^3.0.0
+  # xxh3: ^1.2.0
+  # http_multi_server: ^3.2.2
+  # sqlite3: ^2.7.7
+  # sqlite3_flutter_libs: ^0.5.36
+  # video_thumbnail: ^0.5.6
 
 dev_dependencies:
   flutter_test:
