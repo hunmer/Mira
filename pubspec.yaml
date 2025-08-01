@@ -97,6 +97,7 @@ flutter:
   uses-material-design: true
   
   generate: true
+  
   assets:
     - assets/icon/icon.png
     - assets/images/image_not_found.jpg
