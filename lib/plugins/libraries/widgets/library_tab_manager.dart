@@ -163,7 +163,7 @@ class LibraryTabManager {
         createDate: DateTime.now(),
         stored: {
           'paginationOptions': {'page': 1, 'perPage': 1000},
-          'sortOptions': {'field': 'createdAt', 'order': 'desc'},
+          'sortOptions': {'field': 'id', 'order': 'desc'},
           'imagesPerRow': 0,
           'filter': {},
           'displayFields': [

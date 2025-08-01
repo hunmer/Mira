@@ -142,9 +142,9 @@ class UploadQueueService {
   void start() => queue.start();
   void stop() => queue.stop();
   void dispose() {
+    queue.dispose();
     _progressController.close();
     _taskStatusController.close();
-    queue.dispose();
   }
 
   void clear() {

@@ -65,6 +65,11 @@ void main() async {
     // 注册内置插件
     final plugins = [LibrariesPlugin()];
 
+    // 设置全局错误处理器
+    FlutterError.onError = (details) {
+      print(details.toString());
+    };
+
     // 遍历并注册插件
     for (final plugin in plugins) {
       try {

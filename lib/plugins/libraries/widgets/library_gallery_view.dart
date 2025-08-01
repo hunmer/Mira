@@ -60,7 +60,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   final ValueNotifier<Map<String, dynamic>> _paginationOptionsNotifier =
       ValueNotifier({});
   final ValueNotifier<Map<String, dynamic>> _sortOptionsNotifier =
-      ValueNotifier({'sort': 'imported_at', 'order': 'desc'});
+      ValueNotifier({'sort': 'id', 'order': 'desc'});
   final ValueNotifier<LibraryFile?> _selectedFileNotifier = ValueNotifier(null);
   final ValueNotifier<int> _imagesPerRowNotifier = ValueNotifier(
     0,

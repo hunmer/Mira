@@ -73,8 +73,21 @@ class LibraryLocalDataController {
         createdAt: DateTime.now(),
       ),
       Library(
+        id: "1753984872022",
+        name: "翻书素材",
+        icon: "default",
+        type: "network",
+        socketServer: "ws://192.168.31.3:8081/",
+        httpServer: "http://192.168.31.3:3000/",
+        customFields: {
+          'relativePath': "/library/",
+          'smbPath': "//192.168.31.3/文件共享/",
+        },
+        createdAt: DateTime.now(),
+      ),
+      Library(
         id: "1753778329874",
-        name: "本地人物素材",
+        name: "测试用",
         icon: "default",
         type: "network",
         socketServer: "ws://127.0.0.1:8081/",
