@@ -2,9 +2,9 @@ name: macOS
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
   pull_request:
-    branches: [ master ]
+    branches: [ main ]
 
 jobs:
   build:
@@ -38,7 +38,7 @@ jobs:
     - name: Upload Release Asset
       uses: softprops/action-gh-release@v2
       env:
-        GITHUB_TOKEN: ${{ secrets.SECERT }}
+        GITHUB_TOKEN: ${{ secrets.SECRET }}
       with:
         files: build/macos/Build/Products/Release/mira-macos.app.zip
         tag_name: release-${{ steps.date.outputs.date }}-${{ steps.commit_sha.outputs.sha }}

@@ -2,7 +2,7 @@ name: Flutter Web Deploy
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main ]
     paths:
       - 'lib/**'
       - 'web/**'
@@ -29,5 +29,5 @@ jobs:
       - name: Deploy to GitHub Pages
         uses: peaceiris/actions-gh-pages@v3
         with:
-          github_token: ${{ secrets.SECERT }}
+          github_token: ${{ secrets.SECRET }}
           publish_dir: ./build/web
