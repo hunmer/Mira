@@ -1,8 +1,11 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
+import 'dart:typed_data';
 import 'package:background_downloader/background_downloader.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
 import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/plugin_manager.dart';
@@ -536,6 +539,78 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       }
     } catch (e) {
       return {'success': false, 'message': e.toString(), 'filePath': filePath};
+    }
+  }
+
+  /// Upload file from bytes data (for web platform)
+  Future<Map<String, dynamic>> uploadFileBytes(
+    Map<String, dynamic> fileData,
+    Map<String, dynamic> metaData,
+  ) async {
+    if (!kIsWeb) {
+      // On native platforms, fallback to regular file upload if possible
+      return {
+        'success': false,
+        'message': 'uploadFileBytes is only supported on web platform',
+      };
+    }
+
+    final uploadUrl = '${library.getHttpServer}/api/libraries/upload';
+    try {
+      final action = 'create';
+      final type = 'file';
+      final fileName = fileData['name'] as String;
+      final bytes = fileData['bytes'] as Uint8List;
+
+      // Create multipart request
+      final request = http.MultipartRequest('POST', Uri.parse(uploadUrl));
+
+      // Add the file as bytes
+      request.files.add(
+        http.MultipartFile.fromBytes(
+          'files', // 服务器接收文件的字段名
+          bytes,
+          filename: fileName,
+        ),
+      );
+
+      // Add form fields (same as in uploadFile method)
+      request.fields.addAll({
+        'sourcePath': fileName, // 用于回调检测是否上传成功
+        'libraryId': library.id,
+        'clientId': clientId,
+        'action': action,
+        'fields': jsonEncode(await getLibraryFieldValues(action, type)),
+        'payload': jsonEncode({
+          'type': type,
+          'data': {...metaData, 'filePath': fileName, 'fileName': fileName},
+        }),
+      });
+
+      // Send the request
+      final streamedResponse = await request.send();
+      final response = await http.Response.fromStream(streamedResponse);
+
+      if (response.statusCode == 200) {
+        final responseData =
+            response.body.isNotEmpty
+                ? jsonDecode(response.body)
+                : {'status': 'success'};
+
+        return {'success': true, 'data': responseData, 'filePath': fileName};
+      } else {
+        return {
+          'success': false,
+          'message': 'Upload failed with status code: ${response.statusCode}',
+          'filePath': fileName,
+        };
+      }
+    } catch (e) {
+      return {
+        'success': false,
+        'message': e.toString(),
+        'filePath': fileData['name'],
+      };
     }
   }
 

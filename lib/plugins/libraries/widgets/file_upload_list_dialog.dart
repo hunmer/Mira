@@ -2,7 +2,6 @@ import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
-import 'dart:io';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/file_drop_view.dart';
 import 'package:mira/plugins/libraries/widgets/upload_queue_view.dart';
@@ -10,7 +9,7 @@ import 'package:mira/plugins/libraries/widgets/upload_queue_view.dart';
 class FileUploadListDialog extends StatefulWidget {
   final LibrariesPlugin plugin;
   final UploadQueueService uploadQueue;
-  final List<File> initialFiles;
+  final List<FileItem> initialFiles;
 
   const FileUploadListDialog({
     super.key,
@@ -27,7 +26,7 @@ class FileUploadListDialog extends StatefulWidget {
 class _FileUploadListDialogState extends State<FileUploadListDialog>
     with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  final ValueNotifier<List<File>> _filesNotifier = ValueNotifier([]);
+  final ValueNotifier<List<FileItem>> _filesNotifier = ValueNotifier([]);
 
   @override
   void initState() {
@@ -43,12 +42,13 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
   }
 
   Future<void> _onUploadFiles(
-    List<File> files,
-    Map<File, List<String>> fileTags,
-    Map<File, String?> fileFolders,
+    List<FileItem> fileItems,
+    Map<FileItem, List<String>> fileTags,
+    Map<FileItem, String?> fileFolders,
   ) async {
+    // Directly pass FileItems to the upload queue
     await widget.uploadQueue.addFiles(
-      files,
+      fileItems,
       fileTags: fileTags,
       fileFolders: fileFolders,
     );
@@ -56,13 +56,13 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
   }
 
   Future<void> _onFileAdded(
-    List<File> files,
-    Map<File, List<String>> fileTags,
-    Map<File, String?> fileFolders,
+    List<FileItem> fileItems,
+    Map<FileItem, List<String>> fileTags,
+    Map<FileItem, String?> fileFolders,
   ) async {
-    final existingPaths = _filesNotifier.value.map((f) => f.path).toSet();
+    final existingPaths = _filesNotifier.value.map((f) => f.filePath).toSet();
     final newFiles =
-        files.where((f) => !existingPaths.contains(f.path)).toList();
+        fileItems.where((f) => !existingPaths.contains(f.filePath)).toList();
     _filesNotifier.value = [..._filesNotifier.value, ...newFiles];
   }
 
@@ -101,7 +101,7 @@ class _FileUploadListDialogState extends State<FileUploadListDialog>
                   controller: _tabController,
                   children: [
                     // 文件接收Tab
-                    ValueListenableBuilder<List<File>>(
+                    ValueListenableBuilder<List<FileItem>>(
                       valueListenable: _filesNotifier,
                       builder: (context, files, child) {
                         return FileDropView(

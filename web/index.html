@@ -31,6 +31,21 @@
 
   <title>mira</title>
   <link rel="manifest" href="manifest.json">
+  
+  <script>
+    // 禁用整个应用的右键菜单，让Flutter处理
+    document.addEventListener('contextmenu', function(e) {
+      e.preventDefault();
+      return false;
+    });
+    
+    // 防止某些浏览器的其他默认行为
+    document.addEventListener('selectstart', function(e) {
+      if (e.target.nodeName === 'IMG') {
+        e.preventDefault();
+      }
+    });
+  </script>
 </head>
 <body>
   <script src="flutter_bootstrap.js" async></script>

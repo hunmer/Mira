@@ -1,5 +1,6 @@
 import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
@@ -46,6 +47,10 @@ class LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
         child:
             widget.file.path!.startsWith('http')
                 ? Image.network(widget.file.path!)
+                : kIsWeb
+                ? Image.network(
+                  widget.file.path!,
+                ) // On web, treat local paths as network paths
                 : Image.file(File(widget.file.path!)),
       );
     } else if (fileType == 'pdf') {
@@ -71,8 +76,8 @@ class LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
 
   @override
   Widget build(BuildContext context) {
-    final file = File(widget.file.path!);
-    final fileExists = file.existsSync();
+    // On web platform, skip file existence check
+    final fileExists = kIsWeb ? true : File(widget.file.path!).existsSync();
     return Scaffold(
       appBar: AppBar(
         title: Text(widget.file.name),
@@ -94,7 +99,8 @@ class LibraryFilePreviewViewState extends State<LibraryFilePreviewView> {
           IconButton(
             icon: Icon(Icons.share),
             onPressed: () async {
-              if (fileExists) {
+              if (fileExists && !kIsWeb) {
+                final file = File(widget.file.path!);
                 await Share.shareUri(file.uri);
               } else {
                 ScaffoldMessenger.of(

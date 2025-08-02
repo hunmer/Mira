@@ -8,20 +8,82 @@ import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import 'package:path/path.dart' as path;
 // ignore: depend_on_referenced_packages
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
-import 'dart:io' if (dart.library.html) 'web_io_stub.dart';
+import 'dart:io';
 import 'package:file_picker/file_picker.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+
+// FileItem class to handle both native files and web files with bytes
+class FileItem {
+  final String name;
+  final String filePath;
+  final File? nativeFile;
+  final Uint8List? bytes;
+  final int? size;
+
+  FileItem({
+    required this.name,
+    required this.filePath,
+    this.nativeFile,
+    this.bytes,
+    this.size,
+  });
+
+  // Create from native File
+  factory FileItem.fromFile(File file) {
+    return FileItem(
+      name: path.basename(file.path),
+      filePath: file.path,
+      nativeFile: file,
+    );
+  }
+
+  // Create from web PlatformFile
+  factory FileItem.fromPlatformFile(PlatformFile platformFile) {
+    return FileItem(
+      name: platformFile.name,
+      filePath: platformFile.name, // Use name as path for web
+      bytes: platformFile.bytes,
+      size: platformFile.size,
+    );
+  }
+
+  Future<int> length() async {
+    if (size != null) return size!;
+    if (nativeFile != null) return await nativeFile!.length();
+    if (bytes != null) return bytes!.length;
+    return 0;
+  }
+
+  int lengthSync() {
+    if (size != null) return size!;
+    if (nativeFile != null) return nativeFile!.lengthSync();
+    if (bytes != null) return bytes!.length;
+    return 0;
+  }
+
+  String get extension => path.extension(name);
+  String get basenameWithoutExtension => path.basenameWithoutExtension(name);
+}
 
 // ignore: must_be_immutable
 class FileDropView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Library library;
   final String btnOk;
-  final List<File> items;
-  late Function(List<File>, Map<File, List<String>>, Map<File, String?>)
+  final List<FileItem> items;
+  late Function(
+    List<FileItem>,
+    Map<FileItem, List<String>>,
+    Map<FileItem, String?>,
+  )
   onFileAdded;
-  late Function(List<File>, Map<File, List<String>>, Map<File, String?>) onDone;
+  late Function(
+    List<FileItem>,
+    Map<FileItem, List<String>>,
+    Map<FileItem, String?>,
+  )
+  onDone;
   late Function() onClear;
 
   FileDropView({
@@ -40,7 +102,7 @@ class FileDropView extends StatefulWidget {
 }
 
 class FileDataSource extends AsyncDataTableSource {
-  final List<File> files;
+  final List<FileItem> files;
   final List<bool> selectedItems;
   final Map<int, List<String>> fileTags;
   final Map<int, String?> fileFolders;
@@ -76,8 +138,8 @@ class FileDataSource extends AsyncDataTableSource {
       selected: selectedItems[index],
       onSelectChanged: (value) => onSelectChanged(index, value ?? false),
       cells: [
-        DataCell(Text(path.basenameWithoutExtension(file.path))),
-        DataCell(Text(path.extension(file.path).toUpperCase())),
+        DataCell(Text(file.basenameWithoutExtension)),
+        DataCell(Text(file.extension.toUpperCase())),
         DataCell(
           FutureBuilder<int>(
             future: file.length(),
@@ -178,8 +240,8 @@ class FileDataSource extends AsyncDataTableSource {
             // Remove notifyListeners() call to prevent full list refresh
           },
           cells: [
-            DataCell(Text(path.basenameWithoutExtension(file.path))),
-            DataCell(Text(path.extension(file.path).toUpperCase())),
+            DataCell(Text(file.basenameWithoutExtension)),
+            DataCell(Text(file.extension.toUpperCase())),
             DataCell(
               FutureBuilder<int>(
                 future: file.length(),
@@ -315,18 +377,17 @@ class _FileDropViewState extends State<FileDropView>
       _sortAscending = ascending;
 
       widget.items.sort((a, b) {
-        final aPath = a.path.replaceAll('\\', '/');
-        final bPath = b.path.replaceAll('\\', '/');
+        final aPath = a.filePath.replaceAll('\\', '/');
+        final bPath = b.filePath.replaceAll('\\', '/');
 
         switch (columnIndex) {
           case 0: // 文件名
-            return path
-                    .basenameWithoutExtension(aPath)
-                    .compareTo(path.basenameWithoutExtension(bPath)) *
+            return a.basenameWithoutExtension.compareTo(
+                  b.basenameWithoutExtension,
+                ) *
                 (ascending ? 1 : -1);
           case 1: // 格式
-            return path.extension(aPath).compareTo(path.extension(bPath)) *
-                (ascending ? 1 : -1);
+            return a.extension.compareTo(b.extension) * (ascending ? 1 : -1);
           case 2: // 大小
             return a.lengthSync().compareTo(b.lengthSync()) *
                 (ascending ? 1 : -1);
@@ -345,11 +406,22 @@ class _FileDropViewState extends State<FileDropView>
   Future<void> _pickFiles() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
-      withData: true,
+      withData: kIsWeb, // Only load bytes on web
     );
     if (result != null) {
-      final files = result.paths.map((path) => File(path!)).toList();
-      widget.onFileAdded(files, {}, {});
+      final fileItems = <FileItem>[];
+      for (final platformFile in result.files) {
+        if (kIsWeb) {
+          // On web, use bytes
+          fileItems.add(FileItem.fromPlatformFile(platformFile));
+        } else {
+          // On native platforms, use file path
+          if (platformFile.path != null) {
+            fileItems.add(FileItem.fromFile(File(platformFile.path!)));
+          }
+        }
+      }
+      widget.onFileAdded(fileItems, {}, {});
     }
   }
 
@@ -369,25 +441,27 @@ class _FileDropViewState extends State<FileDropView>
   }
 
   // scan dir files
-  Future<void> _scanDir(String path) async {
+  Future<void> _scanDir(String dirPath) async {
     if (kIsWeb) {
       // Web platform doesn't support directory scanning
       return;
     }
 
-    final dir = Directory(path);
+    final dir = Directory(dirPath);
     final files =
         await dir
             .list(recursive: true)
             .where((entity) => entity is File)
             .toList();
-    widget.onFileAdded(files.cast<File>(), {}, {});
+    final fileItems =
+        files.cast<File>().map((file) => FileItem.fromFile(file)).toList();
+    widget.onFileAdded(fileItems, {}, {});
   }
 
   void _onDone() {
-    final filesToUpload = <File>[];
-    final fileTags = <File, List<String>>{};
-    final fileFolders = <File, String?>{};
+    final filesToUpload = <FileItem>[];
+    final fileTags = <FileItem, List<String>>{};
+    final fileFolders = <FileItem, String?>{};
 
     for (int i = 0; i < widget.items.length; i++) {
       if (i < _selectedItems.length && _selectedItems[i]) {
@@ -537,7 +611,11 @@ class _FileDropViewState extends State<FileDropView>
                             try {
                               final file = File(path);
                               if (await file.exists()) {
-                                widget.onFileAdded([file], {}, {});
+                                widget.onFileAdded(
+                                  [FileItem.fromFile(file)],
+                                  {},
+                                  {},
+                                );
                               }
                             } catch (e) {
                               print('Error adding file: $e');

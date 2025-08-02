@@ -78,6 +78,7 @@ dependencies:
   sqlite3_flutter_libs: ^0.5.36
   video_thumbnail: ^0.5.6
   lpinyin: ^2.0.3
+  responsive_builder: ^0.7.1
 
 dev_dependencies:
   flutter_test:

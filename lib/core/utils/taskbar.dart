@@ -1,10 +1,16 @@
 import 'dart:io' show Platform;
 import 'dart:ui';
+import 'package:flutter/foundation.dart';
 
 /// 跨平台任务栏操作工具类
 class Taskbar {
   /// 设置缩略图工具栏按钮
   static void setThumbnailToolbar(List<ThumbnailToolbarButton> buttons) {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       // Windows平台实现
       WindowsTaskbar.setThumbnailToolbar(buttons);
@@ -19,6 +25,11 @@ class Taskbar {
 
   /// 重置缩略图工具栏
   static void resetThumbnailToolbar() {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       WindowsTaskbar.resetThumbnailToolbar();
     }
@@ -27,6 +38,11 @@ class Taskbar {
 
   /// 设置进度条模式
   static void setProgressMode(TaskbarProgressMode mode) {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       WindowsTaskbar.setProgressMode(mode);
     } else if (Platform.isMacOS) {
@@ -36,6 +52,11 @@ class Taskbar {
 
   /// 设置进度条值
   static void setProgress(int current, int total) {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       WindowsTaskbar.setProgress(current, total);
     } else if (Platform.isMacOS) {
@@ -45,6 +66,11 @@ class Taskbar {
 
   /// 设置缩略图工具提示
   static void setThumbnailTooltip(String tooltip) {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       WindowsTaskbar.setThumbnailTooltip(tooltip);
     }
@@ -55,6 +81,11 @@ class Taskbar {
     required TaskbarFlashMode mode,
     Duration timeout = const Duration(milliseconds: 500),
   }) {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       WindowsTaskbar.setFlashTaskbarAppIcon(mode: mode, timeout: timeout);
     } else if (Platform.isMacOS) {
@@ -64,6 +95,11 @@ class Taskbar {
 
   /// 停止闪烁任务栏图标
   static void resetFlashTaskbarAppIcon() {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       WindowsTaskbar.resetFlashTaskbarAppIcon();
     }
@@ -74,6 +110,11 @@ class Taskbar {
     ThumbnailToolbarAssetIcon icon, {
     String? tooltip,
   }) {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       WindowsTaskbar.setOverlayIcon(icon, tooltip: tooltip);
     }
@@ -81,6 +122,11 @@ class Taskbar {
 
   /// 重置覆盖图标
   static void resetOverlayIcon() {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       WindowsTaskbar.resetOverlayIcon();
     }
@@ -88,6 +134,11 @@ class Taskbar {
 
   /// 设置窗口标题
   static void setWindowTitle(String title) {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       WindowsTaskbar.setWindowTitle(title);
     } else {
@@ -98,6 +149,11 @@ class Taskbar {
 
   /// 重置窗口标题
   static void resetWindowTitle() {
+    if (kIsWeb) {
+      // Web平台不支持任务栏操作
+      return;
+    }
+
     if (Platform.isWindows) {
       WindowsTaskbar.resetWindowTitle();
     }

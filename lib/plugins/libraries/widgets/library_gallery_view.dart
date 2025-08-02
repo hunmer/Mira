@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
@@ -278,7 +279,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       _selectedFileIds.value = currentSelection;
     }
     _selectedFileNotifier.value = file;
-    if (Platform.isAndroid || Platform.isIOS) {
+    if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       showModalBottomSheet(
         context: context,
         builder:

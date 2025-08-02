@@ -16,6 +16,10 @@ abstract class LibraryDataInterface {
     Map<String, dynamic> metaData,
   );
   Future<void> uploadFile(String filePath, Map<String, dynamic> metaData);
+  Future<void> uploadFileBytes(
+    Map<String, dynamic> fileData,
+    Map<String, dynamic> metaData,
+  );
   Future<void> addFileFromPath(String filePath, Map<String, dynamic> metaData);
   Future<void> deleteFile(int id, {bool moveToRecycleBin = false});
   Future<void> recoverFile(int id);

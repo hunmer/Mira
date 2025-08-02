@@ -6,7 +6,6 @@ import 'package:flutter_queue_it/flutter_queue_it.dart';
 import 'package:mira/core/utils/taskbar.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
-import 'package:path/path.dart' as path;
 
 class UploadQueueView extends StatefulWidget {
   final UploadQueueService queueServer;
@@ -93,10 +92,10 @@ class _UploadQueueViewState extends State<UploadQueueView>
                               getStatusColor(task.status),
                             ),
                             cells: [
-                              DataCell(Text(path.basename(task.file.path))),
+                              DataCell(Text(task.fileItem.name)),
                               DataCell(
                                 FutureBuilder<int>(
-                                  future: task.file.length(),
+                                  future: task.fileItem.length(),
                                   builder: (context, snapshot) {
                                     if (snapshot.hasData) {
                                       return Text(
