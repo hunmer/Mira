@@ -65,6 +65,7 @@ Widget buildImageFromUrl(String url) {
               ),
             ),
         errorWidget: (context, url, error) => Icon(Icons.error),
+        errorListener: (value) => print('Image load error: $value'),
       )
       : Image.file(
         File(url),

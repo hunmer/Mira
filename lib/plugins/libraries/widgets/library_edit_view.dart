@@ -89,6 +89,26 @@ class _LibraryEditViewState extends State<LibraryEditView> {
       );
       return;
     }
+
+    if (kIsWeb) {
+      // Web platform doesn't support directory picking
+      showDialog(
+        context: context,
+        builder:
+            (context) => AlertDialog(
+              title: Text('不支持的操作'),
+              content: Text('Web 平台不支持选择本地目录。请使用网络库类型。'),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context),
+                  child: Text('OK'),
+                ),
+              ],
+            ),
+      );
+      return;
+    }
+
     final result = await FilePicker.platform.getDirectoryPath();
     if (result != null) {
       setState(() {
@@ -263,23 +283,11 @@ class _LibraryEditViewState extends State<LibraryEditView> {
                   decoration: InputDecoration(
                     labelText: localizations.relativePath,
                   ),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return localizations.relativePathRequired;
-                    }
-                    return null;
-                  },
                 ),
                 SizedBox(height: 8),
                 TextFormField(
                   controller: _nasSmbPathController,
                   decoration: InputDecoration(labelText: localizations.smbPath),
-                  validator: (value) {
-                    if (value == null || value.isEmpty) {
-                      return localizations.smbPathRequired;
-                    }
-                    return null;
-                  },
                 ),
               ],
             ],

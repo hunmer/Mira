@@ -361,7 +361,7 @@ class _LibraryItemState extends State<LibraryItem> {
           child: GestureDetector(
             onSecondaryTapDown: (details) => widget.onLongPress(details),
             onLongPressDown:
-                kIsWeb ? widget.onLongPress(LongPressDownDetails) : null,
+                kIsWeb ? (details) => widget.onLongPress(details) : null,
             child: Card(
               child: Stack(
                 children: [

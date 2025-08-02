@@ -1,5 +1,6 @@
 // ignore_for_file: library_private_types_in_public_api
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:data_table_2/data_table_2.dart';
 import 'package:mira/core/utils/utils.dart';
@@ -7,7 +8,7 @@ import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import 'package:path/path.dart' as path;
 // ignore: depend_on_referenced_packages
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
-import 'dart:io';
+import 'dart:io' if (dart.library.html) 'web_io_stub.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
@@ -344,6 +345,7 @@ class _FileDropViewState extends State<FileDropView>
   Future<void> _pickFiles() async {
     FilePickerResult? result = await FilePicker.platform.pickFiles(
       allowMultiple: true,
+      withData: true,
     );
     if (result != null) {
       final files = result.paths.map((path) => File(path!)).toList();
@@ -352,6 +354,14 @@ class _FileDropViewState extends State<FileDropView>
   }
 
   Future<void> _pickDirectory() async {
+    if (kIsWeb) {
+      // Web platform doesn't support directory picking
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Web 平台不支持选择目录。请使用拖拽或文件选择功能。')),
+      );
+      return;
+    }
+
     String? directory = await FilePicker.platform.getDirectoryPath();
     if (directory != null) {
       await _scanDir(directory);
@@ -360,6 +370,11 @@ class _FileDropViewState extends State<FileDropView>
 
   // scan dir files
   Future<void> _scanDir(String path) async {
+    if (kIsWeb) {
+      // Web platform doesn't support directory scanning
+      return;
+    }
+
     final dir = Directory(path);
     final files =
         await dir
