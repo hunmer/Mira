@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
@@ -55,6 +56,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   bool _isFirstLoad = false;
   final List<String> _eventSubscribes = [];
   final ScrollController _scrollController = ScrollController();
+  final FocusNode _keyboardFocusNode = FocusNode();
 
   final ValueNotifier<Set<String>> _displayFieldsNotifier = ValueNotifier({});
   final ValueNotifier<Map<String, dynamic>> _filterOptionsNotifier =
@@ -67,6 +69,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   final ValueNotifier<int> _imagesPerRowNotifier = ValueNotifier(
     0,
   ); // 每行显示图片自动调节
+  int? _lastSelectedIndex; // 用于Shift范围选择的最后选中文件索引
 
   @override
   void initState() {
@@ -112,6 +115,14 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     _progressSubscription = _uploadQueue.progressStream.listen((completed) {
       _uploadProgressNotifier.value = _uploadQueue.progress;
     });
+
+    // 监听选择模式状态变化，当退出选择模式时重置最后选中索引
+    _isSelectionModeNotifier.addListener(() {
+      if (!_isSelectionModeNotifier.value) {
+        _lastSelectedIndex = null;
+      }
+    });
+
     initEvents();
   }
 
@@ -213,6 +224,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     _progressSubscription?.cancel();
     _uploadQueue.dispose();
     _scrollController.dispose();
+    _keyboardFocusNode.dispose();
     for (final key in _eventSubscribes) {
       EventManager.instance.unsubscribe(key);
     }
@@ -269,16 +281,69 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   void _onFileSelected(LibraryFile file) {
+    _onFileSelectedWithModifiers(file, false, false);
+  }
+
+  void _onFileSelectedWithModifiers(
+    LibraryFile file,
+    bool isCtrlPressed,
+    bool isShiftPressed,
+  ) {
     final fileId = file.id;
+    final fileIndex = _items.value.indexWhere((item) => item.id == fileId);
+
     if (_isSelectionModeNotifier.value) {
       final currentSelection = Set<int>.from(_selectedFileIds.value);
-      if (currentSelection.contains(fileId)) {
-        currentSelection.remove(fileId);
+
+      if (isShiftPressed && _lastSelectedIndex != null) {
+        // Shift范围选择
+        final startIndex = _lastSelectedIndex!;
+        final endIndex = fileIndex;
+        final minIndex = startIndex < endIndex ? startIndex : endIndex;
+        final maxIndex = startIndex > endIndex ? startIndex : endIndex;
+
+        // 选择范围内的所有文件
+        for (int i = minIndex; i <= maxIndex; i++) {
+          if (i < _items.value.length) {
+            currentSelection.add(_items.value[i].id);
+          }
+        }
+      } else if (isCtrlPressed) {
+        // Ctrl多选：切换选中状态
+        if (currentSelection.contains(fileId)) {
+          currentSelection.remove(fileId);
+        } else {
+          currentSelection.add(fileId);
+        }
+        _lastSelectedIndex = fileIndex;
       } else {
-        currentSelection.add(fileId);
+        // 普通点击：切换选中状态
+        if (currentSelection.contains(fileId)) {
+          currentSelection.remove(fileId);
+        } else {
+          currentSelection.add(fileId);
+        }
+        _lastSelectedIndex = fileIndex;
       }
+
       _selectedFileIds.value = currentSelection;
+
+      // 如果选中的文件数量<=1，关闭选择模式
+      if (currentSelection.length <= 1) {
+        _isSelectionModeNotifier.value = false;
+        if (currentSelection.isEmpty) {
+          _lastSelectedIndex = null;
+        }
+      }
+    } else {
+      // 非选择模式下，如果按住Ctrl或Shift，进入选择模式
+      if (isCtrlPressed || isShiftPressed) {
+        _isSelectionModeNotifier.value = true;
+        _selectedFileIds.value = {fileId};
+        _lastSelectedIndex = fileIndex;
+      }
     }
+
     _selectedFileNotifier.value = file;
     if (!kIsWeb && (Platform.isAndroid || Platform.isIOS)) {
       showModalBottomSheet(
@@ -378,7 +443,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           children: [
             // Sidebar Section
             Flexible(
-              flex: 2,
+              flex: 1,
               child: Card(
                 elevation: 4,
                 margin: const EdgeInsets.all(6),
@@ -392,7 +457,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             ),
             // Main Content
             Flexible(
-              flex: 4,
+              flex: 6,
               child: Card(
                 elevation: 4,
                 margin: const EdgeInsets.all(6),
@@ -423,7 +488,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             ),
             // Sidebar Section (左侧栏)
             Flexible(
-              flex: 2,
+              flex: 1,
               child: Card(
                 elevation: 4,
                 margin: const EdgeInsets.all(6),
@@ -437,7 +502,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             ),
             // Main Content (主内容)
             Flexible(
-              flex: 4,
+              flex: 6,
               child: Card(
                 elevation: 4,
                 margin: const EdgeInsets.all(6),
@@ -452,7 +517,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             ),
             // File Details Section (右侧信息栏)
             Flexible(
-              flex: 2,
+              flex: 1,
               child: Card(
                 elevation: 4,
                 margin: const EdgeInsets.all(6),
@@ -632,30 +697,73 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
               Expanded(
                 child: Stack(
                   children: [
-                    MultiValueListenableBuilder(
-                      valueListenables: [
-                        _items,
-                        _isSelectionModeNotifier,
-                        _selectedFileIds,
-                        _displayFieldsNotifier,
-                        _imagesPerRowNotifier,
-                      ],
-                      builder: (context, values, _) {
-                        return LibraryGalleryBody(
-                          plugin: widget.plugin,
-                          library: widget.library,
-                          isRecycleBin: isRecycleBin,
-                          displayFields: values[3] as Set<String>,
-                          items: values[0] as List<LibraryFile>,
-                          isSelectionMode: values[1] as bool,
-                          selectedFileIds: values[2] as Set<int>,
-                          onFileSelected: _onFileSelected,
-                          onFileOpen: _onFileOpen,
-                          imagesPerRow: values[4] as int,
-                          scrollController: _scrollController,
-                        );
-                      },
-                    ),
+                    // 只在桌面端启用键盘监听
+                    sizingInformation.deviceScreenType ==
+                            DeviceScreenType.desktop
+                        ? KeyboardListener(
+                          focusNode: _keyboardFocusNode,
+                          autofocus: true,
+                          child: MultiValueListenableBuilder(
+                            valueListenables: [
+                              _items,
+                              _isSelectionModeNotifier,
+                              _selectedFileIds,
+                              _displayFieldsNotifier,
+                              _imagesPerRowNotifier,
+                            ],
+                            builder: (context, values, _) {
+                              return LibraryGalleryBody(
+                                plugin: widget.plugin,
+                                library: widget.library,
+                                isRecycleBin: isRecycleBin,
+                                displayFields: values[3] as Set<String>,
+                                items: values[0] as List<LibraryFile>,
+                                isSelectionMode: values[1] as bool,
+                                selectedFileIds: values[2] as Set<int>,
+                                onFileSelected: (file) {
+                                  final isCtrlPressed =
+                                      HardwareKeyboard
+                                          .instance
+                                          .isControlPressed;
+                                  final isShiftPressed =
+                                      HardwareKeyboard.instance.isShiftPressed;
+                                  _onFileSelectedWithModifiers(
+                                    file,
+                                    isCtrlPressed,
+                                    isShiftPressed,
+                                  );
+                                },
+                                onFileOpen: _onFileOpen,
+                                imagesPerRow: values[4] as int,
+                                scrollController: _scrollController,
+                              );
+                            },
+                          ),
+                        )
+                        : MultiValueListenableBuilder(
+                          valueListenables: [
+                            _items,
+                            _isSelectionModeNotifier,
+                            _selectedFileIds,
+                            _displayFieldsNotifier,
+                            _imagesPerRowNotifier,
+                          ],
+                          builder: (context, values, _) {
+                            return LibraryGalleryBody(
+                              plugin: widget.plugin,
+                              library: widget.library,
+                              isRecycleBin: isRecycleBin,
+                              displayFields: values[3] as Set<String>,
+                              items: values[0] as List<LibraryFile>,
+                              isSelectionMode: values[1] as bool,
+                              selectedFileIds: values[2] as Set<int>,
+                              onFileSelected: _onFileSelected,
+                              onFileOpen: _onFileOpen,
+                              imagesPerRow: values[4] as int,
+                              scrollController: _scrollController,
+                            );
+                          },
+                        ),
                     ValueListenableBuilder(
                       valueListenable: _isItemsLoadingNotifier,
                       builder: (context, isLoading, _) {
