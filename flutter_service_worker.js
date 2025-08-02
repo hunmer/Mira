@@ -17,7 +17,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "c3e5e1e92a853c50b2ae4d480a2d4166
 "assets/packages/flutter_inappwebview/assets/t_rex_runner/t-rex.html": "16911fcc170c8af1c5457940bd0bf055",
 "version.json": "36c4d18861fdf114a8a5e95b6fcf9259",
 "manifest.json": "54f25becd72d8b9ee8a4da7ef78b0757",
-"flutter_bootstrap.js": "bcd71cf055cc8a59ffaacab9f3d52527",
+"flutter_bootstrap.js": "f42ae9b93df7ee91fa3f3e268cf9953e",
 "canvaskit/skwasm.wasm": "39dd80367a4e71582d234948adc521c0",
 "canvaskit/canvaskit.wasm": "7a3f4ae7d65fc1de6a6e7ddd3224bc93",
 "canvaskit/skwasm.js.symbols": "e72c79950c8a8483d826a7f0560573a1",
@@ -35,7 +35,7 @@ const RESOURCES = {"assets/AssetManifest.bin": "c3e5e1e92a853c50b2ae4d480a2d4166
 "icons/Icon-192.png": "05bcb481c818af371dd76d64d65bcade",
 "icons/Icon-maskable-512.png": "cdf688800abc3eec4afb0b9e5e8a4e61",
 "icons/Icon-maskable-192.png": "05bcb481c818af371dd76d64d65bcade",
-"main.dart.js": "31bb57644ed2345dc2ca01aaa6abe335"};
+"main.dart.js": "9ad6f246f77ddc5991b14ff5b4a2c737"};
 // The application shell files that are downloaded before a service worker can
 // start.
 const CORE = ["main.dart.js",
