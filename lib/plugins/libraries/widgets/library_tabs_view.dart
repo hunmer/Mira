@@ -119,7 +119,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     _plugin.server?.stop();
   }
 
-  bool _showSidebar = false;
+  final ValueNotifier<bool> _showSidebar = ValueNotifier(false);
 
   Future<void> _openLibrary() async {
     final libraries = _plugin.dataController.libraries;
@@ -213,7 +213,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
               appBar: AppBar(
                 leading: IconButton(
                   icon: const Icon(Icons.menu),
-                  onPressed: () => setState(() => _showSidebar = !_showSidebar),
+                  onPressed: () => _showSidebar.value = !_showSidebar.value,
                 ),
                 actions: [
                   IconButton(
@@ -237,10 +237,19 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
               ),
               body: Row(
                 children: [
-                  if (_showSidebar) ...[
-                    AppSidebarView(),
-                    const VerticalDivider(width: 1),
-                  ],
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _showSidebar,
+                    builder: (context, showSidebar, child) {
+                      return showSidebar
+                          ? Row(
+                            children: [
+                              AppSidebarView(),
+                              const VerticalDivider(width: 1),
+                            ],
+                          )
+                          : const SizedBox.shrink();
+                    },
+                  ),
                   Expanded(
                     child:
                         tabs.isEmpty

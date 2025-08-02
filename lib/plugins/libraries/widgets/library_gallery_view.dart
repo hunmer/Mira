@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
@@ -336,7 +337,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   Widget buildContent() {
     final isRecycleBin = _tabData!.isRecycleBin;
-    final screenWidth = MediaQuery.of(context).size.width;
     final paginationOptions = _paginationOptionsNotifier.value;
     final totalPages =
         (_totalItemsNotifier.value / paginationOptions['perPage']).ceil();
@@ -346,50 +346,113 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       );
       _paginationOptionsNotifier.value['page'] = totalPages;
     }
-    final color = Theme.of(context).primaryColor;
-    return Scaffold(
-      bottomSheet: LibraryGalleryBottomSheet(
-        uploadProgress: _uploadProgressNotifier.value,
-      ),
-      body: Row(
-        children: [
-          // Quick Actions
-          Card(
-            elevation: 4,
-            margin: const EdgeInsets.all(6),
-            child: Padding(
-              padding: const EdgeInsets.all(6.0),
-              child: _buildQuickActions(),
-            ),
+
+    return ResponsiveBuilder(
+      builder: (context, sizingInformation) {
+        return Scaffold(
+          bottomSheet: LibraryGalleryBottomSheet(
+            uploadProgress: _uploadProgressNotifier.value,
           ),
-          // Sidebar Section
-          Flexible(
-            flex: screenWidth < 600 ? 6 : (screenWidth > 1300 ? 1 : 2),
-            child: Card(
-              elevation: 4,
-              margin: const EdgeInsets.all(6),
-              child: Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: _buildSidebarSection(screenWidth),
-              ),
-            ),
-          ),
-          // Main Content
-          Flexible(
-            flex: 4,
-            child: Card(
-              elevation: 4,
-              margin: const EdgeInsets.all(6),
-              child: Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: _buildMainContent(isRecycleBin, screenWidth),
-              ),
-            ),
-          ),
-          // File Details Section (only for wide screens)
-          if (screenWidth > 800)
+          body: _buildResponsiveLayout(sizingInformation, isRecycleBin),
+        );
+      },
+    );
+  }
+
+  Widget _buildResponsiveLayout(
+    SizingInformation sizingInformation,
+    bool isRecycleBin,
+  ) {
+    // 根据设备类型决定显示哪些组件
+    switch (sizingInformation.deviceScreenType) {
+      case DeviceScreenType.mobile:
+        // 手机：只显示主内容（画廊）
+        return _buildMainContent(
+          isRecycleBin,
+          sizingInformation.screenSize.width,
+        );
+
+      case DeviceScreenType.tablet:
+        // 平板：显示侧边栏 + 主内容
+        return Row(
+          children: [
+            // Sidebar Section
             Flexible(
-              flex: 1,
+              flex: 2,
+              child: Card(
+                elevation: 4,
+                margin: const EdgeInsets.all(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: _buildSidebarSection(
+                    sizingInformation.screenSize.width,
+                  ),
+                ),
+              ),
+            ),
+            // Main Content
+            Flexible(
+              flex: 4,
+              child: Card(
+                elevation: 4,
+                margin: const EdgeInsets.all(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: _buildMainContent(
+                    isRecycleBin,
+                    sizingInformation.screenSize.width,
+                  ),
+                ),
+              ),
+            ),
+          ],
+        );
+
+      case DeviceScreenType.desktop:
+        // 桌面：显示所有组件
+        return Row(
+          children: [
+            // Quick Actions (左侧信息栏)
+            Card(
+              elevation: 4,
+              margin: const EdgeInsets.all(6),
+              child: Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: _buildQuickActions(),
+              ),
+            ),
+            // Sidebar Section (左侧栏)
+            Flexible(
+              flex: 2,
+              child: Card(
+                elevation: 4,
+                margin: const EdgeInsets.all(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: _buildSidebarSection(
+                    sizingInformation.screenSize.width,
+                  ),
+                ),
+              ),
+            ),
+            // Main Content (主内容)
+            Flexible(
+              flex: 4,
+              child: Card(
+                elevation: 4,
+                margin: const EdgeInsets.all(6),
+                child: Padding(
+                  padding: const EdgeInsets.all(6.0),
+                  child: _buildMainContent(
+                    isRecycleBin,
+                    sizingInformation.screenSize.width,
+                  ),
+                ),
+              ),
+            ),
+            // File Details Section (右侧信息栏)
+            Flexible(
+              flex: 2,
               child: Card(
                 elevation: 4,
                 margin: const EdgeInsets.all(6),
@@ -399,18 +462,26 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
                 ),
               ),
             ),
-          // AppBar Actions
-          Card(
-            elevation: 4,
-            margin: const EdgeInsets.all(6),
-            child: Padding(
-              padding: const EdgeInsets.all(6.0),
-              child: _buildAppBarActions(),
+            // AppBar Actions (右侧栏)
+            Card(
+              elevation: 4,
+              margin: const EdgeInsets.all(6),
+              child: Padding(
+                padding: const EdgeInsets.all(6.0),
+                child: _buildAppBarActions(),
+              ),
             ),
-          ),
-        ],
-      ),
-    );
+          ],
+        );
+
+      case DeviceScreenType.watch:
+      default:
+        // 手表或其他小屏设备：只显示主内容
+        return _buildMainContent(
+          isRecycleBin,
+          sizingInformation.screenSize.width,
+        );
+    }
   }
 
   Widget _buildAppBarActions() {
@@ -521,80 +592,452 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   }
 
   Widget _buildSidebarSection(double screenWidth) {
-    return ValueListenableBuilder<bool>(
-      valueListenable: _showSidebarNotifier,
-      builder: (context, showSidebar, _) {
-        if (!showSidebar) return SizedBox.shrink();
+    return MultiValueListenableBuilder(
+      valueListenables: [_tags, _folders, _filterOptionsNotifier],
+      builder: (context, values, _) {
+        final tags = values[0] as List<LibraryTag>;
+        final folders = values[1] as List<LibraryFolder>;
+        final filterOptions = values[2] as Map<String, dynamic>;
 
-        return MultiValueListenableBuilder(
-          valueListenables: [_tags, _folders, _filterOptionsNotifier],
-          builder: (context, values, _) {
-            final tags = values[0] as List<LibraryTag>;
-            final folders = values[1] as List<LibraryFolder>;
-            final filterOptions = values[2] as Map<String, dynamic>;
-
-            return LibrarySidebarView(
-              plugin: widget.plugin,
-              library: widget.library,
-              tabId: widget.tabId,
-              tags: tags,
-              tagsSelected: List<String>.from(filterOptions['tags'] ?? []),
-              folders: folders,
-              folderSelected:
-                  filterOptions['folder'] is String
-                      ? [filterOptions['folder']]
-                      : [],
-            );
-          },
+        return LibrarySidebarView(
+          plugin: widget.plugin,
+          library: widget.library,
+          tabId: widget.tabId,
+          tags: tags,
+          tagsSelected: List<String>.from(filterOptions['tags'] ?? []),
+          folders: folders,
+          folderSelected:
+              filterOptions['folder'] is String
+                  ? [filterOptions['folder']]
+                  : [],
         );
       },
     );
   }
 
   Widget _buildMainContent(bool isRecycleBin, double screenWidth) {
-    return Column(
-      children: [
-        Expanded(
-          child: Stack(
+    return ResponsiveBuilder(
+      builder: (context, sizingInformation) {
+        return Scaffold(
+          // 为移动设备添加浮动操作按钮
+          floatingActionButton:
+              sizingInformation.deviceScreenType == DeviceScreenType.mobile
+                  ? _buildMobileFloatingActions()
+                  : null,
+          body: Column(
             children: [
-              MultiValueListenableBuilder(
-                valueListenables: [
-                  _items,
-                  _isSelectionModeNotifier,
-                  _selectedFileIds,
-                  _displayFieldsNotifier,
-                  _imagesPerRowNotifier,
-                ],
-                builder: (context, values, _) {
-                  return LibraryGalleryBody(
-                    plugin: widget.plugin,
-                    library: widget.library,
-                    isRecycleBin: isRecycleBin,
-                    displayFields: values[3] as Set<String>,
-                    items: values[0] as List<LibraryFile>,
-                    isSelectionMode: values[1] as bool,
-                    selectedFileIds: values[2] as Set<int>,
-                    onFileSelected: _onFileSelected,
-                    onFileOpen: _onFileOpen,
-                    imagesPerRow: values[4] as int,
-                    scrollController: _scrollController,
-                  );
-                },
+              // 为移动设备显示简化的顶部操作栏
+              if (sizingInformation.deviceScreenType == DeviceScreenType.mobile)
+                _buildMobileTopBar(),
+              Expanded(
+                child: Stack(
+                  children: [
+                    MultiValueListenableBuilder(
+                      valueListenables: [
+                        _items,
+                        _isSelectionModeNotifier,
+                        _selectedFileIds,
+                        _displayFieldsNotifier,
+                        _imagesPerRowNotifier,
+                      ],
+                      builder: (context, values, _) {
+                        return LibraryGalleryBody(
+                          plugin: widget.plugin,
+                          library: widget.library,
+                          isRecycleBin: isRecycleBin,
+                          displayFields: values[3] as Set<String>,
+                          items: values[0] as List<LibraryFile>,
+                          isSelectionMode: values[1] as bool,
+                          selectedFileIds: values[2] as Set<int>,
+                          onFileSelected: _onFileSelected,
+                          onFileOpen: _onFileOpen,
+                          imagesPerRow: values[4] as int,
+                          scrollController: _scrollController,
+                        );
+                      },
+                    ),
+                    ValueListenableBuilder(
+                      valueListenable: _isItemsLoadingNotifier,
+                      builder: (context, isLoading, _) {
+                        return isLoading
+                            ? Center(child: CircularProgressIndicator())
+                            : SizedBox.shrink();
+                      },
+                    ),
+                  ],
+                ),
               ),
-              ValueListenableBuilder(
-                valueListenable: _isItemsLoadingNotifier,
-                builder: (context, isLoading, _) {
-                  return isLoading
-                      ? Center(child: CircularProgressIndicator())
-                      : SizedBox.shrink();
+              _buildPagination(),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  // 移动设备专用的浮动操作按钮
+  Widget _buildMobileFloatingActions() {
+    return FloatingActionButton(
+      heroTag: "upload",
+      onPressed: _showDropDialog,
+      tooltip: '上传',
+      child: Icon(Icons.add),
+    );
+  }
+
+  // 移动设备专用的顶部操作栏
+  Widget _buildMobileTopBar() {
+    return Container(
+      padding: EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        // ignore: deprecated_member_use
+        color: Theme.of(context).primaryColor.withOpacity(0.1),
+        border: Border(
+          bottom: BorderSide(color: Theme.of(context).dividerColor),
+        ),
+      ),
+      child: Column(
+        children: [
+          // 第一行：标题和基本操作
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  widget.library.name,
+                  style: Theme.of(context).textTheme.titleMedium,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+              IconButton(
+                icon: Icon(Icons.refresh),
+                onPressed: _refresh,
+                tooltip: '刷新',
+              ),
+              ValueListenableBuilder<bool>(
+                valueListenable: _isSelectionModeNotifier,
+                builder: (context, isSelectionMode, _) {
+                  return IconButton(
+                    icon: Icon(isSelectionMode ? Icons.close : Icons.check_box),
+                    onPressed:
+                        () => _isSelectionModeNotifier.value = !isSelectionMode,
+                    tooltip: isSelectionMode ? '退出选择' : '多选',
+                  );
                 },
               ),
             ],
           ),
-        ),
-        _buildPagination(),
-      ],
+          // 第二行：快捷操作图标
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            child: Row(
+              children: [
+                IconButton(
+                  icon: Icon(Icons.menu),
+                  onPressed: () => _showMobileSidebarDialog(),
+                  tooltip: '侧边栏',
+                ),
+                IconButton(
+                  icon: Icon(Icons.filter_list),
+                  onPressed: () => _showMobileFilterDialog(),
+                  tooltip: '筛选',
+                ),
+                IconButton(
+                  icon: Icon(Icons.folder),
+                  onPressed: () async {
+                    final result = await widget.plugin.libraryUIController
+                        .showFolderSelector(widget.library, context);
+                    if (result != null && result.isNotEmpty) {}
+                  },
+                  tooltip: '文件夹',
+                ),
+                IconButton(
+                  icon: Icon(Icons.label),
+                  onPressed: () async {
+                    final result = await widget.plugin.libraryUIController
+                        .showTagSelector(widget.library, context);
+                    if (result != null && result.isNotEmpty) {}
+                  },
+                  tooltip: '标签',
+                ),
+                IconButton(
+                  icon: Icon(Icons.favorite),
+                  onPressed: () {},
+                  tooltip: '收藏',
+                ),
+                IconButton(
+                  icon: Icon(Icons.delete),
+                  onPressed: () {
+                    _tabManager.addTab(
+                      widget.library,
+                      isRecycleBin: true,
+                      title: '回收站',
+                    );
+                  },
+                  tooltip: '回收站',
+                ),
+                IconButton(
+                  icon: Icon(Icons.sort),
+                  onPressed: () => _showMobileSortDialog(),
+                  tooltip: '排序',
+                ),
+                IconButton(
+                  icon: Icon(Icons.view_module),
+                  onPressed: () => _showMobileDisplayDialog(),
+                  tooltip: '显示选项',
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
+  }
+
+  // 显示移动设备的侧边栏对话框
+  void _showMobileSidebarDialog() {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      builder:
+          (context) => DraggableScrollableSheet(
+            expand: false,
+            builder:
+                (context, scrollController) => Container(
+                  padding: EdgeInsets.all(16),
+                  child: MultiValueListenableBuilder(
+                    valueListenables: [_tags, _folders, _filterOptionsNotifier],
+                    builder: (context, values, _) {
+                      final tags = values[0] as List<LibraryTag>;
+                      final folders = values[1] as List<LibraryFolder>;
+                      final filterOptions = values[2] as Map<String, dynamic>;
+
+                      return LibrarySidebarView(
+                        plugin: widget.plugin,
+                        library: widget.library,
+                        tabId: widget.tabId,
+                        tags: tags,
+                        tagsSelected: List<String>.from(
+                          filterOptions['tags'] ?? [],
+                        ),
+                        folders: folders,
+                        folderSelected:
+                            filterOptions['folder'] is String
+                                ? [filterOptions['folder']]
+                                : [],
+                      );
+                    },
+                  ),
+                ),
+          ),
+    );
+  }
+
+  // 显示移动设备的简化筛选对话框
+  void _showMobileFilterDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder:
+          (context) => Container(
+            padding: EdgeInsets.all(16),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('筛选选项', style: Theme.of(context).textTheme.titleLarge),
+                SizedBox(height: 16),
+                TextField(
+                  decoration: InputDecoration(
+                    labelText: '文件名',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.search),
+                  ),
+                  onChanged: (value) {
+                    final currentFilter = Map<String, dynamic>.from(
+                      _filterOptionsNotifier.value,
+                    );
+                    currentFilter['name'] = value;
+                    _filterOptionsNotifier.value = currentFilter;
+                    _tabManager.updateFilter(widget.tabId, currentFilter);
+                  },
+                ),
+                SizedBox(height: 16),
+                Row(
+                  children: [
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _showMobileSidebarDialog();
+                        },
+                        icon: Icon(Icons.label),
+                        label: Text('标签筛选'),
+                      ),
+                    ),
+                    SizedBox(width: 8),
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          // 清除筛选
+                          final defaultFilter = {
+                            'name': '',
+                            'tags': [],
+                            'folder': '',
+                          };
+                          _filterOptionsNotifier.value = defaultFilter;
+                          _tabManager.updateFilter(widget.tabId, defaultFilter);
+                          Navigator.pop(context);
+                        },
+                        icon: Icon(Icons.clear),
+                        label: Text('清除'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+    );
+  }
+
+  // 显示移动设备的排序对话框
+  void _showMobileSortDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder:
+          (context) => Container(
+            padding: EdgeInsets.all(16),
+            child: ValueListenableBuilder<Map<String, dynamic>>(
+              valueListenable: _sortOptionsNotifier,
+              builder: (context, sortOptions, _) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('排序选项', style: Theme.of(context).textTheme.titleLarge),
+                    SizedBox(height: 16),
+                    ListTile(
+                      title: Text('按名称'),
+                      leading: Radio<String>(
+                        value: 'name',
+                        groupValue: sortOptions['sort'],
+                        onChanged:
+                            (value) =>
+                                _updateSort(value!, sortOptions['order']),
+                      ),
+                    ),
+                    ListTile(
+                      title: Text('按导入时间'),
+                      leading: Radio<String>(
+                        value: 'imported_at',
+                        groupValue: sortOptions['sort'],
+                        onChanged:
+                            (value) =>
+                                _updateSort(value!, sortOptions['order']),
+                      ),
+                    ),
+                    ListTile(
+                      title: Text('按大小'),
+                      leading: Radio<String>(
+                        value: 'size',
+                        groupValue: sortOptions['sort'],
+                        onChanged:
+                            (value) =>
+                                _updateSort(value!, sortOptions['order']),
+                      ),
+                    ),
+                    SizedBox(height: 16),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed:
+                                () => _updateSort(sortOptions['sort'], 'asc'),
+                            icon: Icon(Icons.arrow_upward),
+                            label: Text('升序'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  sortOptions['order'] == 'asc'
+                                      ? Theme.of(context).primaryColor
+                                      : null,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: 8),
+                        Expanded(
+                          child: ElevatedButton.icon(
+                            onPressed:
+                                () => _updateSort(sortOptions['sort'], 'desc'),
+                            icon: Icon(Icons.arrow_downward),
+                            label: Text('降序'),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor:
+                                  sortOptions['order'] == 'desc'
+                                      ? Theme.of(context).primaryColor
+                                      : null,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+    );
+  }
+
+  // 显示移动设备的显示选项对话框
+  void _showMobileDisplayDialog() {
+    showModalBottomSheet(
+      context: context,
+      builder:
+          (context) => Container(
+            padding: EdgeInsets.all(16),
+            child: ValueListenableBuilder<int>(
+              valueListenable: _imagesPerRowNotifier,
+              builder: (context, imagesPerRow, _) {
+                return Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text('显示选项', style: Theme.of(context).textTheme.titleLarge),
+                    SizedBox(height: 16),
+                    Text('每行图片数量'),
+                    Slider(
+                      value: imagesPerRow == 0 ? 3 : imagesPerRow.toDouble(),
+                      min: 1,
+                      max: 6,
+                      divisions: 5,
+                      label: imagesPerRow == 0 ? '自动' : imagesPerRow.toString(),
+                      onChanged: (value) {
+                        _imagesPerRowNotifier.value = value.round();
+                        _tabManager.setStoreValue(
+                          widget.tabId,
+                          'imagesPerRow',
+                          value.round(),
+                        );
+                      },
+                    ),
+                    SizedBox(height: 16),
+                    ElevatedButton(
+                      onPressed: () => Navigator.pop(context),
+                      child: Text('确定'),
+                    ),
+                  ],
+                );
+              },
+            ),
+          ),
+    );
+  }
+
+  // 更新排序选项的辅助方法
+  void _updateSort(String sort, String order) {
+    final newSortOptions = {'sort': sort, 'order': order};
+    _sortOptionsNotifier.value = newSortOptions;
+    _tabManager.setStoreValue(widget.tabId, 'sortOptions', newSortOptions);
+    _loadFiles();
   }
 
   void _toPage(int page) {

@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
-import 'dart:typed_data';
 import 'package:background_downloader/background_downloader.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -543,6 +542,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   }
 
   /// Upload file from bytes data (for web platform)
+  @override
   Future<Map<String, dynamic>> uploadFileBytes(
     Map<String, dynamic> fileData,
     Map<String, dynamic> metaData,

@@ -1,9 +1,6 @@
-import 'dart:ui';
-
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 // ignore: library_prefixes
 import 'package:mira/core/utils/utils.dart' as Utils;
 import 'package:mira/plugins/libraries/controllers/library_data_interface.dart';
@@ -171,7 +168,7 @@ class _LibraryGalleryBodyState extends State<LibraryGalleryBody> {
                     },
                     child: MouseRegion(
                       cursor: SystemMouseCursors.click,
-                      child: Container(
+                      child: SizedBox(
                         // 确保点击区域覆盖整个项目
                         width: double.infinity,
                         height: double.infinity,
