@@ -21,7 +21,10 @@ class LibraryTag {
       title: map['title'],
       parentId: map['parent_id']?.toString(),
       color: map['color'] != null ? Color(map['color']) : null,
-      icon: map['icon'] != null ? IconData(map['icon']) : null,
+      icon:
+          map['icon'] != null
+              ? IconData(map['icon'], fontFamily: 'MaterialIcons')
+              : null,
     );
   }
 

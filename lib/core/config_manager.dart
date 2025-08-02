@@ -29,7 +29,7 @@ class ConfigManager {
   Future<void> _loadAppConfig() async {
     try {
       final config = await _storage.readJson('configs/$_appConfigKey.json');
-      _appConfig.addAll(config as Map<String, dynamic>);
+      _appConfig.addAll(Map<String, dynamic>.from(config));
     } catch (e) {
       _appConfig.addAll(_getDefaultConfig());
       await saveAppConfig(); // 保存默认配置到文件
@@ -51,7 +51,10 @@ class ConfigManager {
 
   /// 获取语言设置
   Locale getLocale() {
-    final localeStr = _appConfig['locale'] as String;
+    final localeStr = _appConfig['locale'] as String? ?? '';
+    if (localeStr.isEmpty) {
+      return WidgetsBinding.instance.window.locale;
+    }
     final parts = localeStr.split('_');
     if (parts.length == 1) {
       return Locale(parts[0]);
