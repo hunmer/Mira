@@ -735,4 +735,36 @@ class LibraryDataWebSocket implements LibraryDataInterface {
       tagId,
     );
   }
+
+  /// 获取最新文件信息 - 用于定时刷新
+  /// 行 665: 此方法用于LibraryFileInformationView的定时获取最新文件功能
+  Future<LibraryFile> getLatestFileInfo(int fileId) async {
+    try {
+      final result = await _sendRequest(
+        action: 'read',
+        type: 'file',
+        data: {'id': fileId},
+      );
+      return convertLibraryFile(result);
+    } catch (e) {
+      throw Exception('Failed to get latest file info: $e');
+    }
+  }
+
+  /// 批量更新文件信息 - 用于防抖上传
+  /// 行 675: 此方法用于LibraryFileInformationView的防抖数据更新功能
+  Future<void> updateFileWithDebounce(
+    int fileId,
+    Map<String, dynamic> updates,
+  ) async {
+    try {
+      await _sendRequest(
+        action: 'update',
+        type: 'file',
+        data: {'id': fileId, 'data': updates},
+      );
+    } catch (e) {
+      throw Exception('Failed to update file with debounce: $e');
+    }
+  }
 }

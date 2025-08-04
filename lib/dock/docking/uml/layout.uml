@@ -1,0 +1,56 @@
+@startuml
+
+class DropArea << (M,lightgray) >>  #line:black
+
+abstract class DockingArea << (C,lightgray) >> #line:black {
+index: int
+layoutId: int
+parent: DockingParentArea?
+}
+
+abstract class DockingParentArea << (C,lightgray) >> #line:black {
+childrenCount: int
+}
+
+class DockingItem << (C,lightgray) >> #line:black {
+name: String?
+widget: Widget
+closable: bool
+keepAlive: bool
+maximizable: bool
+value: dynamic
+}
+
+class DockingRow << (C,lightgray) >> #line:black {
+DockingRow(children: List<DockingArea>)
+forEach(f: void (DockingArea child))
+}
+
+class DockingColumn << (C,lightgray) >> #line:black {
+DockingColumn(children: List<DockingArea>)
+forEach(f: void (DockingArea child))
+}
+
+class DockingTabs << (C,lightgray) >> #line:black {
+maximizable: bool
+DockingTabs(children: List<DockingItem>)
+forEach(f: void (DockingItem child))
+}
+
+class Area <multi_split_view> << (C,lightgray) >> #line:black {
+minimalWeight: double?
+minimalSize: double?
+size: double?
+weight: double?
+}
+
+Area <|-- DockingArea #line:black
+DockingArea <|-- DockingParentArea #line:black
+DockingArea <|-- DockingItem #line:black
+DockingParentArea <|-- DockingRow #line:black
+DockingParentArea <|-- DockingColumn #line:black
+DockingParentArea <|--  DockingTabs #line:black
+DropArea <|-- DockingItem #line:black
+DropArea <|-- DockingTabs #line:black
+
+@enduml
