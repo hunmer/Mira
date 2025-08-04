@@ -95,7 +95,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
     };
 
     channel.sink.add(jsonEncode(message));
-    // debugPrint('Sending WebSocket message: ${jsonEncode(message)}');
+    debugPrint('Sending WebSocket message: ${jsonEncode(message)}');
 
     try {
       return await completer.future.timeout(
@@ -185,7 +185,7 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   Future<void> _handleResponse(dynamic message) async {
     _event.add(LibraryStatus.open);
     try {
-      // debugPrint('Received WebSocket message: $message');
+      debugPrint('Received WebSocket message: $message');
       final response = jsonDecode(message);
 
       if (response.containsKey('requestId')) {

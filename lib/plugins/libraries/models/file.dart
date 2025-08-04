@@ -96,4 +96,39 @@ class LibraryFile {
       'thumb': thumb,
     };
   }
+
+  // copyWith
+  LibraryFile copyWith({
+    int? id,
+    String? name,
+    DateTime? createdAt,
+    DateTime? importedAt,
+    int? size,
+    String? hash,
+    Map<String, dynamic>? customFields,
+    String? notes,
+    int? rating,
+    List<String>? tags,
+    String? folderId,
+    String? reference,
+    String? url,
+    String? path,
+    String? thumb,
+  }) {
+    return LibraryFile(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      createdAt: createdAt ?? this.createdAt,
+      importedAt: importedAt ?? this.importedAt,
+      size: size ?? this.size,
+      hash: hash ?? this.hash,
+      customFields: customFields ?? this.customFields,
+      notes: notes ?? this.notes,
+      rating: rating ?? this.rating,
+      tags: tags ?? this.tags,
+      folderId: folderId ?? this.folderId,
+      reference: reference ?? this.reference,
+      url: url ?? this.url,
+    );
+  }
 }

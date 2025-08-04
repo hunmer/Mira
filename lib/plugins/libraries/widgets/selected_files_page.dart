@@ -294,7 +294,6 @@ class _SelectedFilesPageState extends State<SelectedFilesPage> {
                   icon: Icon(Icons.close, color: Colors.red),
                   onPressed: () => _removeFile(file.id),
                 ),
-                Icon(_getFileIcon(file.fileType)),
               ],
             ),
             title: Text(
@@ -305,12 +304,35 @@ class _SelectedFilesPageState extends State<SelectedFilesPage> {
             subtitle: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('大小: ${_formatFileSize(file.size)}'),
-                if (file.tags.isNotEmpty) Text('标签: ${file.tags.join(', ')}'),
-                Text('文件夹ID: ${file.folderId}'),
+                Row(
+                  children: [
+                    const Icon(Icons.storage, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(_formatFileSize(file.size)),
+                  ],
+                ),
+                if (file.tags.isNotEmpty)
+                  Row(
+                    children: [
+                      const Icon(Icons.label, size: 16, color: Colors.grey),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          file.tags.join(', '),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                Row(
+                  children: [
+                    const Icon(Icons.folder, size: 16, color: Colors.grey),
+                    const SizedBox(width: 4),
+                    Text(file.folderId),
+                  ],
+                ),
               ],
             ),
-            isThreeLine: true,
           ),
         );
       },
@@ -339,7 +361,6 @@ class _SelectedFilesPageState extends State<SelectedFilesPage> {
                     icon: Icon(Icons.close, color: Colors.red, size: 20),
                     onPressed: () => _removeFile(file.id),
                   ),
-                  Icon(_getFileIcon(file.fileType)),
                 ],
               ),
               Expanded(
@@ -433,32 +454,16 @@ class _SelectedFilesPageState extends State<SelectedFilesPage> {
 
     try {
       for (final file in _files) {
-        await libraryData.updateFile(file.id, {'folder_id': folderId});
+        await libraryData.setFileFolders(file.id, folderId);
+        // 更新本地文件信息
+        final index = widget.selectedFiles.indexWhere((f) => f.id == file.id);
+        if (index != -1) {
+          widget.selectedFiles[index] = file.copyWith(folderId: folderId);
+        }
       }
 
       // 更新本地文件信息
-      setState(() {
-        for (int i = 0; i < _files.length; i++) {
-          _files[i] = LibraryFile(
-            id: _files[i].id,
-            name: _files[i].name,
-            createdAt: _files[i].createdAt,
-            importedAt: _files[i].importedAt,
-            size: _files[i].size,
-            hash: _files[i].hash,
-            customFields: _files[i].customFields,
-            notes: _files[i].notes,
-            rating: _files[i].rating,
-            tags: _files[i].tags,
-            folderId: folderId,
-            reference: _files[i].reference,
-            url: _files[i].url,
-            path: _files[i].path,
-            thumb: _files[i].thumb,
-          );
-        }
-      });
-
+      // TODO 根据files的fileids从服务器获取信息
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('已更新 ${_files.length} 个文件的文件夹')));
@@ -477,32 +482,13 @@ class _SelectedFilesPageState extends State<SelectedFilesPage> {
 
     try {
       for (final file in _files) {
-        await libraryData.updateFile(file.id, {'tags': tagIds});
-      }
-
-      // 更新本地文件信息
-      setState(() {
-        for (int i = 0; i < _files.length; i++) {
-          _files[i] = LibraryFile(
-            id: _files[i].id,
-            name: _files[i].name,
-            createdAt: _files[i].createdAt,
-            importedAt: _files[i].importedAt,
-            size: _files[i].size,
-            hash: _files[i].hash,
-            customFields: _files[i].customFields,
-            notes: _files[i].notes,
-            rating: _files[i].rating,
-            tags: tagIds,
-            folderId: _files[i].folderId,
-            reference: _files[i].reference,
-            url: _files[i].url,
-            path: _files[i].path,
-            thumb: _files[i].thumb,
-          );
+        await libraryData.setFileTags(file.id, tagIds);
+        // 更新本地文件信息
+        final index = widget.selectedFiles.indexWhere((f) => f.id == file.id);
+        if (index != -1) {
+          widget.selectedFiles[index] = file.copyWith(tags: tagIds);
         }
-      });
-
+      }
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('已更新 ${_files.length} 个文件的标签')));
@@ -510,38 +496,6 @@ class _SelectedFilesPageState extends State<SelectedFilesPage> {
       ScaffoldMessenger.of(
         context,
       ).showSnackBar(SnackBar(content: Text('更新标签失败: $e')));
-    }
-  }
-
-  IconData _getFileIcon(String fileType) {
-    switch (fileType.toLowerCase()) {
-      case 'jpg':
-      case 'jpeg':
-      case 'png':
-      case 'gif':
-      case 'bmp':
-      case 'webp':
-        return Icons.image;
-      case 'mp4':
-      case 'avi':
-      case 'mov':
-      case 'wmv':
-      case 'flv':
-        return Icons.video_file;
-      case 'mp3':
-      case 'wav':
-      case 'flac':
-      case 'aac':
-        return Icons.audio_file;
-      case 'pdf':
-        return Icons.picture_as_pdf;
-      case 'doc':
-      case 'docx':
-        return Icons.description;
-      case 'txt':
-        return Icons.text_snippet;
-      default:
-        return Icons.insert_drive_file;
     }
   }
 
