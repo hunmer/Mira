@@ -29,6 +29,7 @@ class _LibraryContentViewState extends State<LibraryContentView>
       plugin: widget.plugin,
       tabId: widget.tabData.id,
       library: widget.tabData.library,
+      tabData: widget.tabData, // 传递tabData
     );
   }
 }

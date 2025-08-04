@@ -8,6 +8,7 @@ import 'package:mira/core/utils/utils.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:uuid/uuid.dart';
 import '../models/library.dart';
+import 'i_library_tab_manager.dart';
 
 class LibraryTabData {
   final String id;
@@ -83,7 +84,7 @@ class LibraryTabData {
   }
 }
 
-class LibraryTabManager {
+class LibraryTabManager implements ILibraryTabManager {
   late TabController? tabController;
   final List<LibraryTabData> tabDatas = [];
   final ValueNotifier<int> currentIndex;

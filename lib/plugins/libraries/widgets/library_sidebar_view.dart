@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mira/dock/dock_manager.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/folder_tree_widget.dart';
@@ -37,6 +38,30 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
     super.initState();
   }
 
+  /// 更新过滤器 - 通过dock系统
+  void _updateFilter(Map<String, dynamic> filter) {
+    DockManager.updateLibraryTabStoredValue(widget.tabId, 'filter', {
+      ..._getCurrentFilter(),
+      ...filter,
+    });
+
+    // 重置分页到第一页
+    DockManager.updateLibraryTabStoredValue(widget.tabId, 'paginationOptions', {
+      'page': 1,
+      'perPage': 1000,
+    });
+  }
+
+  /// 获取当前过滤器
+  Map<String, dynamic> _getCurrentFilter() {
+    return DockManager.getLibraryTabStoredValue<Map<String, dynamic>>(
+          widget.tabId,
+          'filter',
+          defaultValue: <String, dynamic>{},
+        ) ??
+        <String, dynamic>{};
+  }
+
   @override
   Widget build(BuildContext context) {
     return Container(
@@ -55,7 +80,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
               library: widget.library,
               showSelectAll: false,
               onSelectionChanged: (ids) {
-                widget.plugin.tabManager.updateFilter(widget.tabId, {
+                _updateFilter({
                   'folder': ids != null && ids.isNotEmpty ? ids.first : '',
                 });
               },
@@ -74,10 +99,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
               library: widget.library,
               selected: Set<String>.from(widget.tagsSelected),
               showSelectAll: false,
-              onSelectionChanged:
-                  (ids) => widget.plugin.tabManager.updateFilter(widget.tabId, {
-                    'tags': ids,
-                  }),
+              onSelectionChanged: (ids) => _updateFilter({'tags': ids}),
               type: 'tags',
             ),
           ),

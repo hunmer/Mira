@@ -7,7 +7,7 @@ import 'package:mira/plugins/libraries/controllers/libraray_local_controller.dar
 import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock_adapter.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'services/websocket_server.dart';
 
@@ -30,10 +30,10 @@ class LibrariesPlugin extends PluginBase {
   late final LibraryDataController libraryController; // 数据库
   late final LibraryLocalDataController dataController; // 本地数据
   WebSocketServer? server; // 后端服务器 (Web平台不启用)
-  late final LibraryTabManager tabManager; // 标签视图管理器
   late final FoldersTagsCache foldersTagsController; // 文件夹标签缓存
   late final LibrarySidebarView sidebarController;
   late final FileDownloader fileDownloader;
+  late final LibraryTabManagerDockAdapter tabManager; // dock适配器
 
   @override
   Future<void> registerToApp(
@@ -51,8 +51,7 @@ class LibrariesPlugin extends PluginBase {
     await dataController.init();
     foldersTagsController = FoldersTagsCache();
     await foldersTagsController.init();
-    tabManager = LibraryTabManager(ValueNotifier<int>(-1));
-    await tabManager.init();
+    tabManager = LibraryTabManagerDockAdapter(); // 初始化适配器
     libraryController = LibraryDataController(plugin: this);
     // 仅在非Web平台启用WebSocketServer
     if (!kIsWeb) {

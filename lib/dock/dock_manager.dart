@@ -170,23 +170,6 @@ class DockManager {
     _instance._dockTabsMap.clear();
   }
 
-  /// 获取统计信息
-  static Map<String, int> getStatistics() {
-    int totalDockTabs = _instance._dockTabsMap.length;
-    int totalTabs = 0;
-    int totalItems = 0;
-
-    for (var dockTabs in _instance._dockTabsMap.values) {
-      final tabs = dockTabs.getAllDockTabs();
-      totalTabs += tabs.length;
-      for (var tab in tabs.values) {
-        totalItems += tab.getAllDockItems().length;
-      }
-    }
-
-    return {'dockTabs': totalDockTabs, 'tabs': totalTabs, 'items': totalItems};
-  }
-
   /// 保存所有DockTabs为JSON
   static Map<String, dynamic> saveToJson() {
     final result = <String, dynamic>{};
@@ -262,5 +245,121 @@ class DockManager {
         data['layouts'] as Map<String, dynamic>,
       );
     }
+  }
+
+  // ===================== Library Tab Management =====================
+
+  /// 添加库标签页
+  static String addLibraryTab(
+    dynamic library, {
+    String title = '',
+    bool isRecycleBin = false,
+    String dockTabsId = 'main',
+    String dockTabId = 'home',
+  }) {
+    // 动态导入LibraryDockItem以避免循环依赖
+    // 这个方法将在LibraryDockItem中实现
+    throw UnimplementedError('Use LibraryDockItem.addTab instead');
+  }
+
+  /// 关闭库标签页
+  static bool closeLibraryTab(
+    String tabId, {
+    String dockTabsId = 'main',
+    String dockTabId = 'home',
+  }) {
+    return removeDockItem(dockTabsId, dockTabId, 'library_$tabId');
+  }
+
+  /// 获取当前激活的库标签页ID
+  static String? getCurrentLibraryTabId({
+    String dockTabsId = 'main',
+    String dockTabId = 'home',
+  }) {
+    final dockTabs = getDockTabs(dockTabsId);
+    final dockTab = dockTabs?.getDockTab(dockTabId);
+    // 这里需要实现获取当前活动项的逻辑
+    // 暂时返回null，具体实现需要在dock system中添加
+    return null;
+  }
+
+  /// 激活指定的库标签页
+  static bool activateLibraryTab(
+    String tabId, {
+    String dockTabsId = 'main',
+    String dockTabId = 'home',
+  }) {
+    // 这里需要实现激活指定dock item的逻辑
+    // 暂时返回false，具体实现需要在dock system中添加
+    return false;
+  }
+
+  /// 更新库标签页的stored值
+  static bool updateLibraryTabStoredValue(
+    String tabId,
+    String key,
+    dynamic value, {
+    String dockTabsId = 'main',
+    String dockTabId = 'home',
+  }) {
+    final dockItem = getDockItem(dockTabsId, dockTabId, 'library_$tabId');
+    if (dockItem != null) {
+      final stored = Map<String, dynamic>.from(
+        dockItem.getValue('stored') as Map<String, dynamic>? ?? {},
+      );
+      stored[key] = value;
+      dockItem.update('stored', stored);
+      return true;
+    }
+    return false;
+  }
+
+  /// 获取库标签页的stored值
+  static T? getLibraryTabStoredValue<T>(
+    String tabId,
+    String key, {
+    T? defaultValue,
+    String dockTabsId = 'main',
+    String dockTabId = 'home',
+  }) {
+    final dockItem = getDockItem(dockTabsId, dockTabId, 'library_$tabId');
+    if (dockItem != null) {
+      final stored = dockItem.getValue('stored') as Map<String, dynamic>?;
+      return stored?[key] as T? ?? defaultValue;
+    }
+    return defaultValue;
+  }
+
+  /// 关闭所有库标签页
+  static void closeAllLibraryTabs({
+    String dockTabsId = 'main',
+    String dockTabId = 'home',
+  }) {
+    final dockTabs = getDockTabs(dockTabsId);
+    final dockTab = dockTabs?.getDockTab(dockTabId);
+    if (dockTab != null) {
+      // 获取所有library类型的dock items并移除
+      final itemsToRemove = <String>[];
+      for (final item in dockTab.getAllDockItems()) {
+        if (item.type == 'library_tab') {
+          itemsToRemove.add(item.title);
+        }
+      }
+      for (final itemTitle in itemsToRemove) {
+        removeDockItem(dockTabsId, dockTabId, itemTitle);
+      }
+    }
+  }
+
+  /// 保存库标签页数据到存储
+  static Future<void> saveLibraryTabsToStorage() async {
+    // 这里需要实现保存到插件存储的逻辑
+    // 暂时不实现，等待与LibrariesPlugin的集成
+  }
+
+  /// 从存储加载库标签页数据
+  static Future<void> loadLibraryTabsFromStorage() async {
+    // 这里需要实现从插件存储加载的逻辑
+    // 暂时不实现，等待与LibrariesPlugin的集成
   }
 }

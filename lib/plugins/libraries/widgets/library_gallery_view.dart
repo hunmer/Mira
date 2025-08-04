@@ -7,6 +7,7 @@ import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_preview_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 
 // 导入分离后的组件
 import 'library_gallery_view/index.dart';
@@ -16,11 +17,13 @@ class LibraryGalleryView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Library library;
   final String tabId;
+  final LibraryTabData? tabData; // 添加tabData参数
 
   const LibraryGalleryView({
     required this.plugin,
     required this.library,
     required this.tabId,
+    this.tabData, // 可选参数
     super.key,
   });
 

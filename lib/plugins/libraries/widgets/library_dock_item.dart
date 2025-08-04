@@ -1,0 +1,186 @@
+import 'package:flutter/material.dart';
+import 'package:mira/dock/dock_item.dart';
+import 'package:mira/dock/dock_manager.dart';
+import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:mira/core/plugin_manager.dart';
+import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:uuid/uuid.dart';
+import '../models/library.dart';
+import 'library_content_view.dart';
+import 'library_tab_manager.dart';
+
+/// LibraryDockItem - 继承自DockItem的库标签页项目
+class LibraryDockItem extends DockItem {
+  final LibraryTabData tabData;
+  late final LibrariesPlugin plugin;
+
+  LibraryDockItem({
+    required this.tabData,
+    Map<String, ValueNotifier<dynamic>>? initialValues,
+  }) : super(
+         type: 'library_tab',
+         title: tabData.title.isNotEmpty ? tabData.title : tabData.library.name,
+         values: _initializeValues(tabData, initialValues),
+         builder:
+             (item) => DockingItem(
+               id: 'library_${tabData.id}',
+               name: item.title,
+               closable: true,
+               widget: LibraryContentView(
+                 plugin:
+                     PluginManager.instance.getPlugin('libraries')
+                         as LibrariesPlugin,
+                 tabData: tabData,
+               ),
+             ),
+       ) {
+    plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
+    _setupValueListeners();
+  }
+
+  /// 初始化values
+  static Map<String, ValueNotifier<dynamic>> _initializeValues(
+    LibraryTabData tabData,
+    Map<String, ValueNotifier<dynamic>>? initialValues,
+  ) {
+    final values = initialValues ?? <String, ValueNotifier<dynamic>>{};
+
+    // 从stored数据中初始化动态值
+    final stored = tabData.stored;
+
+    values['paginationOptions'] = ValueNotifier(
+      stored['paginationOptions'] ?? {'page': 1, 'perPage': 1000},
+    );
+    values['sortOptions'] = ValueNotifier(
+      stored['sortOptions'] ?? {'field': 'id', 'order': 'desc'},
+    );
+    values['imagesPerRow'] = ValueNotifier(stored['imagesPerRow'] ?? 0);
+    values['filter'] = ValueNotifier(stored['filter'] ?? {});
+    values['displayFields'] = ValueNotifier(
+      stored['displayFields'] ??
+          [
+            'title',
+            'rating',
+            'notes',
+            'createdAt',
+            'tags',
+            'folder',
+            'size',
+            'ext',
+          ],
+    );
+    values['needUpdate'] = ValueNotifier(tabData.needUpdate);
+    values['isActive'] = ValueNotifier(tabData.isActive);
+
+    return values;
+  }
+
+  /// 设置值变化监听器
+  void _setupValueListeners() {
+    // 监听分页选项变化
+    values['paginationOptions']?.addListener(() {
+      _updateStoredValue(
+        'paginationOptions',
+        values['paginationOptions']!.value,
+      );
+    });
+
+    // 监听排序选项变化
+    values['sortOptions']?.addListener(() {
+      _updateStoredValue('sortOptions', values['sortOptions']!.value);
+    });
+
+    // 监听每行图片数变化
+    values['imagesPerRow']?.addListener(() {
+      _updateStoredValue('imagesPerRow', values['imagesPerRow']!.value);
+    });
+
+    // 监听过滤器变化
+    values['filter']?.addListener(() {
+      _updateStoredValue('filter', values['filter']!.value);
+    });
+
+    // 监听显示字段变化
+    values['displayFields']?.addListener(() {
+      _updateStoredValue('displayFields', values['displayFields']!.value);
+    });
+
+    // 监听需要更新状态变化
+    values['needUpdate']?.addListener(() {
+      tabData.needUpdate = values['needUpdate']!.value;
+    });
+
+    // 监听激活状态变化
+    values['isActive']?.addListener(() {
+      tabData.isActive = values['isActive']!.value;
+    });
+  }
+
+  /// 更新stored值并保存
+  void _updateStoredValue(String key, dynamic value) {
+    tabData.stored[key] = value;
+    // 这里会通过DockManager来保存数据
+  }
+
+  /// 静态方法：添加库标签页
+  static String addTab(
+    Library library, {
+    String title = '',
+    bool isRecycleBin = false,
+    String dockTabsId = 'main',
+    String dockTabId = 'home',
+  }) {
+    final tabData = LibraryTabData(
+      id: Uuid().v4(),
+      library: library,
+      title: title,
+      isRecycleBin: isRecycleBin,
+      createDate: DateTime.now(),
+      stored: {
+        'paginationOptions': {'page': 1, 'perPage': 1000},
+        'sortOptions': {'field': 'id', 'order': 'desc'},
+        'imagesPerRow': 0,
+        'filter': {},
+        'displayFields': [
+          'title',
+          'rating',
+          'notes',
+          'createdAt',
+          'tags',
+          'folder',
+          'size',
+          'ext',
+        ],
+      },
+    );
+
+    final libraryDockItem = LibraryDockItem(tabData: tabData);
+
+    // 通过DockManager添加到dock系统
+    final success = DockManager.addDockItem(
+      dockTabsId,
+      dockTabId,
+      libraryDockItem,
+    );
+
+    if (success) {
+      return tabData.id;
+    }
+    throw Exception('Failed to add library tab');
+  }
+
+  /// 获取stored值
+  T? getStoredValue<T>(String key, [T? defaultValue]) {
+    final stored = getValue('stored') as Map<String, dynamic>?;
+    return stored?[key] as T? ?? defaultValue;
+  }
+
+  /// 设置stored值
+  void setStoredValue(String key, dynamic value) {
+    final stored = Map<String, dynamic>.from(
+      getValue('stored') as Map<String, dynamic>? ?? {},
+    );
+    stored[key] = value;
+    update('stored', stored);
+  }
+}

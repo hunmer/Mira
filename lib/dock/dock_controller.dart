@@ -118,11 +118,6 @@ class DockController extends ChangeNotifier {
     }
   }
 
-  /// 获取统计信息
-  Map<String, int> getStatistics() {
-    return DockManager.getStatistics();
-  }
-
   /// 处理DockItem关闭事件
   void handleItemClose(DockingItem item) {
     // 这里可以添加关闭后的清理逻辑

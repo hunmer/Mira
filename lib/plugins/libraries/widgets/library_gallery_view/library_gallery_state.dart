@@ -5,6 +5,7 @@ import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
+import 'package:mira/plugins/libraries/widgets/i_library_tab_manager.dart';
 import 'drag_select_view.dart';
 
 /// 图库视图的状态管理类
@@ -32,7 +33,7 @@ class LibraryGalleryState {
   final ValueNotifier<List<LibraryTag>> tags = ValueNotifier([]);
 
   // Tab管理
-  late LibraryTabManager tabManager;
+  late ILibraryTabManager tabManager;
   late LibraryTabData? tabData;
 
   // UI状态
@@ -64,7 +65,7 @@ class LibraryGalleryState {
   final List<String> eventSubscribes = [];
 
   /// 初始化状态
-  void initializeState(String tabId, LibraryTabManager manager) {
+  void initializeState(String tabId, ILibraryTabManager manager) {
     tabManager = manager;
     tabData = tabManager.getTabData(tabId);
 
