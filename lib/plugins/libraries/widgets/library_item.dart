@@ -19,23 +19,21 @@ import 'dart:io' show File if (dart.library.html) 'dart:html';
 class LibraryItem extends StatefulWidget {
   const LibraryItem({
     required this.file,
-    this.isSelected = false,
     this.useThumbnail = false,
     required this.getFolderTitle,
     required this.getTagTilte,
     this.onTap,
     this.onDoubleTap,
-    required this.onLongPress,
+    this.onLongPress,
     required this.displayFields,
     super.key,
   });
 
   final LibraryFile file;
-  final bool isSelected;
   final bool useThumbnail;
   final VoidCallback? onTap;
   final VoidCallback? onDoubleTap;
-  final Function(dynamic) onLongPress;
+  final Function(dynamic)? onLongPress;
   final Future<String> Function(String) getFolderTitle;
   final Future<String> Function(String) getTagTilte;
   final Set<String> displayFields;
@@ -200,22 +198,6 @@ class _LibraryItemState extends State<LibraryItem> {
     );
   }
 
-  Widget _buildSelectedIndicator() {
-    if (!widget.isSelected) return const SizedBox.shrink();
-
-    return Positioned(
-      top: 8,
-      left: 8,
-      child: Container(
-        decoration: const BoxDecoration(
-          color: Colors.blue,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(Icons.check, color: Colors.white, size: 20),
-      ),
-    );
-  }
-
   @override
   void dispose() {
     _videoController?.dispose();
@@ -359,9 +341,9 @@ class _LibraryItemState extends State<LibraryItem> {
           onExit: (_) => isMedia ? _handleHover(false) : null,
           onHover: (event) => isMedia ? _handleMousePosition(event) : null,
           child: GestureDetector(
-            onSecondaryTapDown: (details) => widget.onLongPress(details),
+            onSecondaryTapDown: (details) => widget.onLongPress?.call(details),
             onLongPressDown:
-                kIsWeb ? (details) => widget.onLongPress(details) : null,
+                kIsWeb ? (details) => widget.onLongPress?.call(details) : null,
             child: Card(
               child: Stack(
                 children: [
@@ -385,7 +367,6 @@ class _LibraryItemState extends State<LibraryItem> {
                     ),
                   ),
                   _buildFileExtensionBadge(),
-                  _buildSelectedIndicator(),
                 ],
               ),
             ),

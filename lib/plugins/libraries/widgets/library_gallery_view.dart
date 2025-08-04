@@ -74,6 +74,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       context: context,
       onShowDropDialog: _showDropDialog,
       onFileOpen: _onFileOpen,
+      onFileSelected: _onFileSelected,
+      onToggleSelected: _onToggleSelected,
     );
 
     _mobile = LibraryGalleryMobile(
@@ -118,6 +120,22 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
             ),
       ),
     );
+  }
+
+  /// 文件选中事件处理
+  void _onToggleSelected(LibraryFile file) {
+    final selectedIds = _state.selectedFileIds.value;
+    if (selectedIds.contains(file.id)) {
+      selectedIds.remove(file.id);
+    } else {
+      selectedIds.add(file.id);
+    }
+    _state.selectedFileIds.value = Set<int>.from(selectedIds);
+  }
+
+  /// 文件选中事件处理
+  void _onFileSelected(LibraryFile file) {
+    _state.selectedFileNotifier.value = file;
   }
 
   @override
@@ -206,9 +224,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   Widget _buildMobileMainContent(bool isRecycleBin) {
     return Stack(
       children: [
-        _builders.buildGalleryBody((file) {
-          _mobile.onMobileFileSelected(file);
-        }),
+        _builders.buildGalleryBodyWithDragSelect(),
         ValueListenableBuilder(
           valueListenable: _state.isItemsLoadingNotifier,
           builder: (context, isLoading, _) {

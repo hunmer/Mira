@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:multi_value_listenable_builder/multi_value_listenable_builder.dart';
 import 'package:number_pagination/number_pagination.dart';
@@ -10,12 +9,10 @@ import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
-import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_body.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'library_gallery_events.dart';
 import 'library_gallery_state.dart';
-import 'area_selection_overlay.dart';
-import 'selectable_gallery_grid.dart';
+import 'drag_select_view.dart';
 
 /// 图库视图的UI构建器类
 class LibraryGalleryBuilders {
@@ -26,7 +23,9 @@ class LibraryGalleryBuilders {
   final String tabId;
   final BuildContext context;
   final VoidCallback? onShowDropDialog;
-  final Function(LibraryFile)? onFileOpen;
+  final Function(LibraryFile) onFileOpen;
+  final Function(LibraryFile) onFileSelected;
+  final Function(LibraryFile) onToggleSelected;
 
   LibraryGalleryBuilders({
     required this.state,
@@ -36,7 +35,9 @@ class LibraryGalleryBuilders {
     required this.tabId,
     required this.context,
     this.onShowDropDialog,
-    this.onFileOpen,
+    required this.onFileOpen,
+    required this.onFileSelected,
+    required this.onToggleSelected,
   });
 
   /// 构建响应式布局
@@ -299,12 +300,7 @@ class LibraryGalleryBuilders {
               Expanded(
                 child: Stack(
                   children: [
-                    sizingInformation.deviceScreenType ==
-                            DeviceScreenType.desktop
-                        ? _buildDesktopGalleryWithAreaSelection(
-                          events.onFileSelectedWithKeyboard,
-                        )
-                        : buildGalleryBody(events.onFileSelected),
+                    buildGalleryBodyWithDragSelect(),
                     ValueListenableBuilder(
                       valueListenable: state.isItemsLoadingNotifier,
                       builder: (context, isLoading, _) {
@@ -324,8 +320,7 @@ class LibraryGalleryBuilders {
     );
   }
 
-  /// 构建图库主体
-  Widget buildGalleryBody(Function(LibraryFile) onFileSelected) {
+  Widget buildGalleryBodyWithDragSelect() {
     return MultiValueListenableBuilder(
       valueListenables: [
         state.items,
@@ -341,7 +336,8 @@ class LibraryGalleryBuilders {
             state.selectedFileIds.value = {};
             state.isSelectionModeNotifier.value = false;
           },
-          child: LibraryGalleryBody(
+          child: DragSelectView(
+            viewType: DragSelectViewType.grid,
             plugin: plugin,
             library: library,
             isRecycleBin: state.tabData!.isRecycleBin,
@@ -350,123 +346,16 @@ class LibraryGalleryBuilders {
             isSelectionMode: values[1] as bool,
             selectedFileIds: values[2] as Set<int>,
             onFileSelected: onFileSelected,
-            onFileOpen: onFileOpen ?? (file) {},
+            onToggleSelected: onToggleSelected,
+            onFileOpen: onFileOpen,
             imagesPerRow: values[4] as int,
             scrollController: state.scrollController,
+            onSelectionChanged: (selectedIds) {
+              state.selectedFileIds.value = selectedIds;
+            },
           ),
         );
       },
-    );
-  }
-
-  /// 构建支持范围选择的图库主体（桌面端专用）
-  Widget buildGalleryBodyWithAreaSelection(
-    Function(LibraryFile) onFileSelected,
-  ) {
-    return MultiValueListenableBuilder(
-      valueListenables: [
-        state.items,
-        state.isSelectionModeNotifier,
-        state.selectedFileIds,
-        state.displayFieldsNotifier,
-        state.imagesPerRowNotifier,
-      ],
-      builder: (context, values, _) {
-        final GlobalKey<SelectableGalleryGridState> gridKey = GlobalKey();
-        final GlobalKey<AreaSelectionOverlayState> overlayKey = GlobalKey();
-
-        return Stack(
-          children: [
-            // 图库网格组件 - 包含控制按钮
-            SelectableGalleryGrid(
-              key: gridKey,
-              plugin: plugin,
-              library: library,
-              isRecycleBin: state.tabData!.isRecycleBin,
-              displayFields: values[3] as Set<String>,
-              items: values[0] as List<LibraryFile>,
-              isSelectionMode: values[1] as bool,
-              selectedFileIds: values[2] as Set<int>,
-              onFileSelected: onFileSelected,
-              onFileOpen: onFileOpen ?? (file) {},
-              imagesPerRow: values[4] as int,
-              scrollController: state.scrollController,
-              onSelectionChanged: (selectedIds) {
-                state.selectedFileIds.value = selectedIds;
-              },
-              areaSelectionController: null, // 不再使用控制器
-              onStartAreaSelection: () {
-                // 启动区域选择模式
-                overlayKey.currentState?.startSelectionMode();
-              },
-              onEndAreaSelection: () {
-                // 结束区域选择模式
-                overlayKey.currentState?.endSelectionMode();
-              },
-            ),
-            // 区域选择覆盖层 - 作为平行组件，仅提供交互层和视觉反馈
-            AreaSelectionOverlay(
-              key: overlayKey,
-              enabled: true,
-              scrollController: state.scrollController, // 直接传递ScrollController
-              onSelectionStart: (startPosition) {
-                // 开始选择时的处理
-                state.isSelectionModeNotifier.value = true;
-              },
-              onAreaSelectionUpdate: (selectionArea) {
-                gridKey.currentState?.handleAreaSelectionUpdate(selectionArea);
-              },
-              onClearSelection: () {
-                gridKey.currentState?.clearAllSelection();
-                state.isSelectionModeNotifier.value = false;
-              },
-              onSelectionStateChanged: (isActive) {
-                if (isActive) {
-                  state.isSelectionModeNotifier.value = true;
-                }
-              },
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  /// 构建支持范围选择的桌面端图库
-  Widget _buildDesktopGalleryWithAreaSelection(
-    Function(LibraryFile) onFileSelected,
-  ) {
-    return KeyboardListener(
-      focusNode: state.keyboardFocusNode,
-      autofocus: true,
-      onKeyEvent: (event) {
-        // 按住 Ctrl + Shift + A 启动区域选择
-        if (event is KeyDownEvent) {
-          final isCtrlPressed =
-              event.logicalKey == LogicalKeyboardKey.controlLeft ||
-              event.logicalKey == LogicalKeyboardKey.controlRight;
-          final isShiftPressed =
-              event.logicalKey == LogicalKeyboardKey.shiftLeft ||
-              event.logicalKey == LogicalKeyboardKey.shiftRight;
-          final isAPressed = event.logicalKey == LogicalKeyboardKey.keyA;
-
-          // 检查组合键
-          if ((isCtrlPressed || HardwareKeyboard.instance.isControlPressed) &&
-              (isShiftPressed || HardwareKeyboard.instance.isShiftPressed) &&
-              isAPressed) {
-            // 触发区域选择模式
-            state.isSelectionModeNotifier.value = true;
-            // 这里需要一个全局的控制器引用，我们稍后会添加
-          }
-
-          // Esc 键退出选择模式
-          if (event.logicalKey == LogicalKeyboardKey.escape) {
-            state.isSelectionModeNotifier.value = false;
-            state.selectedFileIds.value = {};
-          }
-        }
-      },
-      child: buildGalleryBodyWithAreaSelection(onFileSelected),
     );
   }
 

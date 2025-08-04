@@ -265,6 +265,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.1"
+  drag_select_grid_view:
+    dependency: "direct main"
+    description:
+      name: drag_select_grid_view
+      sha256: cfca7bf84b26e14cc9ca857bb1a766461ea8de49134f188b7b181c1afa75af3a
+      url: "https://pub.dev"
+    source: hosted
+    version: "0.6.2"
   dynamic_tabbar:
     dependency: "direct main"
     description:
@@ -289,6 +297,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "3.1.0"
+  extended_list_library:
+    dependency: transitive
+    description:
+      name: extended_list_library
+      sha256: cb424a04464e89bd6737f9ae025029bd8e913c7bf37101ad10c2defe0238d842
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.0.0"
   fake_async:
     dependency: transitive
     description:
@@ -564,14 +580,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.1.5"
-  flutter_staggered_grid_view:
-    dependency: "direct main"
-    description:
-      name: flutter_staggered_grid_view
-      sha256: "19e7abb550c96fbfeb546b23f3ff356ee7c59a019a651f8f102a4ba9b7349395"
-      url: "https://pub.dev"
-    source: hosted
-    version: "0.7.0"
   flutter_test:
     dependency: "direct dev"
     description: flutter
@@ -1627,6 +1635,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "15.0.0"
+  waterfall_flow:
+    dependency: "direct main"
+    description:
+      name: waterfall_flow
+      sha256: e7ab5728fe536e53cf4b8ea97128112ad18c7f1d797d91f073bf396fa6910181
+      url: "https://pub.dev"
+    source: hosted
+    version: "3.1.1"
   web:
     dependency: transitive
     description:

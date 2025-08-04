@@ -99,78 +99,16 @@ class LibraryGalleryEvents {
 
   /// 文件选择事件处理
   void onFileSelected(LibraryFile file) {
-    onFileSelectedWithModifiers(file, false, false);
-  }
-
-  /// 带修饰键的文件选择事件处理
-  void onFileSelectedWithModifiers(
-    LibraryFile file,
-    bool isCtrlPressed,
-    bool isShiftPressed,
-  ) {
     final fileId = file.id;
-    final fileIndex = state.items.value.indexWhere((item) => item.id == fileId);
-
-    if (state.isSelectionModeNotifier.value) {
-      final currentSelection = Set<int>.from(state.selectedFileIds.value);
-
-      if (isShiftPressed && state.lastSelectedIndex != null) {
-        // Shift范围选择
-        final startIndex = state.lastSelectedIndex!;
-        final endIndex = fileIndex;
-        final minIndex = startIndex < endIndex ? startIndex : endIndex;
-        final maxIndex = startIndex > endIndex ? startIndex : endIndex;
-
-        // 选择范围内的所有文件
-        for (int i = minIndex; i <= maxIndex; i++) {
-          if (i < state.items.value.length) {
-            currentSelection.add(state.items.value[i].id);
-          }
-        }
-      } else if (isCtrlPressed) {
-        // Ctrl多选：切换选中状态
-        if (currentSelection.contains(fileId)) {
-          currentSelection.remove(fileId);
-        } else {
-          currentSelection.add(fileId);
-        }
-        state.lastSelectedIndex = fileIndex;
-      } else {
-        // 普通点击：切换选中状态
-        if (currentSelection.contains(fileId)) {
-          currentSelection.remove(fileId);
-        } else {
-          currentSelection.add(fileId);
-        }
-        state.lastSelectedIndex = fileIndex;
-      }
-
-      state.selectedFileIds.value = currentSelection;
-
-      // 如果选中的文件数量<=1，关闭选择模式
-      if (currentSelection.length <= 1) {
-        state.isSelectionModeNotifier.value = false;
-        if (currentSelection.isEmpty) {
-          state.lastSelectedIndex = null;
-        }
-      }
+    final fileIndex = state.items.value.indexOf(file);
+    final currentSelection = state.selectedFileIds.value;
+    if (currentSelection.contains(fileId)) {
+      currentSelection.remove(fileId);
     } else {
-      // 非选择模式下，如果按住Ctrl或Shift，进入选择模式
-      if (isCtrlPressed || isShiftPressed) {
-        state.isSelectionModeNotifier.value = true;
-        state.selectedFileIds.value = {fileId};
-        state.lastSelectedIndex = fileIndex;
-      }
+      currentSelection.add(fileId);
     }
-
-    state.selectedFileNotifier.value = file;
-  }
-
-  /// 键盘事件处理（桌面端）
-  void onFileSelectedWithKeyboard(LibraryFile file) {
-    final isCtrlPressed = HardwareKeyboard.instance.isControlPressed;
-    final isShiftPressed = HardwareKeyboard.instance.isShiftPressed;
-    onFileSelectedWithModifiers(file, isCtrlPressed, isShiftPressed);
+    state.lastSelectedIndex = fileIndex;
+    state.selectedFileIds.value = currentSelection;
   }
 
   /// 刷新数据
