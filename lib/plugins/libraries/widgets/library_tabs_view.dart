@@ -5,15 +5,13 @@ import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_debounce.dart';
 import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/plugin_manager.dart';
-// ignore: library_prefixes
-import 'package:mira/core/utils/utils.dart' as Utils;
-import 'package:mira/core/widgets/dynamic_tabbar.dart';
+import 'package:mira/dock/dock_controller.dart';
+import 'package:mira/dock/dock_manager.dart';
+import 'package:mira/dock/dock_item.dart';
+import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_tabs_context_menu.dart'
-    // ignore: library_prefixes
-    as LibraryContextMenu;
 import 'package:mira/plugins/libraries/widgets/library_content_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
 import 'package:mira/views/library_tabs_empty_view.dart';
@@ -33,17 +31,30 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   late LibraryTabManager _tabManager;
   late final ValueNotifier<List<LibraryTabData>> _tabDatas = ValueNotifier([]);
   final List<StreamSubscription> _subscriptions = [];
+  late DockController _dockController;
 
   @override
   void initState() {
     super.initState();
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
     _tabManager = _plugin.tabManager;
+
+    // 初始化dock controller
+    _dockController = DockController();
+    _dockController.addListener(_onDockControllerChanged);
+    _dockController.initializeDockSystem();
+
     _loadTabDatas();
     init();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _tabManager.restoreActiveTab();
+    });
+  }
+
+  void _onDockControllerChanged() {
+    setState(() {
+      // dock控制器状态变化时更新UI
     });
   }
 
@@ -107,6 +118,48 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
       // bug：初次打开不显示...
       setState(() {});
     }
+    // 同步dock items
+    _syncTabsWithDock();
+  }
+
+  /// 同步library tabs到dock系统
+  void _syncTabsWithDock() {
+    // 获取dock系统中的主要tab
+    final dockTabs = _dockController.dockTabs;
+    final mainTab = dockTabs.getDockTab('home');
+
+    if (mainTab == null) {
+      // 如果主tab不存在，创建一个
+      DockManager.createDockTab(
+        'main',
+        'home',
+        displayName: 'Libraries',
+        closable: false,
+        maximizable: false,
+        buttons: [],
+      );
+    }
+
+    // 清理现有的library dock items
+    // 注意：这里需要实现清理逻辑，暂时跳过
+
+    // 为每个library tab创建dock item
+    for (final tabData in _tabDatas.value) {
+      final dockItem = DockItem(
+        type: 'library_tab',
+        title: tabData.title.isNotEmpty ? tabData.title : tabData.library.name,
+        builder:
+            (item) => DockingItem(
+              id: 'library_${tabData.id}',
+              name: item.title,
+              closable: true,
+              widget: LibraryContentView(plugin: _plugin, tabData: tabData),
+            ),
+      );
+
+      // 添加到主tab中
+      DockManager.addDockItem('main', 'home', dockItem);
+    }
   }
 
   @override
@@ -115,6 +168,8 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }
+    _dockController.removeListener(_onDockControllerChanged);
+    _dockController.dispose();
     _tabManager.dispose();
     _plugin.server?.stop();
   }
@@ -162,53 +217,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             if (snapshot.hasError) {
               return Text('加载数据出错: ${snapshot.error}');
             }
-            final isDesktop = Utils.isDesktop();
-            final tabs =
-                _tabDatas.value.map((tabData) {
-                  return TabData(
-                    index: tabData.id.hashCode,
-                    title: Tab(
-                      child: GestureDetector(
-                        onSecondaryTapDown:
-                            (details) => {
-                              if (details.globalPosition != null)
-                                {
-                                  _showContextMenu(
-                                    context,
-                                    details.globalPosition,
-                                    tabData.library,
-                                    tabData.id,
-                                  ),
-                                },
-                            },
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            Text(
-                              tabData.title.isNotEmpty
-                                  ? tabData.title
-                                  : tabData.library.name,
-                              style: TextStyle(fontSize: 18),
-                            ),
-                            const SizedBox(width: 4),
-                            GestureDetector(
-                              behavior: HitTestBehavior.opaque,
-                              child: InkWell(
-                                borderRadius: BorderRadius.circular(12),
-                                onTap: () => _tabManager.closeTab(tabData.id),
-                                child: const Icon(Icons.close, size: 20),
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                    content: LibraryContentView(
-                      plugin: _plugin,
-                      tabData: tabData,
-                    ),
-                  );
-                }).toList();
+
             return Scaffold(
               appBar: AppBar(
                 leading: IconButton(
@@ -231,6 +240,16 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                     icon: const Icon(Icons.settings),
                     onPressed: () => Navigator.pushNamed(context, '/settings'),
                   ),
+                  IconButton(
+                    icon: const Icon(Icons.add),
+                    tooltip: 'Add Library Tab',
+                    onPressed: () => _openLibrary(),
+                  ),
+                  IconButton(
+                    icon: const Icon(Icons.close),
+                    tooltip: 'Close All Tabs',
+                    onPressed: () => _tabManager.closeAllTabs(),
+                  ),
                 ],
                 title: const Text('素材管理器'),
                 backgroundColor: Theme.of(context).colorScheme.surface,
@@ -251,128 +270,27 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                     },
                   ),
                   Expanded(
-                    child:
-                        tabs.isEmpty
-                            ? LibraryTabsEmptyView(
-                              onAddTab: () => _openLibrary(),
-                            )
-                            : ValueListenableBuilder<List<LibraryTabData>>(
-                              valueListenable: _tabDatas,
-                              builder: (context, tabDatas, child) {
-                                final tabs =
-                                    tabDatas.map((tabData) {
-                                      return TabData(
-                                        index: tabData.id.hashCode,
-                                        title: Tab(
-                                          child: GestureDetector(
-                                            onSecondaryTapDown:
-                                                (details) => {
-                                                  if (details.globalPosition !=
-                                                      null)
-                                                    {
-                                                      _showContextMenu(
-                                                        context,
-                                                        details.globalPosition,
-                                                        tabData.library,
-                                                        tabData.id,
-                                                      ),
-                                                    },
-                                                },
-                                            child: Row(
-                                              mainAxisSize: MainAxisSize.min,
-                                              children: [
-                                                Text(
-                                                  tabData.title.isNotEmpty
-                                                      ? tabData.title
-                                                      : tabData.library.name,
-                                                  style: TextStyle(
-                                                    fontSize: 18,
-                                                  ),
-                                                ),
-                                                const SizedBox(width: 4),
-                                                GestureDetector(
-                                                  behavior:
-                                                      HitTestBehavior.opaque,
-                                                  child: InkWell(
-                                                    borderRadius:
-                                                        BorderRadius.circular(
-                                                          12,
-                                                        ),
-                                                    onTap:
-                                                        () => _tabManager
-                                                            .closeTab(
-                                                              tabData.id,
-                                                            ),
-                                                    child: const Icon(
-                                                      Icons.close,
-                                                      size: 20,
-                                                    ),
-                                                  ),
-                                                ),
-                                              ],
-                                            ),
-                                          ),
-                                        ),
-                                        content: LibraryContentView(
-                                          plugin: _plugin,
-                                          tabData: tabData,
-                                        ),
-                                      );
-                                    }).toList();
-                                return DynamicTabBarWidget(
-                                  dynamicTabs: tabs,
-                                  enableAnimation: false,
-                                  showBackIcon: true,
-                                  isScrollable: true,
-                                  trailing: IconButton(
-                                    icon: const Icon(Icons.add),
-                                    onPressed: () => _openLibrary(),
-                                  ),
-                                  leading: IconButton(
-                                    icon: const Icon(Icons.close),
-                                    onPressed: () => _tabManager.closeAllTabs(),
-                                  ),
-                                  physics:
-                                      isDesktop
-                                          ? const NeverScrollableScrollPhysics()
-                                          : null,
-                                  physicsTabBarView:
-                                      isDesktop
-                                          ? const NeverScrollableScrollPhysics()
-                                          : null,
-                                  onTabChanged: (index) {
-                                    if (index != null) {
-                                      _tabManager.onTabActived(index: index);
-                                    }
-                                  },
-                                  onTabControllerUpdated: (controller) {
-                                    _tabManager.tabController = controller;
-                                  },
-                                );
-                              },
-                            ),
+                    child: ValueListenableBuilder<List<LibraryTabData>>(
+                      valueListenable: _tabDatas,
+                      builder: (context, tabDatas, child) {
+                        if (tabDatas.isEmpty) {
+                          return LibraryTabsEmptyView(
+                            onAddTab: () => _openLibrary(),
+                          );
+                        }
+
+                        // 使用dock系统显示tabs
+                        return _dockController.dockTabs.buildDockingWidget(
+                          context,
+                        );
+                      },
+                    ),
                   ),
                 ],
               ),
             );
         }
       },
-    );
-  }
-
-  void _showContextMenu(
-    BuildContext context,
-    Offset position,
-    Library library,
-    String tabId,
-  ) {
-    LibraryContextMenu.show(
-      context: context,
-      library: library,
-      position: position,
-      isPinned: false,
-      togglePin: (pin) {},
-      onCloseTab: () => _tabManager.closeTab(tabId),
     );
   }
 }

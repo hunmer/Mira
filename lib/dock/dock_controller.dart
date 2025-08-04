@@ -22,9 +22,10 @@ class DockController extends ChangeNotifier {
         notifyListeners();
       },
     );
-
-    // 创建默认tab和内容
-    _createDefaultTabs();
+    if (_dockTabs.isEmpty) {
+      // 创建默认tab和内容
+      _createDefaultTabs();
+    }
   }
 
   /// 创建默认的tabs和内容
@@ -47,44 +48,6 @@ class DockController extends ChangeNotifier {
       },
     );
     DockManager.addDockItem('main', 'home', homePageItem);
-
-    // 创建其他示例tab
-    DockManager.createDockTab(
-      'main',
-      'workspace',
-      displayName: '工作区',
-      closable: true,
-      maximizable: false,
-      buttons: [],
-    );
-    DockManager.createDockTab(
-      'main',
-      'tools',
-      displayName: '工具',
-      closable: true,
-      maximizable: false,
-      buttons: [],
-    );
-
-    // 为workspace添加示例DockItem
-    final textItem = DockManager.createTextDockItem(
-      'Text Display',
-      content: 'Hello World!',
-    );
-    DockManager.addDockItem('main', 'workspace', textItem);
-
-    final counterItem = DockManager.createCounterDockItem(
-      'Counter',
-      initialCount: 0,
-    );
-    DockManager.addDockItem('main', 'workspace', counterItem);
-
-    // 为tools添加列表DockItem
-    final listItem = DockManager.createListDockItem(
-      'My List',
-      initialItems: ['Item 1', 'Item 2'],
-    );
-    DockManager.addDockItem('main', 'tools', listItem);
   }
 
   /// 创建新tab
@@ -109,20 +72,6 @@ class DockController extends ChangeNotifier {
 
     // 根据类型添加默认内容
     switch (type) {
-      case 'workspace':
-        final textItem = DockManager.createTextDockItem(
-          '文本编辑器',
-          content: '在这里输入内容...',
-        );
-        DockManager.addDockItem('main', tabId, textItem);
-        break;
-      case 'tools':
-        final listItem = DockManager.createListDockItem(
-          '工具列表',
-          initialItems: ['工具1', '工具2'],
-        );
-        DockManager.addDockItem('main', tabId, listItem);
-        break;
       case 'empty':
       default:
         // 空白tab不添加任何内容
@@ -131,28 +80,6 @@ class DockController extends ChangeNotifier {
 
     // 激活新创建的Tab
     DockManager.setActiveTab('main', tabId);
-    notifyListeners();
-  }
-
-  /// 添加新的DockItem
-  void addTextItem() {
-    final item = DockManager.createTextDockItem(
-      'New Text',
-      content: 'New content',
-    );
-    DockManager.addDockItem('main', 'workspace', item);
-    notifyListeners();
-  }
-
-  void addCounterItem() {
-    final item = DockManager.createCounterDockItem('New Counter');
-    DockManager.addDockItem('main', 'workspace', item);
-    notifyListeners();
-  }
-
-  void addListItem() {
-    final item = DockManager.createListDockItem('New List');
-    DockManager.addDockItem('main', 'tools', item);
     notifyListeners();
   }
 

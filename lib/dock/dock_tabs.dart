@@ -38,6 +38,8 @@ class DockTabs {
     }
   }
 
+  bool get isEmpty => _dockTabs.isEmpty;
+
   /// 从JSON数据初始化
   void _initializeFromJson(Map<String, dynamic> json) {
     final tabs = json['tabs'] as Map<String, dynamic>? ?? {};
