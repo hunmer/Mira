@@ -69,6 +69,11 @@ class LibraryGalleryState {
     tabManager = manager;
     tabData = tabManager.getTabData(tabId);
 
+    // 如果无法从manager获取tabData，记录警告但不阻止初始化
+    if (tabData == null) {
+      print('Warning: Could not get tabData for tabId: $tabId');
+    }
+
     // 从存储中恢复状态
     paginationOptionsNotifier.value = Map<String, dynamic>.from(
       tabManager.getStoredValue(tabId, 'paginationOptions', {

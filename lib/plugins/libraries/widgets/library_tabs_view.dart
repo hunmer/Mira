@@ -11,7 +11,6 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
-import 'package:mira/views/library_tabs_empty_view.dart';
 import '../models/library.dart';
 import 'package:mira/core/widgets/hotkey_settings_view.dart';
 
@@ -173,25 +172,9 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                   : const SizedBox.shrink();
             },
           ),
-          Expanded(
-            child:
-                _hasAnyLibraryTabs()
-                    ? _dockController.dockTabs.buildDockingWidget(context)
-                    : LibraryTabsEmptyView(onAddTab: () => _openLibrary()),
-          ),
+          Expanded(child: _dockController.dockTabs.buildDockingWidget(context)),
         ],
       ),
     );
-  }
-
-  /// 检查是否有任何库标签页
-  bool _hasAnyLibraryTabs() {
-    final dockTabs = _dockController.dockTabs;
-    final homeTab = dockTabs.getDockTab('home');
-    if (homeTab != null) {
-      final allItems = homeTab.getAllDockItems();
-      return allItems.any((item) => item.type == 'library_tab');
-    }
-    return false;
   }
 }

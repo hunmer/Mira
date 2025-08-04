@@ -128,7 +128,7 @@ class LibraryDockItem extends DockItem {
     String title = '',
     bool isRecycleBin = false,
     String dockTabsId = 'main',
-    String dockTabId = 'home',
+    String? dockTabId, // 改为可为空，默认不指定
   }) {
     final tabData = LibraryTabData(
       id: Uuid().v4(),

@@ -8,6 +8,7 @@ import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_preview_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
+import 'package:uuid/uuid.dart';
 
 // 导入分离后的组件
 import 'library_gallery_view/index.dart';
@@ -44,6 +45,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     // 初始化状态管理
     _state = LibraryGalleryState();
     _state.initializeState(widget.tabId, widget.plugin.tabManager);
+
+    // 如果widget提供了tabData，优先使用它
+    if (widget.tabData != null) {
+      _state.tabData = widget.tabData;
+    }
 
     // 初始化上传队列
     _state.uploadQueue = UploadQueueService(widget.plugin, widget.library);
@@ -168,7 +174,38 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   /// 构建主要内容
   Widget _buildContent() {
-    final isRecycleBin = _state.tabData!.isRecycleBin;
+    // 如果tabData为空，使用widget.tabData或创建默认值
+    final tabData = _state.tabData ?? widget.tabData;
+    if (tabData == null) {
+      // 如果仍然没有tabData，创建一个基于当前library的默认tabData
+      print('Creating default tabData for library: ${widget.library.name}');
+      final defaultTabData = LibraryTabData(
+        id: widget.tabId.isNotEmpty ? widget.tabId : Uuid().v4(),
+        library: widget.library,
+        title: widget.library.name,
+        isRecycleBin: false,
+        createDate: DateTime.now(),
+        stored: {
+          'paginationOptions': {'page': 1, 'perPage': 1000},
+          'sortOptions': {'field': 'id', 'order': 'desc'},
+          'imagesPerRow': 0,
+          'filter': {},
+          'displayFields': [
+            'title',
+            'rating',
+            'notes',
+            'createdAt',
+            'tags',
+            'folder',
+            'size',
+            'ext',
+          ],
+        },
+      );
+      _state.tabData = defaultTabData;
+    }
+
+    final isRecycleBin = (_state.tabData ?? tabData)!.isRecycleBin;
     final paginationOptions = _state.paginationOptionsNotifier.value;
     final totalPages =
         (_state.totalItemsNotifier.value / paginationOptions['perPage']).ceil();

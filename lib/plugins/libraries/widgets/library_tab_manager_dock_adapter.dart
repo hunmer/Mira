@@ -2,6 +2,7 @@ import 'package:mira/dock/dock_manager.dart';
 import 'library_tab_manager.dart';
 import 'i_library_tab_manager.dart';
 import '../models/library.dart';
+import 'library_dock_item.dart';
 
 /// LibraryTabManager的dock适配器
 /// 提供与原LibraryTabManager兼容的接口，但使用dock系统作为后端
@@ -39,10 +40,18 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
         <String, dynamic>{};
   }
 
-  /// 获取tab数据 - 这个方法需要从dock系统中获取
+  /// 获取tab数据 - 从dock系统中获取
+  @override
   LibraryTabData? getTabData(String tabId) {
-    // TODO: 从dock系统获取LibraryTabData
-    // 这里需要实现从dock item中提取LibraryTabData的逻辑
+    // 首先尝试从dock系统获取DockItem
+    final dockItem = DockManager.getDockItem('main', 'home', 'library_$tabId');
+
+    if (dockItem != null && dockItem is LibraryDockItem) {
+      return dockItem.tabData;
+    }
+
+    // 如果找不到，返回null
+    // 调用者应该处理这种情况
     return null;
   }
 

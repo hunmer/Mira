@@ -126,9 +126,27 @@ class DockManager {
   }
 
   /// 添加DockItem到指定的DockTab
-  static bool addDockItem(String dockTabsId, String tabId, DockItem dockItem) {
+  static bool addDockItem(String dockTabsId, String? tabId, DockItem dockItem) {
     final dockTabs = getDockTabs(dockTabsId);
-    return dockTabs?.addDockItemToTab(tabId, dockItem) ?? false;
+    if (dockTabs == null) return false;
+
+    // 如果没有指定tabId，创建一个新的tab
+    if (tabId == null || tabId.isEmpty) {
+      final newTabId = 'tab_${DateTime.now().millisecondsSinceEpoch}';
+      final newTab = dockTabs.createDockTab(
+        newTabId,
+        displayName: dockItem.title,
+        closable: true,
+      );
+      if (newTab != null) {
+        newTab.addDockItem(dockItem);
+        return true;
+      }
+      return false;
+    }
+
+    // 尝试添加到现有tab
+    return dockTabs.addDockItemToTab(tabId, dockItem);
   }
 
   /// 移除DockItem
@@ -255,7 +273,7 @@ class DockManager {
     String title = '',
     bool isRecycleBin = false,
     String dockTabsId = 'main',
-    String dockTabId = 'home',
+    String? dockTabId, // 改为可为空，默认不指定
   }) {
     // 动态导入LibraryDockItem以避免循环依赖
     // 这个方法将在LibraryDockItem中实现
