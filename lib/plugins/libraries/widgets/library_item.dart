@@ -174,7 +174,7 @@ class _LibraryItemState extends State<LibraryItem> {
   }
 
   Widget _buildFileExtensionBadge() {
-    return Positioned(
+    return widget.displayFields.contains('ext') ? Positioned(
       top: 8,
       right: 8,
       child: Container(
@@ -195,7 +195,7 @@ class _LibraryItemState extends State<LibraryItem> {
           ],
         ),
       ),
-    );
+    ) : const SizedBox.shrink();
   }
 
   @override

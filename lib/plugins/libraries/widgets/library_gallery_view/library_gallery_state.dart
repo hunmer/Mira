@@ -5,6 +5,7 @@ import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
+import 'drag_select_view.dart';
 
 /// 图库视图的状态管理类
 class LibraryGalleryState {
@@ -54,6 +55,9 @@ class LibraryGalleryState {
   final ValueNotifier<int> imagesPerRowNotifier = ValueNotifier(
     0,
   ); // 每行显示图片自动调节
+  final ValueNotifier<DragSelectViewType> viewTypeNotifier = ValueNotifier(
+    DragSelectViewType.grid,
+  ); // 视图类型：网格或瀑布流
 
   // 其他状态
   bool isFirstLoad = false;
@@ -94,6 +98,10 @@ class LibraryGalleryState {
     imagesPerRowNotifier.value =
         tabManager.getStoredValue(tabId, 'imagesPerRow', 0) as int;
 
+    viewTypeNotifier.value =
+        DragSelectViewType
+            .values[tabManager.getStoredValue(tabId, 'viewType', 0) as int];
+
     // 监听选择模式状态变化，当退出选择模式时重置最后选中索引
     isSelectionModeNotifier.addListener(() {
       if (!isSelectionModeNotifier.value) {
@@ -131,5 +139,6 @@ class LibraryGalleryState {
     paginationOptionsNotifier.dispose();
     sortOptionsNotifier.dispose();
     imagesPerRowNotifier.dispose();
+    viewTypeNotifier.dispose();
   }
 }

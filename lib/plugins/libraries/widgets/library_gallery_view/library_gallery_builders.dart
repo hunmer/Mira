@@ -10,6 +10,7 @@ import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
+import 'package:mira/plugins/libraries/widgets/selected_files_page.dart';
 import 'library_gallery_events.dart';
 import 'library_gallery_state.dart';
 import 'drag_select_view.dart';
@@ -124,7 +125,7 @@ class LibraryGalleryBuilders {
               ),
             ),
             Flexible(
-              flex: 1,
+              flex: 2,
               child: Card(
                 elevation: 4,
                 margin: const EdgeInsets.all(6),
@@ -198,6 +199,11 @@ class LibraryGalleryBuilders {
           state.tabManager.setStoreValue(tabId, 'sortOptions', sortOptions);
           events.loadFiles();
         }
+      },
+      viewType: state.viewTypeNotifier.value,
+      onViewTypeChanged: (DragSelectViewType viewType) {
+        state.viewTypeNotifier.value = viewType;
+        state.tabManager.setStoreValue(tabId, 'viewType', viewType.index);
       },
     );
   }
@@ -328,6 +334,7 @@ class LibraryGalleryBuilders {
         state.selectedFileIds,
         state.displayFieldsNotifier,
         state.imagesPerRowNotifier,
+        state.viewTypeNotifier,
       ],
       builder: (context, values, _) {
         return GestureDetector(
@@ -337,7 +344,7 @@ class LibraryGalleryBuilders {
             state.isSelectionModeNotifier.value = false;
           },
           child: DragSelectView(
-            viewType: DragSelectViewType.grid,
+            viewType: values[5] as DragSelectViewType,
             plugin: plugin,
             library: library,
             isRecycleBin: state.tabData!.isRecycleBin,
@@ -429,19 +436,20 @@ class LibraryGalleryBuilders {
                     if (selectedFiles.isEmpty) {
                       return const Center(child: Text('未选中文件'));
                     }
-                    return ListView.builder(
-                      itemCount: selectedFiles.length,
-                      itemBuilder: (context, index) {
-                        final file = selectedFiles[index];
-                        return ListTile(
-                          leading: Icon(Icons.insert_drive_file),
-                          title: Text(file.name),
-                          subtitle: Text('ID: ${file.id}'),
-                          onTap: () {
-                            state.selectedFileNotifier.value = file;
-                          },
-                        );
-                      },
+                    return Column(
+                      children: [
+                        Expanded(
+                          child: SelectedFilesPage(
+                            plugin: plugin,
+                            library: library,
+                            selectedFiles: selectedFiles,
+                            galleryState: state,
+                            onSelectionChanged: (selectedIds) {
+                              state.selectedFileIds.value = selectedIds;
+                            },
+                          ),
+                        ),
+                      ],
                     );
                   },
                 ),

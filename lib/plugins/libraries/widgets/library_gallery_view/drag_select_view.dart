@@ -2,6 +2,7 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:drag_select_grid_view/drag_select_grid_view.dart';
+import 'package:waterfall_flow/waterfall_flow.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
@@ -15,6 +16,7 @@ import 'selectable_item.dart';
 /// 定义视图类型枚举
 enum DragSelectViewType {
   grid,
+  waterfall,
   // 未来可以添加其他类型，如 list, mosaic 等
 }
 
@@ -149,6 +151,8 @@ class _DragSelectViewState extends State<DragSelectView> {
     switch (widget.viewType) {
       case DragSelectViewType.grid:
         return _buildGridView();
+      case DragSelectViewType.waterfall:
+        return _buildWaterfallView();
     }
   }
 
@@ -186,6 +190,31 @@ class _DragSelectViewState extends State<DragSelectView> {
         return _buildSelectableItem(file, index, selected);
       },
       gridDelegate: gridDelegate,
+      padding: const EdgeInsets.all(2.0),
+    );
+  }
+
+  Widget _buildWaterfallView() {
+    return WaterfallFlow.builder(
+      controller: _scrollController,
+      physics:
+          kIsWeb ||
+                  defaultTargetPlatform == TargetPlatform.windows ||
+                  defaultTargetPlatform == TargetPlatform.macOS ||
+                  defaultTargetPlatform == TargetPlatform.linux
+              ? const DesktopScrollPhysics()
+              : const ClampingScrollPhysics(),
+      itemCount: widget.items.length,
+      itemBuilder: (BuildContext context, int index) {
+        final file = widget.items[index];
+        final isSelected = widget.selectedFileIds.contains(file.id);
+        return _buildSelectableWaterfallItem(file, index, isSelected);
+      },
+      gridDelegate: SliverWaterfallFlowDelegateWithFixedCrossAxisCount(
+        crossAxisCount: widget.imagesPerRow > 0 ? widget.imagesPerRow : 3,
+        crossAxisSpacing: 2.0,
+        mainAxisSpacing: 2.0,
+      ),
       padding: const EdgeInsets.all(2.0),
     );
   }
@@ -322,6 +351,111 @@ class _DragSelectViewState extends State<DragSelectView> {
                   _showContextMenu(context, file, details.globalPosition!);
                 },
               ),
+    );
+  }
+
+  /// 构建瀑布流的可选择项目组件
+  Widget _buildSelectableWaterfallItem(
+    LibraryFile file,
+    int index,
+    bool selected,
+  ) {
+    // 为瀑布流项目生成随机高度（模拟真实瀑布流效果）
+    final baseHeight = 200.0;
+    final randomHeight = baseHeight + (index % 3) * 50.0; // 200-300的随机高度
+
+    return GestureDetector(
+      onTap: () {
+        if (!widget.isSelectionMode) {
+          widget.onFileSelected(file);
+        } else {
+          widget.onToggleSelected(file);
+          // 手动触发选择状态更新
+          final newSelected = Set<int>.from(widget.selectedFileIds);
+          if (selected) {
+            newSelected.remove(file.id);
+          } else {
+            newSelected.add(file.id);
+          }
+          widget.onSelectionChanged?.call(newSelected);
+        }
+      },
+      onDoubleTap: () => widget.onFileOpen(file),
+      onLongPress: () {
+        // 长按进入选择模式并选中当前项
+        if (!widget.isSelectionMode) {
+          final newSelected = {file.id};
+          widget.onSelectionChanged?.call(newSelected);
+        }
+      },
+      onSecondaryTapDown: (TapDownDetails details) {
+        _showContextMenu(context, file, details.globalPosition);
+      },
+      child: Container(
+        height: randomHeight,
+        decoration: BoxDecoration(
+          border:
+              selected
+                  ? Border.all(color: Theme.of(context).primaryColor, width: 2)
+                  : null,
+          borderRadius: BorderRadius.circular(4),
+        ),
+        child:
+            kIsWeb
+                ? Listener(
+                  onPointerDown: (event) {
+                    if (event.kind == PointerDeviceKind.mouse &&
+                        event.buttons == kSecondaryMouseButton) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        _showContextMenu(context, file, event.position);
+                      });
+                    }
+                  },
+                  child: MouseRegion(
+                    cursor: SystemMouseCursors.click,
+                    child: SizedBox(
+                      height: randomHeight,
+                      child: LibraryItem(
+                        file: file,
+                        getTagTilte:
+                            (tagId) => widget.plugin.foldersTagsController
+                                .getTagTitleById(widget.library.id, tagId),
+                        getFolderTitle:
+                            (folderId) => widget.plugin.foldersTagsController
+                                .getFolderTitleById(
+                                  widget.library.id,
+                                  folderId,
+                                ),
+                        useThumbnail: file.thumb != null,
+                        displayFields: widget.displayFields,
+                      ),
+                    ),
+                  ),
+                )
+                : SizedBox(
+                  height: randomHeight,
+                  child: LibraryItem(
+                    file: file,
+                    getTagTilte:
+                        (tagId) => widget.plugin.foldersTagsController
+                            .getTagTitleById(widget.library.id, tagId),
+                    getFolderTitle:
+                        (folderId) => widget.plugin.foldersTagsController
+                            .getFolderTitleById(widget.library.id, folderId),
+                    useThumbnail: file.thumb != null,
+                    displayFields: widget.displayFields,
+                    onLongPress: (details) {
+                      if (details.globalPosition != null) {
+                        _showContextMenu(
+                          context,
+                          file,
+                          details.globalPosition!,
+                        );
+                      }
+                    },
+                  ),
+                ),
+      ),
     );
   }
 }

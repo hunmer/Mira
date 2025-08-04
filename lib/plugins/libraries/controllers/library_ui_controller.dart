@@ -14,8 +14,9 @@ class LibraryUIController {
 
   Future<List<LibraryFolder>> showFolderSelector(
     Library library,
-    BuildContext context,
-  ) async {
+    BuildContext context, {
+    List<int>? selectedFileIds,
+  }) async {
     final folders =
         await _plugin.libraryController
             .getLibraryInst(library.id)!
@@ -24,11 +25,14 @@ class LibraryUIController {
       context: context,
       builder:
           (context) => AsyncTreeViewDialog(
-            title: '选择文件夹',
+            title:
+                selectedFileIds != null && selectedFileIds.isNotEmpty
+                    ? '为 ${selectedFileIds.length} 个文件选择文件夹'
+                    : '选择文件夹',
             library: library,
             selected: null,
             type: 'folders',
-            selectionMode: TreeSelectionMode.single,
+            selectionMode: TreeSelectionMode.multiple,
             items: folders.map((f) => TreeItem.fromMap(f)).toList(),
           ),
     );
@@ -40,6 +44,7 @@ class LibraryUIController {
     Library library,
     BuildContext context, {
     TreeSelectionMode? selectionMode,
+    List<int>? selectedFileIds,
   }) async {
     final tags =
         await _plugin.libraryController
@@ -49,7 +54,10 @@ class LibraryUIController {
       context: context,
       builder:
           (context) => AsyncTreeViewDialog(
-            title: '选择标签',
+            title:
+                selectedFileIds != null && selectedFileIds.isNotEmpty
+                    ? '为 ${selectedFileIds.length} 个文件选择标签'
+                    : '选择标签',
             library: library,
             selectionMode: selectionMode ?? TreeSelectionMode.single,
             selected: null,

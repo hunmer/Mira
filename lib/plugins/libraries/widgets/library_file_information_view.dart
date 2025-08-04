@@ -135,23 +135,24 @@ class _LibraryFileInformationViewState
                       .toList(),
             ),
             const SizedBox(height: 16),
-            FutureBuilder<String>(
-              future: widget.plugin.foldersTagsController.getFolderTitleById(
-                widget.library.id,
-                widget.file.folderId,
+            if (widget.file.folderId.isNotEmpty)
+              FutureBuilder<String>(
+                future: widget.plugin.foldersTagsController.getFolderTitleById(
+                  widget.library.id,
+                  widget.file.folderId,
+                ),
+                builder: (context, snapshot) {
+                  return InputChip(
+                    label: Text(snapshot.data ?? widget.file.folderId),
+                    avatar: const Icon(Icons.folder),
+                    onDeleted: () {
+                      setState(() {
+                        _folderIdController.text = '';
+                      });
+                    },
+                  );
+                },
               ),
-              builder: (context, snapshot) {
-                return InputChip(
-                  label: Text(snapshot.data ?? widget.file.folderId),
-                  avatar: const Icon(Icons.folder),
-                  onDeleted: () {
-                    setState(() {
-                      _folderIdController.text = '';
-                    });
-                  },
-                );
-              },
-            ),
             const SizedBox(height: 16),
             TextFormField(
               controller: _nameController,
