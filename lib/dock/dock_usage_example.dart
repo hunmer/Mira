@@ -27,8 +27,16 @@ class _DockUsageExampleState extends State<DockUsageExample> {
     // 监听dock事件
     _eventSubscription = _dockController.eventStream.listen(_onDockEvent);
 
-    // 初始化dock系统，尝试加载之前保存的布局
-    _dockController.initializeDockSystem(savedLayoutId: 'example_layout');
+    // 异步初始化dock系统，尝试加载之前保存的布局
+    _initializeDock();
+  }
+
+  Future<void> _initializeDock() async {
+    await _dockController.initializeDockSystem(savedLayoutId: 'example_layout');
+    // 初始化完成后刷新UI
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _onDockControllerChanged() {
@@ -172,7 +180,11 @@ class _DockUsageExampleState extends State<DockUsageExample> {
           ),
 
           // 右侧：Dock系统
-          Expanded(child: _dockController.dockTabs.buildDockingWidget(context)),
+          Expanded(
+            child:
+                _dockController.dockTabs?.buildDockingWidget(context) ??
+                const Center(child: CircularProgressIndicator()),
+          ),
         ],
       ),
     );

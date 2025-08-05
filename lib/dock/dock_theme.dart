@@ -150,6 +150,8 @@ class DockTheme {
             color: primaryColor,
             borderRadius: borderRadius,
           ),
+          // 激活状态下的尺寸调整
+          padding: EdgeInsets.fromLTRB(12, 6, 12, 6), // 增加激活tab的内边距
         ),
         highlightedStatus: TabStatusThemeData(
           decoration: BoxDecoration(

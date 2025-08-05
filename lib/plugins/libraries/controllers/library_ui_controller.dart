@@ -4,6 +4,8 @@ import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/folder_tree_dialog.dart';
+import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
+import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import 'package:mira/widgets/tree_view.dart';
 
@@ -67,5 +69,32 @@ class LibraryUIController {
     );
     if (result == null) return [];
     return result.map((item) => LibraryTag.fromMap(item.toMap())).toList();
+  }
+
+  Future<void> openLibrary(BuildContext context) async {
+    final libraries = _plugin.dataController.libraries;
+    final itemCount = libraries.length;
+    if (itemCount == 1) {
+      LibraryDockItem.addTab(libraries.first);
+      return;
+    }
+    final selectedLibrary = await showDialog<Library>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('Select Library'),
+            content: SizedBox(
+              width: double.maxFinite,
+              child: LibraryListView(
+                onSelected: (library) {
+                  Navigator.pop(context, library);
+                },
+              ),
+            ),
+          ),
+    );
+    if (selectedLibrary != null) {
+      LibraryDockItem.addTab(selectedLibrary);
+    }
   }
 }

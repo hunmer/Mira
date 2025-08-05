@@ -39,9 +39,19 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     // 初始化dock controller
     _dockController = DockController(dockTabsId: 'main');
     _dockController.addListener(_onDockControllerChanged);
-    _dockController.initializeDockSystem(savedLayoutId: 'main_layout');
+
+    // 异步初始化dock系统
+    _initializeDock();
 
     init();
+  }
+
+  Future<void> _initializeDock() async {
+    await _dockController.initializeDockSystem(savedLayoutId: 'main_layout');
+    // 初始化完成后刷新UI
+    if (mounted) {
+      setState(() {});
+    }
   }
 
   void _onDockControllerChanged() {
@@ -89,37 +99,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     _dockController.removeListener(_onDockControllerChanged);
     _dockController.dispose();
     _plugin.server?.stop();
-  }
-
-  Future<void> _openLibrary() async {
-    final libraries = _plugin.dataController.libraries;
-    final itemCount = libraries.length;
-    if (itemCount == 1) {
-      LibraryDockItem.addTab(libraries.first);
-      return;
-    }
-    final selectedLibrary = await showDialog<Library>(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Select Library'),
-            content: SizedBox(
-              width: double.maxFinite,
-              child: LibraryListView(
-                onSelected: (library) {
-                  Navigator.pop(context, library);
-                },
-              ),
-            ),
-          ),
-    );
-    if (selectedLibrary != null) {
-      LibraryDockItem.addTab(selectedLibrary);
-    }
-  }
-
-  void _closeAllTabs() {
-    DockManager.closeAllLibraryTabs();
   }
 
   // 检查是否为桌面端
@@ -180,20 +159,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
               );
             },
           ),
-          IconButton(
-            icon: const Icon(Icons.settings),
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
-          ),
-          IconButton(
-            icon: const Icon(Icons.add),
-            tooltip: 'Add Library Tab',
-            onPressed: () => _openLibrary(),
-          ),
-          IconButton(
-            icon: const Icon(Icons.close),
-            tooltip: 'Close All Tabs',
-            onPressed: () => _closeAllTabs(),
-          ),
           // Windows/Linux 的窗口控制按钮在右侧
           if ((Platform.isWindows || Platform.isLinux) && _isDesktop)
             const WindowControls(),
@@ -215,7 +180,11 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                   : const SizedBox.shrink();
             },
           ),
-          Expanded(child: _dockController.dockTabs.buildDockingWidget(context)),
+          Expanded(
+            child:
+                _dockController.dockTabs?.buildDockingWidget(context) ??
+                const Center(child: CircularProgressIndicator()),
+          ),
         ],
       ),
     );

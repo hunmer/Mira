@@ -1,28 +1,33 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:mira/core/storage/storage_manager.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
-import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'dock_manager.dart';
 import 'dock_tabs.dart';
 import 'dock_events.dart';
+import 'dock_layout_preset_dialog.dart';
 
 /// DockController - 控制器类，管理Dock系统的业务逻辑
 class DockController extends ChangeNotifier {
   final String dockTabsId;
-  late DockTabs _dockTabs;
+  DockTabs? _dockTabs;
   String _lastSavedLayout = '';
   late DockEventStreamController _eventStreamController;
   late StreamSubscription<DockEvent> _eventSubscription;
+  bool _isInitialized = false;
 
   DockController({this.dockTabsId = 'main'});
 
-  DockTabs get dockTabs => _dockTabs;
+  DockTabs? get dockTabs => _dockTabs;
+  bool get isInitialized => _isInitialized;
   String get lastSavedLayout => _lastSavedLayout;
   bool get hasValidSavedLayout => _lastSavedLayout.isNotEmpty;
   Stream<DockEvent> get eventStream => _eventStreamController.stream;
 
   /// 初始化Dock系统
-  void initializeDockSystem({String? savedLayoutId}) {
+  Future<void> initializeDockSystem({String? savedLayoutId}) async {
+    if (_isInitialized) return;
+
     // 创建事件流控制器
     _eventStreamController = DockEventStreamController(id: dockTabsId);
 
@@ -30,11 +35,12 @@ class DockController extends ChangeNotifier {
     _eventSubscription = _eventStreamController.stream.listen(_handleDockEvent);
 
     // 等待DockManager完成初始化后再尝试加载布局
-    _initializeWithLayout(savedLayoutId);
+    await _initializeWithLayout(savedLayoutId);
+    _isInitialized = true;
   }
 
   /// 异步初始化布局
-  void _initializeWithLayout(String? savedLayoutId) async {
+  Future<void> _initializeWithLayout(String? savedLayoutId) async {
     print('Initializing DockController for $dockTabsId');
 
     // 等待DockManager完成初始化
@@ -50,15 +56,45 @@ class DockController extends ChangeNotifier {
     }
 
     Map<String, dynamic>? initData;
-    if (savedLayoutId != null) {
-      final savedLayout = DockManager.getStoredLayout(savedLayoutId);
-      if (savedLayout != null) {
-        print(
-          'Found saved layout for $savedLayoutId, length: ${savedLayout.length}',
+
+    // 首先检查是否有默认布局预设
+    try {
+      final storageManager = StorageManager();
+      await storageManager.initialize();
+      final defaultPreset = await LayoutPresetManager.getDefaultPreset(
+        storageManager,
+      );
+
+      if (defaultPreset != null) {
+        print('Found default layout preset: ${defaultPreset.name}');
+        // 使用默认预设的布局数据
+        await storageManager.save(
+          '${dockTabsId}_layout',
+          defaultPreset.layoutData,
         );
-        initData = {'layout': savedLayout};
-      } else {
-        print('No saved layout found for $savedLayoutId');
+        initData = {'layout': defaultPreset.layoutData};
+      } else if (savedLayoutId != null) {
+        final savedLayout = DockManager.getStoredLayout(savedLayoutId);
+        if (savedLayout != null) {
+          print(
+            'Found saved layout for $savedLayoutId, length: ${savedLayout.length}',
+          );
+          initData = {'layout': savedLayout};
+        } else {
+          print('No saved layout found for $savedLayoutId');
+        }
+      }
+    } catch (e) {
+      print('Error loading default preset: $e');
+      // 如果加载默认预设失败，尝试加载保存的布局
+      if (savedLayoutId != null) {
+        final savedLayout = DockManager.getStoredLayout(savedLayoutId);
+        if (savedLayout != null) {
+          print(
+            'Fallback to saved layout for $savedLayoutId, length: ${savedLayout.length}',
+          );
+          initData = {'layout': savedLayout};
+        }
       }
     }
 
@@ -70,7 +106,7 @@ class DockController extends ChangeNotifier {
       deferInitialization: true, // 启用延迟初始化
     );
 
-    if (_dockTabs.isEmpty) {
+    if (_dockTabs?.isEmpty ?? true) {
       // 创建默认tab和内容
       _createDefaultTabs();
     }
@@ -113,6 +149,11 @@ class DockController extends ChangeNotifier {
         break;
       case DockEventType.itemSelected:
         // 保存activeTabId
+        if (event is DockTabEvent && event.tabId != null) {
+          final tabId = event.tabId!;
+          _dockTabs?.setActiveTab(tabId);
+          shouldNotifyListeners = true;
+        }
         break;
       case DockEventType.itemPositionChanged:
         break;

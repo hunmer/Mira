@@ -221,12 +221,13 @@ class StorageManager {
     await _storage.saveData(key, value);
   }
 
-  Future<String> _readString(String key) async {
+  Future<String?> _readString(String key) async {
     if (_cache.containsKey(key)) return _cache[key] as String;
     final content = await _storage.loadData(key);
-    if (content == null) throw Exception('数据不存在: $key');
-    _cache[key] = content;
-    return content;
+    if (content != null) {
+      _cache[key] = content;
+      return content;
+    }
   }
 
   Future<void> _saveJson(String key, dynamic data) async {
@@ -237,6 +238,7 @@ class StorageManager {
   Future<dynamic> _readJson(String key, [dynamic defaultValue]) async {
     try {
       final jsonStr = await _readString(key);
+      if (jsonStr == null) return defaultValue;
       return jsonDecode(jsonStr);
     } catch (e) {
       return defaultValue;

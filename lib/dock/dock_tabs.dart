@@ -1,19 +1,23 @@
 import 'package:flutter/material.dart';
+import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/dock/dock_theme.dart';
 import 'package:mira/dock/docking/lib/src/docking.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/layout/drop_position.dart'
     as docking_drop;
+import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:tabbed_view/tabbed_view.dart';
 import 'dock_tab.dart';
 import 'dock_item.dart';
 import 'dock_layout_parser.dart';
 import 'dock_events.dart';
 import 'dock_manager.dart';
+import 'dock_layout_preset_dialog.dart';
 
 /// DockTabs类 - 管理多个DockTab，提供全局的TabbedViewTheme和Docking
 class DockTabs {
   final String id;
+  late final LibrariesPlugin? _plugin;
   final Map<String, DockTab> _dockTabs = {};
   late DockingLayout _globalLayout;
   final ValueNotifier<int> _layoutChangeNotifier = ValueNotifier<int>(0);
@@ -37,6 +41,7 @@ class DockTabs {
   }) {
     _themeData = themeData;
     _eventStreamController = eventStreamController;
+    _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin?;
 
     if (initData != null) {
       if (deferInitialization) {
@@ -206,13 +211,25 @@ class DockTabs {
     return false;
   }
 
-  /// 清除所有类型为homepage的tab
+  /// 清除所有类型为homepage且确实为空的tab
   void _clearDefaultEmptyTabs() {
+    final tabsToRemove = <String>[];
+
     for (var entry in _dockTabs.entries) {
       final dockTab = entry.value;
-      if (dockTab.getAllDockItems().any((item) => item.type == 'homepage')) {
-        removeDockTab(entry.key);
+      final allItems = dockTab.getAllDockItems();
+
+      // 只有当tab确实只包含homepage类型的item，并且没有其他有用的数据时才清除
+      if (allItems.length == 1 &&
+          allItems.first.type == 'homepage' &&
+          dockTab.displayName.contains('首页')) {
+        tabsToRemove.add(entry.key);
       }
+    }
+
+    // 批量删除空的默认tab
+    for (final tabId in tabsToRemove) {
+      removeDockTab(tabId);
     }
   }
 
@@ -359,18 +376,17 @@ class DockTabs {
   /// 构建带事件监听的Tab内容
   Widget _buildTabContentWithEvents(DockTab tab) {
     final items = tab.getAllDockItems();
+    final defaultConfig = tab.getDefaultDockingItemConfig();
     if (items.isEmpty) {
       return DockManager.createDefaultHomePageDockItem().widget;
     } else if (items.length == 1) {
-      return items.first
-          .buildDockingItem(defaultConfig: tab.getDefaultDockingItemConfig())
-          .widget;
+      return items.first.buildDockingItem(defaultConfig: defaultConfig).widget;
     } else {
       // 创建TabData列表
       final tabDataList =
           items.map((item) {
             final dockingItem = item.buildDockingItem(
-              defaultConfig: tab.getDefaultDockingItemConfig(),
+              defaultConfig: defaultConfig,
             );
             return TabData(
               value: dockingItem,
@@ -380,9 +396,11 @@ class DockTabs {
             );
           }).toList();
 
-      // TODO: 正确的TabbedView位置
       return TabbedView(
         controller: TabbedViewController(tabDataList),
+        // tabsAreaButtonsBuilder: (context, tabsCount) {
+        //   return _buildTabsAreaButtons(context, tabsCount);
+        // },
         onDraggableBuild: (controller, tabIndex, tabData) {
           final dockingItem = tabData.value as DockingItem;
           return DraggableConfig(
@@ -421,6 +439,80 @@ class DockTabs {
     }
   }
 
+  /// 构建Tab区域的按钮
+  List<TabButton> _buildTabsAreaButtons(
+    BuildContext context,
+    DockingTabs? dockingTabs,
+  ) {
+    List<TabButton> buttons = [];
+
+    // 添加新tab按钮
+    buttons.add(
+      TabButton(
+        icon: IconProvider.data(Icons.add),
+        onPressed: () {
+          _handleAddNewTab(context);
+        },
+      ),
+    );
+
+    // 如果有tab，添加删除所有tab按钮
+    if (dockingTabs != null) {
+      buttons.add(
+        TabButton(
+          icon: IconProvider.data(Icons.clear_all),
+          onPressed: () {
+            _handleDeleteAllTabs();
+          },
+        ),
+      );
+    }
+
+    // 预设菜单按钮
+    buttons.add(
+      TabButton(
+        icon: IconProvider.data(Icons.more_vert),
+        onPressed: () {
+          _showPresetDialog(context);
+        },
+      ),
+    );
+
+    return buttons;
+  }
+
+  /// 处理添加新tab
+  void _handleAddNewTab(BuildContext context) {
+    // TODO 展示所有注册的窗口类型
+    _plugin?.libraryUIController.openLibrary(context);
+  }
+
+  /// 处理删除所有tab
+  void _handleDeleteAllTabs() {
+    // 删除所有tab
+    final tabIds = _dockTabs.keys.toList();
+    for (final tabId in tabIds) {
+      removeDockTab(tabId);
+    }
+  }
+
+  /// 显示预设对话框
+  void _showPresetDialog(BuildContext context) async {
+    final result = await showDialog<String>(
+      context: context,
+      builder:
+          (context) => DockLayoutPresetDialog(
+            dockTabsId: id,
+            storageManager: _plugin!.storage,
+          ),
+    );
+
+    if (result != null && result.isNotEmpty) {
+      // 重新加载布局
+      loadLayout(result);
+    }
+  }
+
   /// 构建带主题的Docking Widget
   Widget buildDockingWidget(BuildContext context) {
     return TabbedViewTheme(
@@ -433,6 +525,13 @@ class DockTabs {
             return _buildContextMenuWrapper(
               Docking(
                 layout: _globalLayout,
+                dockingButtonsBuilder: (
+                  BuildContext context,
+                  DockingTabs? dockingTabs,
+                  DockingItem? dockingItem,
+                ) {
+                  return _buildTabsAreaButtons(context, dockingTabs);
+                },
                 onItemClose: _handleItemClose,
                 onItemSelection: _handleItemSelection,
                 onTabMove: _handleItemMove,
