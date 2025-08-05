@@ -9,6 +9,8 @@ import '../../layout/docking_layout.dart';
 import '../../layout/drop_position.dart';
 import '../../on_item_close.dart';
 import '../../on_item_selection.dart';
+import '../../on_item_move.dart';
+import '../../on_item_layout_changed.dart';
 import '../../theme/docking_theme.dart';
 import '../../theme/docking_theme_data.dart';
 import 'package:flutter/material.dart';
@@ -23,6 +25,8 @@ class DockingTabsWidget extends StatefulWidget {
     required this.dockingTabs,
     this.onItemSelection,
     this.onItemClose,
+    this.onItemMove,
+    this.onItemLayoutChanged,
     this.itemCloseInterceptor,
     this.dockingButtonsBuilder,
     required this.maximizableTab,
@@ -34,6 +38,8 @@ class DockingTabsWidget extends StatefulWidget {
   final DockingTabs dockingTabs;
   final OnItemSelection? onItemSelection;
   final OnItemClose? onItemClose;
+  final OnItemMove? onItemMove;
+  final OnItemLayoutChanged? onItemLayoutChanged;
   final ItemCloseInterceptor? itemCloseInterceptor;
   final DockingButtonsBuilder? dockingButtonsBuilder;
   final bool maximizableTab;
@@ -62,9 +68,10 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
         buttons = [];
         buttons.addAll(child.buttons!);
       }
-      final bool maximizable = child.maximizable != null
-          ? child.maximizable!
-          : widget.maximizableTab;
+      final bool maximizable =
+          child.maximizable != null
+              ? child.maximizable!
+              : widget.maximizableTab;
       if (maximizable) {
         if (buttons == null) {
           buttons = [];
@@ -118,22 +125,28 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
         }
       },
       tabCloseInterceptor: _tabCloseInterceptor,
-      onDraggableBuild: widget.draggable
-          ? (TabbedViewController controller, int tabIndex, TabData tabData) {
-              return buildDraggableConfig(
-                dockingDrag: widget.dragOverPosition,
-                tabData: tabData,
-                sourceLayout: widget.layout,
-              );
-            }
-          : null,
+      onDraggableBuild:
+          widget.draggable
+              ? (
+                TabbedViewController controller,
+                int tabIndex,
+                TabData tabData,
+              ) {
+                return buildDraggableConfig(
+                  dockingDrag: widget.dragOverPosition,
+                  tabData: tabData,
+                  sourceLayout: widget.layout,
+                );
+              }
+              : null,
       onTabClose: _onTabClose,
-      contentBuilder: (context, tabIndex) => TabsContentWrapper(
-        listener: _updateActiveDropPosition,
-        layout: widget.layout,
-        dockingTabs: widget.dockingTabs,
-        child: controller.tabs[tabIndex].content!,
-      ),
+      contentBuilder:
+          (context, tabIndex) => TabsContentWrapper(
+            listener: _updateActiveDropPosition,
+            layout: widget.layout,
+            dockingTabs: widget.dockingTabs,
+            child: controller.tabs[tabIndex].content!,
+          ),
       onBeforeDropAccept: widget.draggable ? _onBeforeDropAccept : null,
     );
     if (widget.draggable && widget.dragOverPosition.enable) {
@@ -163,7 +176,9 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
       return false;
     }
 
-    DockingItem dockingItem = source.tabData.value; // 检查是否为跨layout拖动
+    DockingItem dockingItem = source.tabData.value;
+
+    // 检查是否为跨layout拖动
     if (dockingItem.layoutId != widget.layout.id) {
       // 跨layout拖动：先创建副本添加到目标layout，然后标记拖动完成
       try {
@@ -190,6 +205,15 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
         // 标记跨layout拖动已完成，这样源layout会在拖动结束时移除原item
         DraggableConfigMixin.markCrossLayoutDropCompleted();
 
+        if (widget.onItemLayoutChanged != null) {
+          widget.onItemLayoutChanged!(
+            oldItem: dockingItem,
+            newItem: newItem,
+            targetArea: widget.dockingTabs,
+            dropIndex: newIndex,
+          );
+        }
+
         return true;
       } catch (e) {
         // 如果跨layout拖动失败，返回false阻止拖动
@@ -203,6 +227,13 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
         targetArea: widget.dockingTabs,
         dropIndex: newIndex,
       );
+      if (widget.onItemMove != null) {
+        widget.onItemMove!(
+          draggedItem: dockingItem,
+          targetArea: widget.dockingTabs,
+          dropIndex: newIndex,
+        );
+      }
       return true;
     }
   }
@@ -214,9 +245,10 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
         widget.dockingButtonsBuilder!(context, widget.dockingTabs, null),
       );
     }
-    final bool maximizable = widget.dockingTabs.maximizable != null
-        ? widget.dockingTabs.maximizable!
-        : widget.maximizableTabsArea;
+    final bool maximizable =
+        widget.dockingTabs.maximizable != null
+            ? widget.dockingTabs.maximizable!
+            : widget.maximizableTabsArea;
     if (maximizable) {
       DockingThemeData data = DockingTheme.of(context);
       if (widget.layout.maximizedArea != null &&
@@ -231,8 +263,8 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
         buttons.add(
           TabButton(
             icon: data.maximizeIcon,
-            onPressed: () =>
-                widget.layout.maximizeDockingTabs(widget.dockingTabs),
+            onPressed:
+                () => widget.layout.maximizeDockingTabs(widget.dockingTabs),
           ),
         );
       }

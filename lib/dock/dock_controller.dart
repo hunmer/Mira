@@ -1,7 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
-import 'package:mira/dock/homepage_dock_item.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'dock_manager.dart';
 import 'dock_tabs.dart';
 import 'dock_events.dart';
@@ -62,7 +62,7 @@ class DockController extends ChangeNotifier {
       }
     }
 
-    // 创建主要的DockTabs，添加onItemClose回调和事件流
+    // 创建主要的DockTabs，添加回调和事件流
     _dockTabs = DockManager.createDockTabs(
       dockTabsId,
       initData: initData,
@@ -75,6 +75,64 @@ class DockController extends ChangeNotifier {
             dockTabsId: dockTabsId,
             tabId: _dockTabs.activeTabId ?? 'home',
             itemTitle: item.name ?? 'unknown',
+          ),
+        );
+        notifyListeners();
+      },
+      onItemSelection: (DockingItem item) {
+        // 处理项目选择事件
+        print('Controller: Item selected: ${item.name}');
+        notifyListeners();
+      },
+      onItemMove: (
+        DockingItem draggedItem,
+        DropArea targetArea,
+        DropPosition? dropPosition,
+        int? dropIndex,
+      ) {
+        // 处理项目移动事件
+        print('Controller: Item moved: ${draggedItem.name}');
+        _eventStreamController.emit(
+          DockItemEvent(
+            type: DockEventType.layoutChanged,
+            dockTabsId: dockTabsId,
+            tabId: _dockTabs.activeTabId ?? 'home',
+            itemTitle: draggedItem.name ?? 'unknown',
+            data: {
+              'action': 'move',
+              'targetArea': targetArea.toString(),
+              'dropPosition': dropPosition?.toString(),
+              'dropIndex': dropIndex,
+            },
+          ),
+        );
+        notifyListeners();
+      },
+      onItemLayoutChanged: (
+        DockingItem oldItem,
+        DockingItem newItem,
+        DropArea targetArea,
+        DropPosition? newIndex,
+        int? dropIndex,
+      ) {
+        // 处理项目布局变化事件
+        print(
+          'Controller: Item layout changed: ${oldItem.name} -> ${newItem.name}',
+        );
+        _eventStreamController.emit(
+          DockItemEvent(
+            type: DockEventType.layoutChanged,
+            dockTabsId: dockTabsId,
+            tabId: _dockTabs.activeTabId ?? 'home',
+            itemTitle: newItem.name ?? 'unknown',
+            data: {
+              'action': 'layoutChanged',
+              'oldItem': oldItem.name,
+              'newItem': newItem.name,
+              'targetArea': targetArea.toString(),
+              'newIndex': newIndex?.toString(),
+              'dropIndex': dropIndex,
+            },
           ),
         );
         notifyListeners();

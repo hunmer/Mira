@@ -1,5 +1,6 @@
 import 'dart:convert';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:tabbed_view/tabbed_view.dart';
 import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_tabs.dart';
@@ -71,6 +72,10 @@ class DockManager {
     Map<String, dynamic>? initData,
     TabbedViewThemeData? themeData,
     void Function(DockingItem)? onItemClose,
+    void Function(DockingItem)? onItemSelection,
+    void Function(DockingItem, DropArea, DropPosition?, int?)? onItemMove,
+    void Function(DockingItem, DockingItem, DropArea, DropPosition?, int?)?
+    onItemLayoutChanged,
     DockEventStreamController? eventStreamController,
   }) {
     final dockTabs = DockTabs(
@@ -78,6 +83,9 @@ class DockManager {
       initData: initData,
       themeData: themeData,
       onItemClose: onItemClose,
+      onItemSelection: onItemSelection,
+      onItemMove: onItemMove,
+      onItemLayoutChanged: onItemLayoutChanged,
       eventStreamController: eventStreamController,
     );
     _instance._dockTabsMap[id] = dockTabs;

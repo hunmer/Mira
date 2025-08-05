@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mira/dock/dock_theme.dart';
 import 'package:mira/dock/docking/lib/src/docking.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:super_drag_and_drop/super_drag_and_drop.dart';
 import 'package:tabbed_view/tabbed_view.dart';
 import 'dock_tab.dart';
 import 'dock_item.dart';
@@ -15,6 +16,11 @@ class DockTabs {
   late DockingLayout _globalLayout;
   final ValueNotifier<int> _layoutChangeNotifier = ValueNotifier<int>(0);
   void Function(DockingItem)? _onItemClose;
+  void Function(DockingItem)? _onItemSelection;
+  void Function(DockingItem, DropArea, DropPosition?, int?)? _onItemMove;
+  void Function(DockingItem, DockingItem, DropArea, DropPosition?, int?)?
+  _onItemLayoutChanged;
+
   String? _activeTabId;
   TabbedViewThemeData? _themeData;
   DefaultDockLayoutParser? mainParser;
@@ -25,10 +31,17 @@ class DockTabs {
     Map<String, dynamic>? initData,
     TabbedViewThemeData? themeData,
     void Function(DockingItem)? onItemClose,
+    void Function(DockingItem)? onItemSelection,
+    void Function(DockingItem, DropArea, DropPosition?, int?)? onItemMove,
+    void Function(DockingItem, DockingItem, DropArea, DropPosition?, int?)?
+    onItemLayoutChanged,
     DockEventStreamController? eventStreamController,
   }) {
     _themeData = themeData;
     _onItemClose = onItemClose;
+    _onItemSelection = onItemSelection;
+    _onItemMove = onItemMove;
+    _onItemLayoutChanged = onItemLayoutChanged;
     _eventStreamController = eventStreamController;
 
     if (initData != null) {
@@ -421,10 +434,37 @@ class DockTabs {
                 layout: _globalLayout,
                 onItemClose: (DockingItem item) {
                   _handleItemClose(item);
-                  // add stream with closed item
                 },
                 onItemSelection: (DockingItem item) {
-                  // add stream with selected item
+                  _handleItemSelection(item);
+                },
+                onItemMove: ({
+                  required DockingItem draggedItem,
+                  required DropArea targetArea,
+                  DropPosition? dropPosition,
+                  int? dropIndex,
+                }) {
+                  _handleItemMove(
+                    draggedItem,
+                    targetArea,
+                    dropPosition,
+                    dropIndex,
+                  );
+                },
+                onItemLayoutChanged: ({
+                  required DockingItem oldItem,
+                  required DockingItem newItem,
+                  required DropArea targetArea,
+                  DropPosition? newIndex,
+                  int? dropIndex,
+                }) {
+                  _handleItemLayoutChanged(
+                    oldItem,
+                    newItem,
+                    targetArea,
+                    newIndex,
+                    dropIndex,
+                  );
                 },
               ),
             );
@@ -461,6 +501,50 @@ class DockTabs {
 
     // 调用外部回调
     _onItemClose?.call(dockingItem);
+  }
+
+  /// 处理DockItem选择事件
+
+  void _handleItemSelection(DockingItem dockingItem) {
+    // 这里可以添加选择事件的处理逻辑
+    print('Item selected: ${dockingItem.name}');
+    _onItemSelection?.call(dockingItem);
+  }
+
+  /// 处理DockItem移动事件
+  void _handleItemMove(
+    DockingItem draggedItem,
+    DropArea targetArea,
+    DropPosition? dropPosition,
+    int? dropIndex,
+  ) {
+    // 这里可以添加移动事件的处理逻辑
+    print(
+      'Dragged item: ${draggedItem.name}, Target area: $targetArea, Drop position: $dropPosition, Drop index: $dropIndex',
+    );
+    _onItemMove?.call(draggedItem, targetArea, dropPosition, dropIndex);
+  }
+
+  /// 处理DockItem布局变化事件
+  ///
+  void _handleItemLayoutChanged(
+    DockingItem oldItem,
+    DockingItem newItem,
+    DropArea targetArea,
+    DropPosition? newIndex,
+    int? dropIndex,
+  ) {
+    // 这里可以添加布局变化事件的处理逻辑
+    print(
+      'Old item: ${oldItem.name}, New item: ${newItem.name}, Target area: $targetArea, Drop position: $newIndex, Drop index: $dropIndex',
+    );
+    _onItemLayoutChanged?.call(
+      oldItem,
+      newItem,
+      targetArea,
+      newIndex,
+      dropIndex,
+    );
   }
 
   /// 添加DockItem到指定的DockTab

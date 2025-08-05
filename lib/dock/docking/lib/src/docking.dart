@@ -1,3 +1,6 @@
+import 'package:mira/dock/docking/lib/src/on_item_layout_changed.dart';
+import 'package:mira/dock/docking/lib/src/on_item_move.dart';
+
 import 'docking_buttons_builder.dart';
 import 'drag_over_position.dart';
 import 'internal/widgets/docking_item_widget.dart';
@@ -16,6 +19,8 @@ class Docking extends StatefulWidget {
     this.layout,
     this.onItemSelection,
     this.onItemClose,
+    this.onItemMove,
+    this.onItemLayoutChanged,
     this.itemCloseInterceptor,
     this.dockingButtonsBuilder,
     this.maximizableItem = true,
@@ -28,6 +33,9 @@ class Docking extends StatefulWidget {
   final DockingLayout? layout;
   final OnItemSelection? onItemSelection;
   final OnItemClose? onItemClose;
+  final OnItemMove? onItemMove;
+  final OnItemLayoutChanged? onItemLayoutChanged;
+
   final ItemCloseInterceptor? itemCloseInterceptor;
   final DockingButtonsBuilder? dockingButtonsBuilder;
   final bool maximizableItem;
@@ -105,6 +113,8 @@ class _DockingState extends State<Docking> {
         item: area,
         onItemSelection: widget.onItemSelection,
         itemCloseInterceptor: widget.itemCloseInterceptor,
+        onItemMove: widget.onItemMove,
+        onItemLayoutChanged: widget.onItemLayoutChanged,
         onItemClose: widget.onItemClose,
         dockingButtonsBuilder: widget.dockingButtonsBuilder,
         maximizable: widget.maximizableItem,
@@ -123,6 +133,8 @@ class _DockingState extends State<Docking> {
           item: area.childAt(0),
           onItemSelection: widget.onItemSelection,
           itemCloseInterceptor: widget.itemCloseInterceptor,
+          onItemMove: widget.onItemMove,
+          onItemLayoutChanged: widget.onItemLayoutChanged,
           onItemClose: widget.onItemClose,
           dockingButtonsBuilder: widget.dockingButtonsBuilder,
           maximizable: widget.maximizableItem,
@@ -136,6 +148,8 @@ class _DockingState extends State<Docking> {
         dockingTabs: area,
         onItemSelection: widget.onItemSelection,
         onItemClose: widget.onItemClose,
+        onItemMove: widget.onItemMove,
+        onItemLayoutChanged: widget.onItemLayoutChanged,
         itemCloseInterceptor: widget.itemCloseInterceptor,
         dockingButtonsBuilder: widget.dockingButtonsBuilder,
         maximizableTab: widget.maximizableTab,

@@ -1,3 +1,6 @@
+import 'package:mira/dock/docking/lib/src/on_item_layout_changed.dart';
+import 'package:mira/dock/docking/lib/src/on_item_move.dart';
+
 import '../../docking_buttons_builder.dart';
 import '../../drag_over_position.dart';
 import 'draggable_config_mixin.dart';
@@ -23,6 +26,8 @@ class DockingItemWidget extends StatefulWidget {
     required this.item,
     this.onItemSelection,
     this.onItemClose,
+    this.onItemMove,
+    this.onItemLayoutChanged,
     this.itemCloseInterceptor,
     this.dockingButtonsBuilder,
     required this.maximizable,
@@ -33,6 +38,9 @@ class DockingItemWidget extends StatefulWidget {
   final DockingItem item;
   final OnItemSelection? onItemSelection;
   final OnItemClose? onItemClose;
+  final OnItemMove? onItemMove;
+  final OnItemLayoutChanged? onItemLayoutChanged;
+
   final ItemCloseInterceptor? itemCloseInterceptor;
   final DockingButtonsBuilder? dockingButtonsBuilder;
   final bool maximizable;
@@ -187,6 +195,15 @@ class DockingItemWidgetState extends State<DockingItemWidget>
           // 标记跨layout拖动已完成，这样源layout会在拖动结束时移除原item
           DraggableConfigMixin.markCrossLayoutDropCompleted();
 
+          if (widget.onItemLayoutChanged != null) {
+            widget.onItemLayoutChanged!(
+              oldItem: dockingItem,
+              newItem: newItem,
+              targetArea: widget.item,
+              dropIndex: newIndex,
+            );
+          }
+
           return true;
         } catch (e) {
           // 如果跨layout拖动失败，返回false阻止拖动
@@ -200,6 +217,13 @@ class DockingItemWidgetState extends State<DockingItemWidget>
           targetArea: widget.item,
           dropIndex: newIndex,
         );
+        if (widget.onItemMove != null) {
+          widget.onItemMove!(
+            draggedItem: dockingItem,
+            targetArea: widget.item,
+            dropIndex: newIndex,
+          );
+        }
         return true;
       }
     }
