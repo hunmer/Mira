@@ -748,13 +748,11 @@ class DockTabs {
   /// 转换为JSON
   Map<String, dynamic> toJson() {
     final tabsMap = <String, dynamic>{};
-    String? activeTabIdToSave = _activeTabId;
-
     for (var entry in _dockTabs.entries) {
       final dockTab = entry.value;
       tabsMap[entry.key] = dockTab.toJson();
     }
-    return {'id': id, 'tabs': tabsMap, 'activeTabId': activeTabIdToSave};
+    return {'id': id, 'tabs': tabsMap, 'activeTabId': _activeTabId};
   }
 
   /// 保存当前布局

@@ -1,5 +1,7 @@
 import 'dart:async';
+import 'dart:io';
 
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_debounce.dart';
@@ -13,6 +15,7 @@ import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
 import '../models/library.dart';
 import 'package:mira/core/widgets/hotkey_settings_view.dart';
+import 'package:mira/core/widgets/window_controls.dart';
 
 class LibraryTabsView extends StatefulWidget {
   const LibraryTabsView({super.key});
@@ -119,14 +122,52 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     DockManager.closeAllLibraryTabs();
   }
 
+  // 检查是否为桌面端
+  bool get _isDesktop {
+    if (kIsWeb) return false;
+    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        leading: IconButton(
-          icon: const Icon(Icons.menu),
-          onPressed: () => _showSidebar.value = !_showSidebar.value,
-        ),
+        leading:
+            Platform.isMacOS && _isDesktop
+                ? Row(
+                  children: [
+                    const WindowControls(),
+                    const SizedBox(width: 8),
+                    IconButton(
+                      icon: const Icon(Icons.menu),
+                      onPressed: () => _showSidebar.value = !_showSidebar.value,
+                    ),
+                  ],
+                )
+                : IconButton(
+                  icon: const Icon(Icons.menu),
+                  onPressed: () => _showSidebar.value = !_showSidebar.value,
+                ),
+        leadingWidth: Platform.isMacOS && _isDesktop ? 140 : null,
+        title:
+            _isDesktop
+                ? DragToMoveArea(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        Icons.drag_indicator,
+                        size: 16,
+                        color: Theme.of(
+                          context,
+                        ).textTheme.titleMedium?.color?.withOpacity(0.6),
+                      ),
+                      const SizedBox(width: 8),
+                      Tooltip(message: '拖拽此区域移动窗口', child: const Text('素材管理器')),
+                    ],
+                  ),
+                )
+                : const Text('素材管理器'),
         actions: [
           IconButton(
             icon: const Icon(Icons.keyboard),
@@ -153,8 +194,10 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             tooltip: 'Close All Tabs',
             onPressed: () => _closeAllTabs(),
           ),
+          // Windows/Linux 的窗口控制按钮在右侧
+          if ((Platform.isWindows || Platform.isLinux) && _isDesktop)
+            const WindowControls(),
         ],
-        title: const Text('素材管理器'),
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
       body: Row(

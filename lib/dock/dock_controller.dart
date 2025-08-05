@@ -112,6 +112,8 @@ class DockController extends ChangeNotifier {
         // shouldNotifyListeners = true;
         break;
       case DockEventType.itemSelected:
+        // 保存activeTabId
+        break;
       case DockEventType.itemPositionChanged:
         break;
     }
