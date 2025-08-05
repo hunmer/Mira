@@ -13,6 +13,10 @@ class DockLayoutController extends ChangeNotifier {
   String? _pendingLayoutData;
   bool _isLayoutLoading = false;
 
+  // 防抖相关
+  Timer? _debounceTimer;
+  static const Duration _debounceDuration = Duration(milliseconds: 500);
+
   DockLayoutController({required this.dockTabsId});
 
   /// 获取上次保存的布局
@@ -113,13 +117,11 @@ class DockLayoutController extends ChangeNotifier {
       final success = dockTabs.loadLayout(_pendingLayoutData!);
 
       if (success) {
-        // 将布局数据保存到存储中，确保后续加载时能够获取到正确的数据
-        DockManager.storeLayout('${dockTabsId}_layout', _pendingLayoutData!);
+        // 仅设置_lastSavedLayout，不直接调用storeLayout
+        // 让正常的自动保存机制来处理数据的持久化存储
         _lastSavedLayout = _pendingLayoutData!;
         _pendingLayoutData = null; // 清除待处理数据
-        print(
-          'DockLayoutController: Successfully applied and stored pending layout',
-        );
+        print('DockLayoutController: Successfully applied pending layout');
       } else {
         print('DockLayoutController: Failed to apply pending layout');
       }
@@ -135,7 +137,22 @@ class DockLayoutController extends ChangeNotifier {
   }
 
   /// 保存当前布局
-  bool saveLayout() {
+  bool saveLayout({bool useDebounce = false}) {
+    if (useDebounce) {
+      // 使用防抖保存
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(_debounceDuration, () {
+        _performImmediateSave();
+      });
+      return true; // 防抖模式下总是返回true，实际结果在异步回调中
+    } else {
+      // 立即保存
+      return _performImmediateSave();
+    }
+  }
+
+  /// 执行立即保存操作
+  bool _performImmediateSave() {
     try {
       final success = DockManager.saveLayoutForDockTabs(dockTabsId);
       if (success) {
@@ -166,6 +183,14 @@ class DockLayoutController extends ChangeNotifier {
     } catch (e) {
       print('DockLayoutController: Error saving layout: $e');
       return false;
+    }
+  }
+
+  /// 强制执行待处理的防抖保存操作
+  void flushPendingSave() {
+    if (_debounceTimer?.isActive == true) {
+      _debounceTimer!.cancel();
+      _performImmediateSave();
     }
   }
 
@@ -358,31 +383,43 @@ class DockLayoutController extends ChangeNotifier {
   /// 处理布局变化事件（由DockController调用）
   void handleLayoutChanged(String eventDockTabsId) {
     if (eventDockTabsId == dockTabsId) {
-      // 自动保存布局
-      final success = DockManager.saveLayoutForDockTabs(eventDockTabsId);
-      if (success) {
-        // 从存储中获取实际的布局字符串用于设置_lastSavedLayout
-        final storedData = DockManager.getStoredLayout(
-          '${eventDockTabsId}_layout',
-        );
-        if (storedData != null) {
-          try {
-            // 尝试解析为完整的布局数据
-            final layoutData = json.decode(storedData) as Map<String, dynamic>;
-            if (layoutData.containsKey('layoutString')) {
-              _lastSavedLayout = layoutData['layoutString'] as String;
-            } else {
-              _lastSavedLayout = storedData; // 兼容旧格式
-            }
-          } catch (jsonError) {
-            // JSON解析失败，直接使用原始数据（兼容旧格式）
-            _lastSavedLayout = storedData;
+      // 使用防抖来避免频繁保存布局
+      _debounceTimer?.cancel();
+      _debounceTimer = Timer(_debounceDuration, () {
+        _performLayoutSave(eventDockTabsId);
+      });
+    }
+  }
+
+  /// 执行实际的布局保存操作
+  void _performLayoutSave(String eventDockTabsId) {
+    // 自动保存布局
+    final success = DockManager.saveLayoutForDockTabs(eventDockTabsId);
+    if (success) {
+      // 从存储中获取实际的布局字符串用于设置_lastSavedLayout
+      final storedData = DockManager.getStoredLayout(
+        '${eventDockTabsId}_layout',
+      );
+      if (storedData != null) {
+        try {
+          // 尝试解析为完整的布局数据
+          final layoutData = json.decode(storedData) as Map<String, dynamic>;
+          if (layoutData.containsKey('layoutString')) {
+            _lastSavedLayout = layoutData['layoutString'] as String;
+          } else {
+            _lastSavedLayout = storedData; // 兼容旧格式
           }
-        } else {
-          _lastSavedLayout = '';
+        } catch (jsonError) {
+          // JSON解析失败，直接使用原始数据（兼容旧格式）
+          _lastSavedLayout = storedData;
         }
-        notifyListeners();
+      } else {
+        _lastSavedLayout = '';
       }
+      notifyListeners();
+      print(
+        'DockLayoutController: Layout auto-saved with debounce for $eventDockTabsId',
+      );
     }
   }
 
@@ -400,6 +437,7 @@ class DockLayoutController extends ChangeNotifier {
 
   @override
   void dispose() {
+    _debounceTimer?.cancel();
     _pendingLayoutData = null;
     super.dispose();
   }

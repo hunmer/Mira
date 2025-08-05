@@ -101,8 +101,6 @@ class DockController extends ChangeNotifier {
       case DockEventType.itemClosed:
       case DockEventType.itemCreated:
       case DockEventType.layoutChanged:
-        // 这些事件需要通知 UI 重建
-        // shouldNotifyListeners = true;
         break;
       case DockEventType.itemSelected:
         break;
@@ -110,9 +108,9 @@ class DockController extends ChangeNotifier {
         break;
     }
     _saveLayoutForEvent(event.dockTabsId);
-    // if (shouldNotifyListeners) {
-    //   notifyListeners();
-    // }
+    if (event is DockTabEvent && event.values.containsKey('rebuild')) {
+      notifyListeners();
+    }
   }
 
   /// 根据事件的dockTabsId保存布局
@@ -130,8 +128,13 @@ class DockController extends ChangeNotifier {
   }
 
   /// 保存布局
-  bool saveLayout() {
-    return _layoutController.saveLayout();
+  bool saveLayout({bool useDebounce = false}) {
+    return _layoutController.saveLayout(useDebounce: useDebounce);
+  }
+
+  /// 强制执行待处理的防抖保存操作
+  void flushPendingSave() {
+    _layoutController.flushPendingSave();
   }
 
   /// 加载布局
@@ -147,6 +150,9 @@ class DockController extends ChangeNotifier {
 
   @override
   void dispose() {
+    // 在销毁前强制刷新任何待处理的布局保存操作
+    _layoutController.flushPendingSave();
+
     _eventSubscription.cancel();
     _eventStreamController.dispose();
     _layoutController.removeListener(_onLayoutControllerChanged);
