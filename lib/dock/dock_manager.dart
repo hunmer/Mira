@@ -193,9 +193,10 @@ class DockManager {
         newTabId,
         displayName: dockItem.title,
         closable: true,
+        rebuildLayout: false, // 创建tab时先不刷新布局
       );
       if (newTab != null) {
-        newTab.addDockItem(dockItem);
+        newTab.addDockItem(dockItem, rebuildLayout: true); // 添加item时再刷新布局
         return true;
       }
       return false;
@@ -205,7 +206,82 @@ class DockManager {
     return dockTabs.addDockItemToTab(tabId, dockItem);
   }
 
-  /// 移除DockItem
+  /// 批量添加DockItem，避免多次布局刷新
+  static bool addDockItems(
+    String dockTabsId,
+    List<DockItem> dockItems, {
+    String? tabId,
+  }) {
+    final dockTabs = getDockTabs(dockTabsId);
+    if (dockTabs == null) return false;
+
+    if (dockItems.isEmpty) return true;
+
+    bool success = true;
+
+    if (tabId == null || tabId.isEmpty) {
+      // 为第一个item创建新tab
+      final firstItem = dockItems.first;
+      String prefix = 'tab';
+      if (firstItem.type == 'library_tab') {
+        prefix = 'library';
+      }
+      final newTabId = '${prefix}_${DateTime.now().millisecondsSinceEpoch}';
+      final newTab = dockTabs.createDockTab(
+        newTabId,
+        displayName: firstItem.title,
+        closable: true,
+        rebuildLayout: false, // 创建tab时不刷新布局
+      );
+
+      if (newTab != null) {
+        // 批量添加所有items，只在最后一个item时刷新布局
+        for (int i = 0; i < dockItems.length; i++) {
+          final isLast = i == dockItems.length - 1;
+          newTab.addDockItem(dockItems[i], rebuildLayout: isLast);
+        }
+      } else {
+        success = false;
+      }
+    } else {
+      // 添加到现有tab，只在最后一个item时刷新布局
+      for (int i = 0; i < dockItems.length; i++) {
+        final isLast = i == dockItems.length - 1;
+        final itemSuccess = dockTabs.addDockItemToTab(
+          tabId,
+          dockItems[i],
+          rebuildLayout: isLast,
+        );
+        if (!itemSuccess) success = false;
+      }
+    }
+
+    return success;
+  }
+
+  /// 批量创建DockTab，避免多次布局刷新
+  static bool createMultipleDockTabs(
+    String dockTabsId,
+    List<Map<String, dynamic>> tabConfigs,
+  ) {
+    final dockTabs = getDockTabs(dockTabsId);
+    if (dockTabs == null) return false;
+
+    dockTabs.createMultipleDockTabs(tabConfigs);
+    return true;
+  }
+
+  /// 移除DockItem (基于ID)
+  static bool removeDockItemById(
+    String dockTabsId,
+    String tabId,
+    String itemId,
+  ) {
+    final dockTabs = getDockTabs(dockTabsId);
+    return dockTabs?.removeDockItemFromTabById(tabId, itemId) ?? false;
+  }
+
+  /// 移除DockItem (基于title，保持向后兼容)
   static bool removeDockItem(
     String dockTabsId,
     String tabId,
@@ -215,7 +291,17 @@ class DockManager {
     return dockTabs?.removeDockItemFromTab(tabId, itemTitle) ?? false;
   }
 
-  /// 获取DockItem
+  /// 获取DockItem (基于ID)
+  static DockItem? getDockItemById(
+    String dockTabsId,
+    String tabId,
+    String itemId,
+  ) {
+    final dockTabs = getDockTabs(dockTabsId);
+    return dockTabs?.getDockItemFromTabById(tabId, itemId);
+  }
+
+  /// 获取DockItem (基于title，保持向后兼容)
   static DockItem? getDockItem(
     String dockTabsId,
     String tabId,
@@ -225,7 +311,18 @@ class DockManager {
     return dockTabs?.getDockItemFromTab(tabId, itemTitle);
   }
 
-  /// 更新DockItem
+  /// 更新DockItem (基于ID)
+  static bool updateDockItemById(
+    String dockTabsId,
+    String tabId,
+    String itemId,
+    Map<String, dynamic> updates,
+  ) {
+    final dockTabs = getDockTabs(dockTabsId);
+    return dockTabs?.updateDockItemInTabById(tabId, itemId, updates) ?? false;
+  }
+
+  /// 更新DockItem (基于title，保持向后兼容)
   static bool updateDockItem(
     String dockTabsId,
     String tabId,
@@ -322,39 +419,6 @@ class DockManager {
   }
 
   // ===================== Library Tab Management =====================
-
-  /// 关闭库标签页
-  static bool closeLibraryTab(
-    String tabId, {
-    String dockTabsId = 'main',
-    String dockTabId = 'home',
-  }) {
-    return removeDockItem(dockTabsId, dockTabId, 'library_$tabId');
-  }
-
-  /// 获取当前激活的库标签页ID
-  static String? getCurrentLibraryTabId({
-    String dockTabsId = 'main',
-    String dockTabId = 'home',
-  }) {
-    final dockTabs = getDockTabs(dockTabsId);
-    final dockTab = dockTabs?.getDockTab(dockTabId);
-    // 这里需要实现获取当前活动项的逻辑
-    // 暂时返回null，具体实现需要在dock system中添加
-    return null;
-  }
-
-  /// 激活指定的库标签页
-  static bool activateLibraryTab(
-    String tabId, {
-    String dockTabsId = 'main',
-    String dockTabId = 'home',
-  }) {
-    // 这里需要实现激活指定dock item的逻辑
-    // 暂时返回false，具体实现需要在dock system中添加
-    return false;
-  }
-
   /// 更新库标签页的stored值
   static bool updateLibraryTabStoredValue(
     String tabId,
@@ -403,11 +467,11 @@ class DockManager {
       final itemsToRemove = <String>[];
       for (final item in dockTab.getAllDockItems()) {
         if (item.type == 'library_tab') {
-          itemsToRemove.add(item.title);
+          itemsToRemove.add(item.id); // 收集ID而不是title
         }
       }
-      for (final itemTitle in itemsToRemove) {
-        removeDockItem(dockTabsId, dockTabId, itemTitle);
+      for (final itemId in itemsToRemove) {
+        removeDockItemById(dockTabsId, dockTabId, itemId); // 使用ID删除
       }
     }
   }

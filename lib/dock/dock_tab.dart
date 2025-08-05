@@ -113,7 +113,7 @@ class DockTab {
   }
 
   /// 添加DockItem
-  void addDockItem(DockItem dockItem) {
+  void addDockItem(DockItem dockItem, {bool rebuildLayout = true}) {
     if (dockItem.title.isEmpty) {
       dockItem = dockItem.copyWith(title: _displayName);
     }
@@ -130,12 +130,14 @@ class DockTab {
       ),
     );
 
-    _rebuildLayout();
+    if (rebuildLayout) {
+      _rebuildLayout();
+    }
   }
 
-  /// 移除DockItem
-  bool removeDockItem(String title) {
-    final index = _dockItems.indexWhere((item) => item.title == title);
+  /// 移除DockItem (基于ID)
+  bool removeDockItemById(String id) {
+    final index = _dockItems.indexWhere((item) => item.id == id);
     if (index != -1) {
       final dockItem = _dockItems[index];
 
@@ -144,7 +146,7 @@ class DockTab {
         DockItemEvent(
           type: DockEventType.itemClosed,
           dockTabsId: parentDockTabId ?? 'unknown',
-          tabId: id,
+          tabId: this.id,
           itemTitle: dockItem.title,
           itemType: dockItem.type,
         ),
@@ -158,7 +160,60 @@ class DockTab {
     return false;
   }
 
-  /// 获取DockItem
+  /// 移除DockItem (基于title，保持向后兼容)
+  bool removeDockItem(String title) {
+    final index = _dockItems.indexWhere((item) => item.title == title);
+    if (index != -1) {
+      final dockItem = _dockItems[index];
+
+      // 发送item关闭事件
+      _eventStreamController?.emit(
+        DockItemEvent(
+          type: DockEventType.itemClosed,
+          dockTabsId: parentDockTabId ?? 'unknown',
+          tabId: this.id,
+          itemTitle: dockItem.title,
+          itemType: dockItem.type,
+        ),
+      );
+
+      dockItem.dispose();
+      _dockItems.removeAt(index);
+      _rebuildLayout();
+      return true;
+    }
+    return false;
+  }
+
+  /// 获取DockItem (基于ID)
+  DockItem? getDockItemById(String id) {
+    print('Searching for DockItem with ID: "$id" in tab: ${this.id}');
+    print(
+      'Available items in this tab: ${_dockItems.map((item) => '${item.id}:${item.title}').toList()}',
+    );
+
+    if (_dockItems.isEmpty) {
+      print('No items in this tab');
+      return null;
+    }
+
+    try {
+      for (var item in _dockItems) {
+        if (item.id == id) {
+          print('Found match by ID: ${item.id} (${item.title})');
+          return item;
+        }
+      }
+
+      print('No match found for ID: "$id"');
+      return null;
+    } catch (e) {
+      print('Error in getDockItemById for ID "$id": $e');
+      return null;
+    }
+  }
+
+  /// 获取DockItem (基于title，保持向后兼容)
   DockItem? getDockItem(String title) {
     print('Searching for DockItem with title: "$title" in tab: $id');
     print(
@@ -206,9 +261,27 @@ class DockTab {
   /// 检查是否应该在序列化时忽略（当只有默认内容时不保存）
   bool get shouldSkipSerialization => isDefaultEmpty;
 
-  /// 更新DockItem
+  /// 更新DockItem (基于ID)
+  bool updateDockItemById(String id, Map<String, dynamic> updates) {
+    final dockItem = getDockItemById(id);
+    if (dockItem != null) {
+      for (var entry in updates.entries) {
+        dockItem.update(entry.key, entry.value);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /// 更新DockItem (基于title，保持向后兼容)
   bool updateDockItem(String title, Map<String, dynamic> updates) {
-    final dockItem = getDockItem(title);
+    // 优先尝试作为ID查找
+    var dockItem = getDockItemById(title);
+    if (dockItem == null) {
+      // 如果ID查找失败，尝试title查找
+      dockItem = getDockItem(title);
+    }
+
     if (dockItem != null) {
       for (var entry in updates.entries) {
         dockItem.update(entry.key, entry.value);
@@ -273,17 +346,19 @@ class DockTab {
   }
 
   /// 清空所有DockItem
-  void clear() {
+  void clear({bool rebuildLayout = true}) {
     for (var item in _dockItems) {
       item.dispose();
     }
     _dockItems.clear();
-    _rebuildLayout();
+    if (rebuildLayout) {
+      _rebuildLayout();
+    }
   }
 
   /// 释放资源
-  void dispose() {
-    clear();
+  void dispose({bool rebuildLayout = true}) {
+    clear(rebuildLayout: rebuildLayout);
     _layoutChangeNotifier.dispose();
   }
 

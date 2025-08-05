@@ -47,7 +47,7 @@ class DefaultDockLayoutParser extends DockLayoutParser
     }
     // 对于DockingTabs中的每个tab，我们应该使用特殊的格式
     // 格式: "tab:tabId" 来区分tab ID和DockItem title
-    print('Saving ID: $id (type: ${id.runtimeType})');
+    // print('Saving ID: $id (type: ${id.runtimeType})');
 
     // 检查是否是tab ID（在当前DockTabs中存在的tab）
     final dockTabs = DockManager.getDockTabs(dockTabsId);
@@ -64,7 +64,7 @@ class DefaultDockLayoutParser extends DockLayoutParser
     if (id.isEmpty) {
       return null;
     }
-    print('Loading ID: $id');
+    // print('Loading ID: $id');
 
     // 如果是tab格式，去掉前缀
     if (id.startsWith('tab:')) {
@@ -80,9 +80,9 @@ class DefaultDockLayoutParser extends DockLayoutParser
     required double? weight,
     required bool maximized,
   }) {
-    print(
-      'Building DockingItem for ID: $id, tabId: $tabId, dockTabsId: $dockTabsId',
-    );
+    // print(
+    //   'Building DockingItem for ID: $id, tabId: $tabId, dockTabsId: $dockTabsId',
+    // );
 
     if (id == null) {
       return DockingItem(
@@ -100,7 +100,7 @@ class DefaultDockLayoutParser extends DockLayoutParser
       if (dockTabs != null) {
         final tab = dockTabs.getDockTab(idString);
         if (tab != null) {
-          print('Found tab: ${tab.id} with displayName: ${tab.displayName}');
+          // print('Found tab: ${tab.id} with displayName: ${tab.displayName}');
           // 返回整个tab的内容作为DockingItem
           return DockingItem(
             id: id,
@@ -112,11 +112,19 @@ class DefaultDockLayoutParser extends DockLayoutParser
         }
       }
 
-      // 如果不是tab ID，尝试作为DockItem title查找
-      final dockItem = DockManager.getDockItem(dockTabsId, tabId, idString);
+      // 如果不是tab ID，尝试作为DockItem ID或title查找
+      // 优先使用ID查找，如果找不到再尝试title查找
+      var dockItem = DockManager.getDockItemById(dockTabsId, tabId, idString);
+
+      if (dockItem == null) {
+        // 如果ID查找失败，尝试title查找（为了向后兼容）
+        dockItem = DockManager.getDockItem(dockTabsId, tabId, idString);
+      }
 
       if (dockItem != null) {
-        print('Found DockItem: ${dockItem.title} in tab: $tabId');
+        // print(
+        //   'Found DockItem: ${dockItem.title} (ID: ${dockItem.id}) in tab: $tabId',
+        // );
         // 获取对应tab的默认配置
         final dockTab = dockTabs?.getDockTab(tabId);
         final defaultConfig = dockTab?.getDefaultDockingItemConfig() ?? {};
@@ -140,11 +148,17 @@ class DefaultDockLayoutParser extends DockLayoutParser
       // 如果在指定tab中找不到，尝试在所有tab中查找
       if (dockTabs != null) {
         for (var tab in dockTabs.getAllDockTabs().values) {
-          final foundItem = tab.getDockItem(idString);
+          // 优先使用ID查找
+          var foundItem = tab.getDockItemById(idString);
+          if (foundItem == null) {
+            // 如果ID查找失败，尝试title查找
+            foundItem = tab.getDockItem(idString);
+          }
+
           if (foundItem != null) {
-            print(
-              'Found DockItem: ${foundItem.title} in tab: ${tab.id} (different from expected tab: $tabId)',
-            );
+            // print(
+            //   'Found DockItem: ${foundItem.title} (ID: ${foundItem.id}) in tab: ${tab.id} (different from expected tab: $tabId)',
+            // );
             // 使用找到的tab的默认配置
             final defaultConfig = tab.getDefaultDockingItemConfig();
             final dockingItem = foundItem.buildDockingItem(

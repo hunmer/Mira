@@ -2,19 +2,29 @@ import 'package:flutter/material.dart';
 import 'package:tabbed_view/tabbed_view.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 
-/// DockItem类 - 包含type、title、values和builder属性
+/// DockItem类 - 包含id、type、title、values和builder属性
 class DockItem {
+  final String id;
   final String type;
   final String title;
   final Map<String, ValueNotifier<dynamic>> values;
   final DockingItem Function(DockItem) builder;
 
   DockItem({
+    String? id,
     required this.type,
     required this.title,
     Map<String, ValueNotifier<dynamic>>? values,
     required this.builder,
-  }) : values = values ?? {};
+  }) : id = id ?? _generateId(),
+       values = values ?? {};
+
+  /// 生成唯一ID
+  static String _generateId() {
+    return 'dock_item_${DateTime.now().millisecondsSinceEpoch}_${_idCounter++}';
+  }
+
+  static int _idCounter = 0;
 
   /// 更新values中的数据
   void update(String key, dynamic value) {
@@ -98,6 +108,7 @@ class DockItem {
     }
 
     return DockItem(
+      id: json['id'],
       type: json['type'] ?? '',
       title: json['title'] ?? '',
       values: values,
@@ -107,12 +118,14 @@ class DockItem {
 
   // copyWith
   DockItem copyWith({
+    String? id,
     String? type,
     String? title,
     Map<String, ValueNotifier<dynamic>>? values,
     DockingItem Function(DockItem)? builder,
   }) {
     return DockItem(
+      id: id ?? this.id,
       type: type ?? this.type,
       title: title ?? this.title,
       values: values ?? this.values,
@@ -127,6 +140,6 @@ class DockItem {
       valuesMap[entry.key] = entry.value.value;
     }
 
-    return {'type': type, 'title': title, 'values': valuesMap};
+    return {'id': id, 'type': type, 'title': title, 'values': valuesMap};
   }
 }

@@ -26,6 +26,9 @@ class DockTabs {
   DefaultDockLayoutParser? mainParser;
   DockEventStreamController? _eventStreamController;
 
+  // 新增：批量操作标志，用于避免多次重建布局
+  bool _batchOperationInProgress = false;
+
   DockTabs({
     required this.id,
     Map<String, dynamic>? initData,
@@ -61,50 +64,54 @@ class DockTabs {
 
   /// 从JSON数据初始化
   void _initializeFromJson(Map<String, dynamic> json) {
-    final tabs = json['tabs'] as Map<String, dynamic>? ?? {};
+    _performBatchOperation(() {
+      final tabs = json['tabs'] as Map<String, dynamic>? ?? {};
 
-    for (var entry in tabs.entries) {
-      final tabData = entry.value as Map<String, dynamic>;
-      final dockTab = DockTab(
-        id: entry.key,
-        parentDockTabId: id,
-        initData: tabData,
-        defaultDockingItemConfig:
-            tabData['defaultDockingItemConfig'] as Map<String, dynamic>? ?? {},
-        onLayoutChanged: _rebuildGlobalLayout,
-      );
-      _dockTabs[entry.key] = dockTab;
-    }
-
-    _rebuildGlobalLayout();
+      for (var entry in tabs.entries) {
+        final tabData = entry.value as Map<String, dynamic>;
+        final dockTab = DockTab(
+          id: entry.key,
+          parentDockTabId: id,
+          initData: tabData,
+          defaultDockingItemConfig:
+              tabData['defaultDockingItemConfig'] as Map<String, dynamic>? ??
+              {},
+          onLayoutChanged: _rebuildGlobalLayout,
+        );
+        _dockTabs[entry.key] = dockTab;
+      }
+    });
   }
 
   /// 公共方法：从JSON数据重新加载
   void loadFromJson(Map<String, dynamic> json) {
-    // 清除现有数据
-    clear();
+    _performBatchOperation(() {
+      // 清除现有数据（不触发布局重建）
+      _clearWithoutRebuild();
 
-    // 重新初始化
-    _initializeFromJson(json);
+      // 重新初始化
+      _initializeFromJson(json);
 
-    // 恢复激活状态
-    final activeTabId = json['activeTabId'] as String?;
-    if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
-      _activeTabId = activeTabId;
-    }
+      // 恢复激活状态
+      final activeTabId = json['activeTabId'] as String?;
+      if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
+        _activeTabId = activeTabId;
+      }
 
-    // 检查是否需要创建默认空tab
-    final hasDefaultEmptyTabs = json['hasDefaultEmptyTabs'] as bool? ?? false;
-    if (_dockTabs.isEmpty || hasDefaultEmptyTabs) {
-      // 如果没有tab或者之前有默认空tab，创建一个新的默认空tab
-      createDockTab(
-        'home',
-        displayName: '首页',
-        closable: false,
-        maximizable: false,
-        buttons: [],
-      );
-    }
+      // 检查是否需要创建默认空tab
+      final hasDefaultEmptyTabs = json['hasDefaultEmptyTabs'] as bool? ?? false;
+      if (_dockTabs.isEmpty || hasDefaultEmptyTabs) {
+        // 如果没有tab或者之前有默认空tab，创建一个新的默认空tab
+        createDockTab(
+          'home',
+          displayName: '首页',
+          closable: false,
+          maximizable: false,
+          buttons: [],
+          rebuildLayout: false, // 不立即重建布局
+        );
+      }
+    });
   }
 
   /// 创建新的DockTab
@@ -123,6 +130,7 @@ class DockTabs {
     double? weight,
     double? minimalWeight,
     double? minimalSize,
+    bool rebuildLayout = true, // 新增参数，控制是否立即重建布局
   }) {
     final dockTab = DockTab(
       id: tabId,
@@ -166,7 +174,9 @@ class DockTabs {
       ),
     );
 
-    _rebuildGlobalLayout();
+    if (rebuildLayout) {
+      _rebuildGlobalLayout();
+    }
     return dockTab;
   }
 
@@ -306,6 +316,13 @@ class DockTabs {
 
   /// 重建全局布局
   void _rebuildGlobalLayout() {
+    // 如果正在进行批量操作，延迟重建布局
+    if (_batchOperationInProgress) {
+      return;
+    }
+
+    print('🔄 DockTabs._rebuildGlobalLayout called for DockTabs: $id');
+
     if (_dockTabs.isEmpty) {
       _globalLayout = DockingLayout(
         root: DockingItem(
@@ -490,11 +507,52 @@ class DockTabs {
     _rebuildGlobalLayout();
   }
 
+  /// 批量操作：创建多个DockTab，避免多次重建布局
+  void createMultipleDockTabs(List<Map<String, dynamic>> tabConfigs) {
+    _performBatchOperation(() {
+      for (var config in tabConfigs) {
+        createDockTab(
+          config['tabId'] as String,
+          displayName: config['displayName'] as String?,
+          initData: config['initData'] as Map<String, dynamic>?,
+          closable: config['closable'] as bool? ?? true,
+          keepAlive: config['keepAlive'] as bool? ?? true,
+          buttons: config['buttons'] as List<TabButton>?,
+          maximizable: config['maximizable'] as bool? ?? false,
+          maximized: config['maximized'] as bool? ?? false,
+          leading: config['leading'] as TabLeadingBuilder?,
+          size: config['size'] as double?,
+          weight: config['weight'] as double?,
+          minimalWeight: config['minimalWeight'] as double?,
+          minimalSize: config['minimalSize'] as double?,
+          rebuildLayout: false, // 批量操作期间不重建布局
+        );
+      }
+    });
+  }
+
   /// 处理DockItem关闭事件
   void _handleItemClose(DockingItem dockingItem) {
     // 从所有DockTab中查找并移除对应的DockItem
+    // 优先使用ID查找，如果没有ID则使用name
     for (var dockTab in _dockTabs.values) {
-      if (dockTab.removeDockItem(dockingItem.name ?? '')) {
+      bool removed = false;
+
+      // 如果DockingItem有ID，优先使用ID查找
+      if (dockingItem.id != null) {
+        // 通过ID查找对应的DockItem
+        final dockItem = dockTab.getDockItemById(dockingItem.id.toString());
+        if (dockItem != null) {
+          removed = dockTab.removeDockItemById(dockItem.id);
+        }
+      }
+
+      // 如果通过ID没有找到，则尝试使用name
+      if (!removed && dockingItem.name != null) {
+        removed = dockTab.removeDockItem(dockingItem.name!);
+      }
+
+      if (removed) {
         break; // 找到并移除后跳出循环
       }
     }
@@ -548,20 +606,41 @@ class DockTabs {
   }
 
   /// 添加DockItem到指定的DockTab
-  bool addDockItemToTab(String tabId, DockItem dockItem) {
+  bool addDockItemToTab(
+    String tabId,
+    DockItem dockItem, {
+    bool rebuildLayout = true,
+  }) {
     final dockTab = getDockTab(tabId);
     if (dockTab != null) {
       // 在添加DockItem之前，清除其他的默认空tab
       _clearDefaultEmptyTabs();
 
-      dockTab.addDockItem(dockItem);
-      _refreshGlobalLayout();
+      // 传递rebuildLayout参数，避免DockTab内部立即刷新布局
+      dockTab.addDockItem(dockItem, rebuildLayout: false);
+
+      if (rebuildLayout) {
+        _refreshGlobalLayout();
+      }
       return true;
     }
     return false;
   }
 
-  /// 从指定的DockTab移除DockItem
+  /// 从指定的DockTab移除DockItem (基于ID)
+  bool removeDockItemFromTabById(String tabId, String itemId) {
+    final dockTab = getDockTab(tabId);
+    if (dockTab != null) {
+      final result = dockTab.removeDockItemById(itemId);
+      if (result) {
+        _refreshGlobalLayout();
+      }
+      return result;
+    }
+    return false;
+  }
+
+  /// 从指定的DockTab移除DockItem (基于title，保持向后兼容)
   bool removeDockItemFromTab(String tabId, String itemTitle) {
     final dockTab = getDockTab(tabId);
     if (dockTab != null) {
@@ -574,13 +653,32 @@ class DockTabs {
     return false;
   }
 
-  /// 获取指定DockTab中的DockItem
+  /// 获取指定DockTab中的DockItem (基于ID)
+  DockItem? getDockItemFromTabById(String tabId, String itemId) {
+    final dockTab = getDockTab(tabId);
+    return dockTab?.getDockItemById(itemId);
+  }
+
+  /// 获取指定DockTab中的DockItem (基于title，保持向后兼容)
   DockItem? getDockItemFromTab(String tabId, String itemTitle) {
     final dockTab = getDockTab(tabId);
     return dockTab?.getDockItem(itemTitle);
   }
 
-  /// 更新指定DockTab中的DockItem
+  /// 更新指定DockTab中的DockItem (基于ID)
+  bool updateDockItemInTabById(
+    String tabId,
+    String itemId,
+    Map<String, dynamic> updates,
+  ) {
+    final dockTab = getDockTab(tabId);
+    if (dockTab != null) {
+      return dockTab.updateDockItemById(itemId, updates);
+    }
+    return false;
+  }
+
+  /// 更新指定DockTab中的DockItem (基于title，保持向后兼容)
   bool updateDockItemInTab(
     String tabId,
     String itemTitle,
@@ -593,12 +691,37 @@ class DockTabs {
     return false;
   }
 
-  /// 清空所有DockTab
-  void clear() {
+  /// 执行批量操作，避免多次重建布局
+  void _performBatchOperation(void Function() operation) {
+    final wasBatchOperationInProgress = _batchOperationInProgress;
+    _batchOperationInProgress = true;
+
+    if (!wasBatchOperationInProgress) {
+      print('🔧 Starting batch operation for DockTabs: $id');
+    }
+
+    try {
+      operation();
+    } finally {
+      _batchOperationInProgress = wasBatchOperationInProgress;
+      if (!wasBatchOperationInProgress) {
+        print('✅ Ending batch operation for DockTabs: $id');
+        _rebuildGlobalLayout(); // 只有在最外层批量操作结束时才重建布局
+      }
+    }
+  }
+
+  /// 清空所有DockTab，但不重建布局（用于批量操作）
+  void _clearWithoutRebuild() {
     for (var dockTab in _dockTabs.values) {
-      dockTab.dispose();
+      dockTab.dispose(rebuildLayout: false); // 不重建布局
     }
     _dockTabs.clear();
+  }
+
+  /// 清空所有DockTab
+  void clear() {
+    _clearWithoutRebuild();
     _rebuildGlobalLayout();
   }
 
