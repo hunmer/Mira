@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'dock_item.dart';
 import 'dock_events.dart';
+import 'homepage_dock_item.dart';
 
 /// DockTab类 - 管理单个tab的DockItem集合
 class DockTab {
@@ -14,6 +15,10 @@ class DockTab {
   VoidCallback? _onLayoutChanged;
   final Map<String, dynamic> _defaultDockingItemConfig;
   DockEventStreamController? _eventStreamController;
+
+  // 静态注册的builder映射
+  static final Map<String, DockingItem Function(DockItem)> _registeredBuilders =
+      {};
 
   DockTab({
     required this.id,
@@ -42,6 +47,15 @@ class DockTab {
 
   /// 从JSON数据初始化
   void _initializeFromJson(Map<String, dynamic> json) {
+    // 检查是否为默认空状态
+    final isDefaultEmpty = json['isDefaultEmpty'] as bool? ?? false;
+
+    // 如果标记为默认空状态，直接使用空布局（会自动显示HomePageDockItem）
+    if (isDefaultEmpty) {
+      _rebuildLayout();
+      return;
+    }
+
     final items = json['items'] as List<dynamic>? ?? [];
 
     for (var itemData in items) {
@@ -57,96 +71,45 @@ class DockTab {
 
   /// 根据type获取对应的builder
   DockingItem Function(DockItem) _getBuilderForType(String type) {
-    switch (type) {
-      case 'text':
-        return (dockItem) => DockingItem(
-          name: dockItem.title,
-          widget: ValueListenableBuilder(
-            valueListenable: dockItem.values['content'] ?? ValueNotifier(''),
-            builder: (context, value, child) {
-              return Center(
-                child: Text(
-                  value.toString(),
-                  style: const TextStyle(fontSize: 16),
-                ),
-              );
-            },
-          ),
-        );
-      case 'counter':
-        return (dockItem) => DockingItem(
-          name: dockItem.title,
-          widget: ValueListenableBuilder(
-            valueListenable: dockItem.values['count'] ?? ValueNotifier(0),
-            builder: (context, value, child) {
-              return Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text('Count: $value', style: const TextStyle(fontSize: 20)),
-                    const SizedBox(height: 16),
-                    ElevatedButton(
-                      onPressed: () {
-                        dockItem.update('count', (value as int) + 1);
-                      },
-                      child: const Text('Increment'),
-                    ),
-                  ],
-                ),
-              );
-            },
-          ),
-        );
-      case 'list':
-        return (dockItem) => DockingItem(
-          name: dockItem.title,
-          widget: ValueListenableBuilder(
-            valueListenable:
-                dockItem.values['items'] ?? ValueNotifier(<String>[]),
-            builder: (context, value, child) {
-              final items = value as List<String>;
-              return Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.all(8.0),
-                    child: ElevatedButton(
-                      onPressed: () {
-                        final newItems = List<String>.from(items);
-                        newItems.add('Item ${newItems.length + 1}');
-                        dockItem.update('items', newItems);
-                      },
-                      child: const Text('Add Item'),
-                    ),
-                  ),
-                  Expanded(
-                    child: ListView.builder(
-                      itemCount: items.length,
-                      itemBuilder: (context, index) {
-                        return ListTile(
-                          title: Text(items[index]),
-                          trailing: IconButton(
-                            icon: const Icon(Icons.delete),
-                            onPressed: () {
-                              final newItems = List<String>.from(items);
-                              newItems.removeAt(index);
-                              dockItem.update('items', newItems);
-                            },
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                ],
-              );
-            },
-          ),
-        );
-      default:
-        return (dockItem) => DockingItem(
-          name: dockItem.title,
-          widget: Center(child: Text('Unknown type: ${dockItem.type}')),
-        );
+    if (_registeredBuilders.containsKey(type)) {
+      return _registeredBuilders[type]!;
     }
+    return (dockItem) => DockingItem(
+      name: dockItem.title,
+      widget: Center(child: Text('Unknown type: ${dockItem.type}')),
+    );
+  }
+
+  /// 静态方法：注册DockItem类型的builder
+  static void registerBuilder(
+    String type,
+    DockingItem Function(DockItem) builder,
+  ) {
+    _registeredBuilders[type] = builder;
+    print('DockTab: Registered builder for type "$type"');
+  }
+
+  /// 静态方法：注销DockItem类型的builder
+  static void unregisterBuilder(String type) {
+    final removed = _registeredBuilders.remove(type);
+    if (removed != null) {
+      print('DockTab: Unregistered builder for type "$type"');
+    }
+  }
+
+  /// 静态方法：检查类型是否已注册
+  static bool isTypeRegistered(String type) {
+    return _registeredBuilders.containsKey(type);
+  }
+
+  /// 静态方法：获取所有已注册的类型
+  static List<String> getRegisteredTypes() {
+    return _registeredBuilders.keys.toList();
+  }
+
+  /// 静态方法：调试用，打印所有已注册的类型
+  static void printRegisteredTypes() {
+    print('DockTab registered types: ${getRegisteredTypes()}');
   }
 
   /// 添加DockItem
@@ -237,6 +200,12 @@ class DockTab {
     return List.unmodifiable(_dockItems);
   }
 
+  /// 检查是否为默认空状态（只显示HomePageDockItem，没有真正的DockItem）
+  bool get isDefaultEmpty => _dockItems.isEmpty;
+
+  /// 检查是否应该在序列化时忽略（当只有默认内容时不保存）
+  bool get shouldSkipSerialization => isDefaultEmpty;
+
   /// 更新DockItem
   bool updateDockItem(String title, Map<String, dynamic> updates) {
     final dockItem = getDockItem(title);
@@ -252,37 +221,30 @@ class DockTab {
   /// 重建布局
   void _rebuildLayout() {
     if (_dockItems.isEmpty) {
+      // 当没有items时，创建一个HomePageDockItem作为默认内容
+      final homePageItem = HomePageDockItem();
       _layout = DockingLayout(
-        root: DockingItem(
-          name: 'empty',
-          widget: const Center(child: Text('No items in this tab')),
+        root: homePageItem.buildDockingItem(
+          defaultConfig: _defaultDockingItemConfig,
         ),
       );
     } else if (_dockItems.length == 1) {
       // 如果只有一个item，直接使用它
-      if (_dockItems.length == 1) {
-        _layout = DockingLayout(
-          root: _dockItems.first.buildDockingItem(
-            defaultConfig: _defaultDockingItemConfig,
-          ),
-        );
-      } else {
-        _layout = DockingLayout(
-          root: DockingTabs(
-            _dockItems
-                .map(
-                  (item) => item.buildDockingItem(
-                    defaultConfig: _defaultDockingItemConfig,
-                  ),
-                )
-                .toList(),
-          ),
-        );
-      }
+      _layout = DockingLayout(
+        root: _dockItems.first.buildDockingItem(
+          defaultConfig: _defaultDockingItemConfig,
+        ),
+      );
     } else {
       // 多个item时，使用Tabs布局
       final dockingItems =
-          _dockItems.map((item) => item.buildDockingItem()).toList();
+          _dockItems
+              .map(
+                (item) => item.buildDockingItem(
+                  defaultConfig: _defaultDockingItemConfig,
+                ),
+              )
+              .toList();
       _layout = DockingLayout(root: DockingTabs(dockingItems));
     }
 
@@ -327,9 +289,20 @@ class DockTab {
 
   /// 转换为JSON
   Map<String, dynamic> toJson() {
+    // 如果是默认空状态，返回标记信息而不是完整数据
+    if (shouldSkipSerialization) {
+      return {
+        'id': id,
+        'parentDockTabId': parentDockTabId,
+        'isDefaultEmpty': true,
+        'items': [], // 空列表表示这是默认状态
+      };
+    }
+
     return {
       'id': id,
       'parentDockTabId': parentDockTabId,
+      'isDefaultEmpty': false,
       'items': _dockItems.map((item) => item.toJson()).toList(),
     };
   }

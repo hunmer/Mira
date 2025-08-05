@@ -68,12 +68,27 @@ class DockTabs {
   void loadFromJson(Map<String, dynamic> json) {
     // 清除现有数据
     clear();
+
     // 重新初始化
     _initializeFromJson(json);
+
     // 恢复激活状态
     final activeTabId = json['activeTabId'] as String?;
     if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
       _activeTabId = activeTabId;
+    }
+
+    // 检查是否需要创建默认空tab
+    final hasDefaultEmptyTabs = json['hasDefaultEmptyTabs'] as bool? ?? false;
+    if (_dockTabs.isEmpty || hasDefaultEmptyTabs) {
+      // 如果没有tab或者之前有默认空tab，创建一个新的默认空tab
+      createDockTab(
+        'home',
+        displayName: '首页',
+        closable: false,
+        maximizable: false,
+        buttons: [],
+      );
     }
   }
 
@@ -115,6 +130,10 @@ class DockTabs {
         'minimalSize': minimalSize,
       },
     );
+
+    // 在添加新tab之前，检查并清除所有默认空tab
+    _clearDefaultEmptyTabs();
+
     _dockTabs[tabId] = dockTab;
 
     // 如果这是第一个tab或者没有激活的tab，将其设为激活状态
@@ -155,6 +174,44 @@ class DockTabs {
       return true;
     }
     return false;
+  }
+
+  /// 清除所有默认空tab（只显示HomePageDockItem，没有真正DockItem的tab）
+  void _clearDefaultEmptyTabs() {
+    final tabsToRemove = <String>[];
+
+    for (var entry in _dockTabs.entries) {
+      if (entry.value.isDefaultEmpty) {
+        tabsToRemove.add(entry.key);
+      }
+    }
+
+    for (var tabId in tabsToRemove) {
+      final dockTab = _dockTabs.remove(tabId);
+      if (dockTab != null) {
+        // 如果删除的是当前激活的tab，需要重新选择激活tab
+        if (_activeTabId == tabId) {
+          _activeTabId =
+              _dockTabs.keys.isNotEmpty ? _dockTabs.keys.first : null;
+        }
+
+        // 发送tab关闭事件
+        _eventStreamController?.emit(
+          DockTabEvent(
+            type: DockEventType.tabClosed,
+            dockTabsId: id,
+            tabId: tabId,
+            displayName: dockTab.displayName,
+          ),
+        );
+
+        dockTab.dispose();
+      }
+    }
+
+    if (tabsToRemove.isNotEmpty) {
+      print('Cleared ${tabsToRemove.length} default empty tabs: $tabsToRemove');
+    }
   }
 
   /// 获取DockTab
@@ -402,6 +459,9 @@ class DockTabs {
   bool addDockItemToTab(String tabId, DockItem dockItem) {
     final dockTab = getDockTab(tabId);
     if (dockTab != null) {
+      // 在添加DockItem之前，清除其他的默认空tab
+      _clearDefaultEmptyTabs();
+
       dockTab.addDockItem(dockItem);
       _refreshGlobalLayout();
       return true;
@@ -459,11 +519,29 @@ class DockTabs {
   /// 转换为JSON
   Map<String, dynamic> toJson() {
     final tabsMap = <String, dynamic>{};
+    String? activeTabIdToSave = _activeTabId;
+
     for (var entry in _dockTabs.entries) {
-      tabsMap[entry.key] = entry.value.toJson();
+      final dockTab = entry.value;
+
+      // 如果tab不应该被序列化（默认空状态），则跳过
+      if (!dockTab.shouldSkipSerialization) {
+        tabsMap[entry.key] = dockTab.toJson();
+      } else {
+        // 如果跳过的tab是当前激活的tab，需要重新选择一个激活tab
+        if (_activeTabId == entry.key) {
+          activeTabIdToSave =
+              tabsMap.keys.isNotEmpty ? tabsMap.keys.first : null;
+        }
+      }
     }
 
-    return {'id': id, 'tabs': tabsMap, 'activeTabId': _activeTabId};
+    return {
+      'id': id,
+      'tabs': tabsMap,
+      'activeTabId': activeTabIdToSave,
+      'hasDefaultEmptyTabs': _dockTabs.values.any((tab) => tab.isDefaultEmpty),
+    };
   }
 
   /// 保存当前布局

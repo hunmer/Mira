@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/dock_item.dart';
 import 'package:mira/dock/dock_manager.dart';
+import 'package:mira/dock/dock_tab.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
@@ -13,6 +14,11 @@ import 'library_tab_manager.dart';
 class LibraryDockItem extends DockItem {
   final LibraryTabData tabData;
   late final LibrariesPlugin plugin;
+  static bool _isBuilderRegistered = false;
+
+  // 缓存widget实例和DockingItem实例，避免重复创建
+  late final Widget _cachedWidget;
+  late final DockingItem _cachedDockingItem;
 
   LibraryDockItem({
     required this.tabData,
@@ -21,21 +27,90 @@ class LibraryDockItem extends DockItem {
          type: 'library_tab',
          title: tabData.title.isNotEmpty ? tabData.title : tabData.library.name,
          values: _initializeValues(tabData, initialValues),
-         builder:
-             (item) => DockingItem(
-               id: 'library_${tabData.id}',
-               name: item.title,
-               closable: true,
-               widget: LibraryContentView(
-                 plugin:
-                     PluginManager.instance.getPlugin('libraries')
-                         as LibrariesPlugin,
-                 tabData: tabData,
-               ),
-             ),
+         builder: (item) => (item as LibraryDockItem)._cachedDockingItem,
        ) {
-    plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
+    // 初始化缓存的widget
+    _cachedWidget = LibraryContentView(
+      plugin: PluginManager.instance.getPlugin('libraries') as LibrariesPlugin,
+      tabData: tabData,
+    );
+
+    // 初始化缓存的DockingItem
+    _cachedDockingItem = DockingItem(
+      id: 'library_${tabData.id}',
+      name: title,
+      closable: true,
+      widget: _cachedWidget,
+    );
+
+    // 确保builder已注册
+    _ensureBuilderRegistered();
     _setupValueListeners();
+  }
+
+  /// 构建DockingItem（返回缓存的实例）
+  DockingItem _buildDockingItem() {
+    return _cachedDockingItem;
+  }
+
+  /// 确保library_tab类型的builder已经注册
+  static void _ensureBuilderRegistered() {
+    if (!_isBuilderRegistered) {
+      registerLibraryTabBuilder();
+      _isBuilderRegistered = true;
+    }
+  }
+
+  /// 注册library_tab类型的builder
+  static void registerLibraryTabBuilder() {
+    DockTab.registerBuilder('library_tab', (dockItem) {
+      // 从dockItem中获取LibraryDockItem的实例
+      if (dockItem is LibraryDockItem) {
+        return dockItem.buildDockingItem();
+      }
+
+      // 如果不是LibraryDockItem实例，尝试从values中重建
+      try {
+        // 尝试从保存的值中恢复LibraryTabData
+        final tabDataJson =
+            dockItem.getValue('_tabDataJson') as Map<String, dynamic>?;
+
+        if (tabDataJson != null) {
+          // 重建LibraryTabData
+          final tabData = LibraryTabData.fromMap(tabDataJson);
+
+          // 创建新的LibraryDockItem
+          final libraryDockItem = LibraryDockItem(
+            tabData: tabData,
+            initialValues: dockItem.values,
+          );
+
+          return libraryDockItem._cachedDockingItem;
+        }
+      } catch (e) {
+        print('LibraryDockItem: Error restoring from saved data: $e');
+      }
+
+      // 如果无法重建，显示错误信息
+      return DockingItem(
+        id: 'library_${dockItem.title}',
+        name: dockItem.title,
+        closable: true,
+        widget: const Center(
+          child: Text(
+            'Library content not available',
+            style: TextStyle(color: Colors.grey),
+          ),
+        ),
+      );
+    });
+
+    print('LibraryDockItem: Registered library_tab builder');
+  }
+
+  /// 静态方法：手动注册builder（供外部调用）
+  static void ensureRegistered() {
+    _ensureBuilderRegistered();
   }
 
   /// 初始化values
@@ -71,6 +146,9 @@ class LibraryDockItem extends DockItem {
     );
     values['needUpdate'] = ValueNotifier(tabData.needUpdate);
     values['isActive'] = ValueNotifier(tabData.isActive);
+
+    // 存储LibraryTabData的完整信息以便恢复
+    values['_tabDataJson'] = ValueNotifier(tabData.toJson());
 
     return values;
   }
@@ -108,17 +186,21 @@ class LibraryDockItem extends DockItem {
     // 监听需要更新状态变化
     values['needUpdate']?.addListener(() {
       tabData.needUpdate = values['needUpdate']!.value;
+      values['_tabDataJson']?.value = tabData.toJson();
     });
 
     // 监听激活状态变化
     values['isActive']?.addListener(() {
       tabData.isActive = values['isActive']!.value;
+      values['_tabDataJson']?.value = tabData.toJson();
     });
   }
 
   /// 更新stored值并保存
   void _updateStoredValue(String key, dynamic value) {
     tabData.stored[key] = value;
+    // 更新_tabDataJson以保持数据同步
+    values['_tabDataJson']?.value = tabData.toJson();
     // 这里会通过DockManager来保存数据
   }
 

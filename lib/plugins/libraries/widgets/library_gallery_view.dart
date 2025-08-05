@@ -32,7 +32,11 @@ class LibraryGalleryView extends StatefulWidget {
   LibraryGalleryViewState createState() => LibraryGalleryViewState();
 }
 
-class LibraryGalleryViewState extends State<LibraryGalleryView> {
+class LibraryGalleryViewState extends State<LibraryGalleryView>
+    with AutomaticKeepAliveClientMixin {
+  @override
+  bool get wantKeepAlive => true;
+
   late LibraryGalleryState _state;
   late LibraryGalleryEvents _events;
   late LibraryGalleryBuilders _builders;
@@ -67,20 +71,13 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       tabId: widget.tabId,
     );
     _events.initEvents();
-  }
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
-
-    // 在这里初始化需要context的组件
     _builders = LibraryGalleryBuilders(
       state: _state,
       events: _events,
       plugin: widget.plugin,
       library: widget.library,
       tabId: widget.tabId,
-      context: context,
       onShowDropDialog: _showDropDialog,
       onFileOpen: _onFileOpen,
       onFileSelected: _onFileSelected,
@@ -93,7 +90,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       plugin: widget.plugin,
       library: widget.library,
       tabId: widget.tabId,
-      context: context,
       onShowDropDialog: _showDropDialog,
     );
   }
@@ -153,7 +149,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   @override
   Widget build(BuildContext context) {
-    print('build');
+    super.build(context); // 调用super.build以满足AutomaticKeepAliveClientMixin的要求
     return FutureBuilder<dynamic>(
       future: widget.plugin.libraryController.loadLibraryInst(widget.library),
       builder: (context, snapshot) {
@@ -223,7 +219,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           bottomSheet: LibraryGalleryBottomSheet(
             uploadProgress: _state.uploadProgressNotifier.value,
           ),
-          body: _buildResponsiveBody(sizingInformation, isRecycleBin),
+          body: _buildResponsiveBody(context, sizingInformation, isRecycleBin),
         );
       },
     );
@@ -231,6 +227,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   /// 构建响应式主体内容
   Widget _buildResponsiveBody(
+    BuildContext context,
     SizingInformation sizingInformation,
     bool isRecycleBin,
   ) {
@@ -243,7 +240,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     }
 
     // 其他设备使用通用布局构建器
-    return _builders.buildResponsiveLayout(sizingInformation, isRecycleBin);
+    return _builders.buildResponsiveLayout(
+      context,
+      sizingInformation,
+      isRecycleBin,
+    );
   }
 
   /// 构建移动端布局
@@ -254,7 +255,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           floatingActionButton: _mobile.buildMobileFloatingActions(),
           body: Column(
             children: [
-              _mobile.buildMobileTopBar(),
+              _mobile.buildMobileTopBar(context),
               Expanded(child: _buildMobileMainContent(isRecycleBin)),
               _builders.buildPagination(),
             ],

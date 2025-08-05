@@ -19,7 +19,6 @@ class LibraryGalleryMobile {
   final LibrariesPlugin plugin;
   final Library library;
   final String tabId;
-  final BuildContext context;
   final VoidCallback? onShowDropDialog;
 
   LibraryGalleryMobile({
@@ -28,12 +27,11 @@ class LibraryGalleryMobile {
     required this.plugin,
     required this.library,
     required this.tabId,
-    required this.context,
     this.onShowDropDialog,
   });
 
   /// 处理移动端文件选择事件
-  void onMobileFileSelected(LibraryFile file) {
+  void onMobileFileSelected(LibraryFile file, BuildContext context) {
     events.onFileSelected(file);
 
     // 在移动端显示底部信息弹窗
@@ -61,7 +59,7 @@ class LibraryGalleryMobile {
   }
 
   /// 构建移动端顶部操作栏
-  Widget buildMobileTopBar() {
+  Widget buildMobileTopBar(BuildContext context) {
     return Container(
       padding: EdgeInsets.all(8),
       decoration: BoxDecoration(
@@ -109,12 +107,12 @@ class LibraryGalleryMobile {
               children: [
                 IconButton(
                   icon: Icon(Icons.menu),
-                  onPressed: showMobileSidebarDialog,
+                  onPressed: () => showMobileSidebarDialog(context),
                   tooltip: '侧边栏',
                 ),
                 IconButton(
                   icon: Icon(Icons.filter_list),
-                  onPressed: showMobileFilterDialog,
+                  onPressed: () => showMobileFilterDialog(context),
                   tooltip: '筛选',
                 ),
                 IconButton(
@@ -153,12 +151,12 @@ class LibraryGalleryMobile {
                 ),
                 IconButton(
                   icon: Icon(Icons.sort),
-                  onPressed: showMobileSortDialog,
+                  onPressed: () => showMobileSortDialog(context),
                   tooltip: '排序',
                 ),
                 IconButton(
                   icon: Icon(Icons.view_module),
-                  onPressed: showMobileDisplayDialog,
+                  onPressed: () => showMobileDisplayDialog(context),
                   tooltip: '显示选项',
                 ),
               ],
@@ -170,7 +168,7 @@ class LibraryGalleryMobile {
   }
 
   /// 显示移动设备的侧边栏对话框
-  void showMobileSidebarDialog() {
+  void showMobileSidebarDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -213,7 +211,7 @@ class LibraryGalleryMobile {
   }
 
   /// 显示移动设备的简化筛选对话框
-  void showMobileFilterDialog() {
+  void showMobileFilterDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
       builder:
@@ -247,7 +245,7 @@ class LibraryGalleryMobile {
                       child: ElevatedButton.icon(
                         onPressed: () {
                           Navigator.pop(context);
-                          showMobileSidebarDialog();
+                          showMobileSidebarDialog(context);
                         },
                         icon: Icon(Icons.label),
                         label: Text('标签筛选'),
@@ -280,7 +278,7 @@ class LibraryGalleryMobile {
   }
 
   /// 显示移动设备的排序对话框
-  void showMobileSortDialog() {
+  void showMobileSortDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
       builder:
@@ -374,7 +372,7 @@ class LibraryGalleryMobile {
   }
 
   /// 显示移动设备的显示选项对话框
-  void showMobileDisplayDialog() {
+  void showMobileDisplayDialog(BuildContext context) {
     showModalBottomSheet(
       context: context,
       builder:

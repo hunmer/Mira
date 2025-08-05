@@ -93,12 +93,13 @@ class DockController extends ChangeNotifier {
 
   /// 创建默认的tabs和内容
   void _createDefaultTabs() {
-    // 创建一个默认的DockTab，包含HomePage
+    // 创建一个默认的DockTab，但不添加任何DockItem
+    // 这样它会自动显示HomePageDockItem，并且标记为默认空状态
     DockManager.createDockTab(
       dockTabsId,
       'home',
       displayName: '首页',
-      closable: true,
+      closable: false, // 默认tab不可关闭
       maximizable: false,
       buttons: [],
     );

@@ -22,7 +22,6 @@ class LibraryGalleryBuilders {
   final LibrariesPlugin plugin;
   final Library library;
   final String tabId;
-  final BuildContext context;
   final VoidCallback? onShowDropDialog;
   final Function(LibraryFile) onFileOpen;
   final Function(LibraryFile) onFileSelected;
@@ -34,7 +33,6 @@ class LibraryGalleryBuilders {
     required this.plugin,
     required this.library,
     required this.tabId,
-    required this.context,
     this.onShowDropDialog,
     required this.onFileOpen,
     required this.onFileSelected,
@@ -43,6 +41,7 @@ class LibraryGalleryBuilders {
 
   /// 构建响应式布局
   Widget buildResponsiveLayout(
+    BuildContext context,
     SizingInformation sizingInformation,
     bool isRecycleBin,
   ) {
@@ -94,7 +93,7 @@ class LibraryGalleryBuilders {
               margin: const EdgeInsets.all(6),
               child: Padding(
                 padding: const EdgeInsets.all(6.0),
-                child: buildQuickActions(),
+                child: buildQuickActions(context),
               ),
             ),
             Flexible(
@@ -209,7 +208,7 @@ class LibraryGalleryBuilders {
   }
 
   /// 构建快捷操作栏
-  Widget buildQuickActions() {
+  Widget buildQuickActions(BuildContext context) {
     return SizedBox(
       width: 60,
       child: Column(
@@ -344,9 +343,9 @@ class LibraryGalleryBuilders {
             state.isSelectionModeNotifier.value = false;
           },
           child: DragSelectView(
-            viewType: values[5] as DragSelectViewType,
             plugin: plugin,
             library: library,
+            viewType: values[5] as DragSelectViewType,
             isRecycleBin: state.tabData!.isRecycleBin,
             displayFields: values[3] as Set<String>,
             items: values[0] as List<LibraryFile>,
