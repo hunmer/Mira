@@ -1,4 +1,6 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
+import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_manager.dart';
 
@@ -36,10 +38,8 @@ class _DockLayoutPresetDialogState extends State<DockLayoutPresetDialog> {
 
   /// 加载所有布局预设
   void _loadPresets() async {
-    final presets = await LayoutPresetManager.getAllPresets(_storageManager);
-    final defaultId = await LayoutPresetManager.getDefaultPresetId(
-      _storageManager,
-    );
+    final presets = await LayoutPresetManager.getAllPresets();
+    final defaultId = await LayoutPresetManager.getDefaultPresetId();
     setState(() {
       _presets = presets;
       _defaultPresetId = defaultId;
@@ -76,7 +76,7 @@ class _DockLayoutPresetDialogState extends State<DockLayoutPresetDialog> {
         createdAt: DateTime.now(),
       );
 
-      await LayoutPresetManager.savePreset(_storageManager, preset);
+      await LayoutPresetManager.savePreset(preset);
       _nameController.clear();
       _loadPresets();
       _showMessage('布局预设保存成功');
@@ -116,10 +116,10 @@ class _DockLayoutPresetDialogState extends State<DockLayoutPresetDialog> {
       '确定要删除布局预设 "${preset.name}" 吗？',
     );
     if (confirmed) {
-      await LayoutPresetManager.deletePreset(_storageManager, preset.id);
+      await LayoutPresetManager.deletePreset(preset.id);
       // 如果删除的是默认预设，清除默认设置
       if (_defaultPresetId == preset.id) {
-        await LayoutPresetManager.setDefaultPreset(_storageManager, null);
+        await LayoutPresetManager.setDefaultPreset(null);
       }
       _loadPresets();
       _showMessage('布局预设删除成功');
@@ -128,7 +128,7 @@ class _DockLayoutPresetDialogState extends State<DockLayoutPresetDialog> {
 
   /// 设置默认布局预设
   void _setDefaultPreset(String? presetId) async {
-    await LayoutPresetManager.setDefaultPreset(_storageManager, presetId);
+    await LayoutPresetManager.setDefaultPreset(presetId);
     setState(() {
       _defaultPresetId = presetId;
     });
@@ -374,29 +374,22 @@ class LayoutPreset {
 class LayoutPresetManager {
   static const String _presetsKey = 'dock_layout_presets';
   static const String _presetConfig = 'dock_layout_config';
-
+  static StorageManager get storageManager =>
+      PluginManager.instance.getPlugin('libraries')!.storage;
   // static getConfig
-  static Future<Map<String, dynamic>> getConfig(
-    StorageManager storageManager,
-  ) async {
+  static Future<Map<String, dynamic>> getConfig() async {
     return await storageManager.load(_presetConfig, {'defaultPresetId': ''});
   }
 
   // static setConfig
-  static Future<void> setConfig(
-    StorageManager storageManager,
-    String key,
-    String value,
-  ) async {
-    final config = await getConfig(storageManager);
+  static Future<void> setConfig(String key, String value) async {
+    final config = await getConfig();
     config[key] = value;
     await storageManager.save(_presetConfig, config);
   }
 
   /// 获取所有布局预设
-  static Future<List<LayoutPreset>> getAllPresets(
-    StorageManager storageManager,
-  ) async {
+  static Future<List<LayoutPreset>> getAllPresets() async {
     try {
       final presetsJson = await storageManager.load(_presetsKey);
       if (presetsJson == null) return [];
@@ -412,68 +405,41 @@ class LayoutPresetManager {
   }
 
   /// 保存布局预设
-  static Future<void> savePreset(
-    StorageManager storageManager,
-    LayoutPreset preset,
-  ) async {
-    final presets = await getAllPresets(storageManager);
+  static Future<void> savePreset(LayoutPreset preset) async {
+    final presets = await getAllPresets();
     presets.add(preset);
-    await _saveAllPresets(storageManager, presets);
+    await _saveAllPresets(presets);
   }
 
   /// 删除布局预设
-  static Future<void> deletePreset(
-    StorageManager storageManager,
-    String presetId,
-  ) async {
-    final presets = await getAllPresets(storageManager);
+  static Future<void> deletePreset(String presetId) async {
+    final presets = await getAllPresets();
     presets.removeWhere((preset) => preset.id == presetId);
-    await _saveAllPresets(storageManager, presets);
+    await _saveAllPresets(presets);
   }
 
   /// 保存所有预设
-  static Future<void> _saveAllPresets(
-    StorageManager storageManager,
-    List<LayoutPreset> presets,
-  ) async {
+  static Future<void> _saveAllPresets(List<LayoutPreset> presets) async {
     final presetsJson = presets.map((preset) => preset.toJson()).toList();
     await storageManager.save(_presetsKey, presetsJson);
   }
 
   /// 获取默认布局预设ID
-  static Future<String?> getDefaultPresetId(
-    StorageManager storageManager,
-  ) async {
-    return getConfig(
-      storageManager,
-    ).then((config) => config['defaultPresetId'] as String?);
+  static Future<String?> getDefaultPresetId() async {
+    return getConfig().then((config) => config['defaultPresetId'] as String?);
   }
 
   /// 设置默认布局预设
-  static Future<void> setDefaultPreset(
-    StorageManager storageManager,
-    String? presetId,
-  ) async {
-    await setConfig(storageManager, 'defaultPresetId', presetId ?? '');
+  static Future<void> setDefaultPreset(String? presetId) async {
+    await setConfig('defaultPresetId', presetId ?? '');
   }
 
   /// 获取默认布局预设
-  static Future<LayoutPreset?> getDefaultPreset(
-    StorageManager storageManager,
-  ) async {
-    final defaultId = await getDefaultPresetId(storageManager);
+  static Future<LayoutPreset?> getDefaultPreset() async {
+    final defaultId = await getDefaultPresetId();
     if (defaultId == null) return null;
 
-    final presets = await getAllPresets(storageManager);
-    return presets.firstWhere(
-      (preset) => preset.id == defaultId,
-      orElse:
-          () => LayoutPreset(
-            id: defaultId,
-            name: '',
-            layoutData: 'V',
-            createdAt: DateTime.now(),
-          ),
-    );
+    final presets = await getAllPresets();
+    return presets.firstWhereOrNull((preset) => preset.id == defaultId);
   }
 }

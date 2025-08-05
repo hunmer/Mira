@@ -103,15 +103,7 @@ class DefaultDockLayoutParser extends DockLayoutParser
         }
       }
 
-      // 如果不是tab ID，尝试作为DockItem ID或title查找
-      // 优先使用ID查找，如果找不到再尝试title查找
       var dockItem = DockManager.getDockItemById(dockTabsId, tabId, idString);
-
-      if (dockItem == null) {
-        // 如果ID查找失败，尝试title查找（为了向后兼容）
-        dockItem = DockManager.getDockItem(dockTabsId, tabId, idString);
-      }
-
       if (dockItem != null) {
         // print(
         //   'Found DockItem: ${dockItem.title} (ID: ${dockItem.id}) in tab: $tabId',

@@ -109,11 +109,6 @@ class LayoutFactory {
         parent: rootConfig,
         areas: areas,
       );
-    } else {
-      if (layout.startsWith('V')) {
-        throw StateError('Unsupported layout version.');
-      }
-      throw StateError('Unable to identify layout version.');
     }
   }
 

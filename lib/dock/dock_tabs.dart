@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/dock/dock_theme.dart';
@@ -63,8 +65,8 @@ class DockTabs {
   bool get isEmpty => _dockTabs.isEmpty;
 
   /// 从JSON数据初始化（不使用批量操作包装）
-  void _initializeFromJsonWithoutBatch(Map<String, dynamic> json) {
-    final tabs = json['tabs'] as Map<String, dynamic>? ?? {};
+  void _initializeFromJsonWithoutBatch(Map<String, dynamic> data) {
+    final tabs = data['tabs'] as Map<String, dynamic>? ?? {};
 
     for (var entry in tabs.entries) {
       final tabData = entry.value as Map<String, dynamic>;
@@ -172,9 +174,7 @@ class DockTabs {
     _dockTabs[tabId] = dockTab;
 
     // 如果这是第一个tab或者没有激活的tab，将其设为激活状态
-    if (_activeTabId == null || _dockTabs.length == 1) {
-      _activeTabId = tabId;
-    }
+    _activeTabId ??= tabId;
 
     // 发送tab创建事件
     _eventStreamController?.emit(
@@ -213,23 +213,14 @@ class DockTabs {
 
   /// 清除所有类型为homepage且确实为空的tab
   void _clearDefaultEmptyTabs() {
-    final tabsToRemove = <String>[];
-
     for (var entry in _dockTabs.entries) {
       final dockTab = entry.value;
       final allItems = dockTab.getAllDockItems();
-
-      // 只有当tab确实只包含homepage类型的item，并且没有其他有用的数据时才清除
-      if (allItems.length == 1 &&
-          allItems.first.type == 'homepage' &&
-          dockTab.displayName.contains('首页')) {
-        tabsToRemove.add(entry.key);
+      for (var item in allItems) {
+        if (item.type == 'homepage') {
+          dockTab.removeDockItem(item);
+        }
       }
-    }
-
-    // 批量删除空的默认tab
-    for (final tabId in tabsToRemove) {
-      removeDockTab(tabId);
     }
   }
 
@@ -241,29 +232,6 @@ class DockTabs {
   /// 获取所有DockTab
   Map<String, DockTab> getAllDockTabs() {
     return Map.unmodifiable(_dockTabs);
-  }
-
-  /// 设置激活的Tab
-  void setActiveTab(String tabId) {
-    if (_dockTabs.containsKey(tabId) && _activeTabId != tabId) {
-      final previousTabId = _activeTabId;
-      _activeTabId = tabId;
-
-      // 发送tab切换事件
-      _eventStreamController?.emit(
-        DockTabEvent(
-          type: DockEventType.itemSelected,
-          dockTabsId: id,
-          values: {
-            'tabId': tabId,
-            'displayName': _dockTabs[tabId]?.displayName,
-            'data': {'previousTabId': previousTabId},
-          },
-        ),
-      );
-
-      _rebuildGlobalLayout();
-    }
   }
 
   /// 获取当前激活的Tab ID
@@ -600,12 +568,6 @@ class DockTabs {
           removed = dockTab.removeDockItemById(dockItem.id);
         }
       }
-
-      // 如果通过ID没有找到，则尝试使用name
-      if (!removed && dockingItem.name != null) {
-        removed = dockTab.removeDockItem(dockingItem.name!);
-      }
-
       if (removed) {
         break; // 找到并移除后跳出循环
       }
@@ -628,7 +590,7 @@ class DockTabs {
   void _handleItemSelection(DockingItem dockingItem) {
     // 这里可以添加选择事件的处理逻辑
     print('Item selected: ${dockingItem.name}');
-
+    _activeTabId = dockingItem.id;
     // 发送item选择事件
     _eventStreamController?.emit(
       DockTabEvent(
@@ -864,6 +826,7 @@ class DockTabs {
     };
 
     // 为每个tab创建parser，而不是只为活动tab
+    if (_activeTabId == null) return '';
     if (mainParser == null) {
       mainParser = DefaultDockLayoutParser(
         dockTabsId: id,
@@ -898,6 +861,9 @@ class DockTabs {
 
   /// 加载布局
   bool loadLayout(String layoutString) {
+    if (_dockTabs.isEmpty) {
+      return false;
+    }
     try {
       // 尝试恢复元数据
       final metadataString = DockLayoutManager.getSavedLayout('${id}_metadata');

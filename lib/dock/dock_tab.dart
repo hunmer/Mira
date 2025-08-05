@@ -132,32 +132,34 @@ class DockTab {
     }
   }
 
-  /// 移除DockItem (基于ID)
-  bool removeDockItemById(String id) {
-    final index = _dockItems.indexWhere((item) => item.id == id);
+  bool removeDockItem(DockItem dockItem, {bool rebuildLayout = true}) {
+    final index = _dockItems.indexOf(dockItem);
     if (index != -1) {
-      final dockItem = _dockItems[index];
-
       // 发送item关闭事件
       _eventStreamController?.emit(
         DockTabEvent(
           type: DockEventType.itemClosed,
           dockTabsId: parentDockTabId ?? 'unknown',
-          values: {'dockItem': dockItem},
+          values: {
+            'tabId': id,
+            'itemTitle': dockItem.title,
+            'itemType': dockItem.type,
+          },
         ),
       );
 
-      dockItem.dispose();
       _dockItems.removeAt(index);
-      _rebuildLayout();
+      if (rebuildLayout) {
+        _rebuildLayout();
+      }
       return true;
     }
     return false;
   }
 
-  /// 移除DockItem (基于title，保持向后兼容)
-  bool removeDockItem(String title) {
-    final index = _dockItems.indexWhere((item) => item.title == title);
+  /// 移除DockItem (基于ID)
+  bool removeDockItemById(String id) {
+    final index = _dockItems.indexWhere((item) => item.id == id);
     if (index != -1) {
       final dockItem = _dockItems[index];
 

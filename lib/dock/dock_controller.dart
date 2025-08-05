@@ -1,28 +1,40 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
-import 'package:mira/core/storage/storage_manager.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'dock_manager.dart';
 import 'dock_tabs.dart';
 import 'dock_events.dart';
-import 'dock_layout_preset_dialog.dart';
+import 'dock_layout_controller.dart';
 
 /// DockController - 控制器类，管理Dock系统的业务逻辑
 class DockController extends ChangeNotifier {
   final String dockTabsId;
   DockTabs? _dockTabs;
-  String _lastSavedLayout = '';
   late DockEventStreamController _eventStreamController;
   late StreamSubscription<DockEvent> _eventSubscription;
+  late DockLayoutController _layoutController;
   bool _isInitialized = false;
 
-  DockController({this.dockTabsId = 'main'});
+  DockController({this.dockTabsId = 'main'}) {
+    _layoutController = DockLayoutController(dockTabsId: dockTabsId);
+    _layoutController.addListener(_onLayoutControllerChanged);
+  }
 
   DockTabs? get dockTabs => _dockTabs;
   bool get isInitialized => _isInitialized;
-  String get lastSavedLayout => _lastSavedLayout;
-  bool get hasValidSavedLayout => _lastSavedLayout.isNotEmpty;
+  DockLayoutController get layoutController => _layoutController;
+
+  // 布局相关的便捷访问器
+  String get lastSavedLayout => _layoutController.lastSavedLayout;
+  bool get hasValidSavedLayout => _layoutController.hasValidSavedLayout;
+  bool get isLayoutLoading => _layoutController.isLayoutLoading;
+
   Stream<DockEvent> get eventStream => _eventStreamController.stream;
+
+  /// 布局控制器状态变化时的回调
+  void _onLayoutControllerChanged() {
+    notifyListeners();
+  }
 
   /// 初始化Dock系统
   Future<void> initializeDockSystem({String? savedLayoutId}) async {
@@ -55,48 +67,10 @@ class DockController extends ChangeNotifier {
       print('Warning: DockManager initialization timeout');
     }
 
-    Map<String, dynamic>? initData;
-
-    // 首先检查是否有默认布局预设
-    try {
-      final storageManager = StorageManager();
-      await storageManager.initialize();
-      final defaultPreset = await LayoutPresetManager.getDefaultPreset(
-        storageManager,
-      );
-
-      if (defaultPreset != null) {
-        print('Found default layout preset: ${defaultPreset.name}');
-        // 使用默认预设的布局数据
-        await storageManager.save(
-          '${dockTabsId}_layout',
-          defaultPreset.layoutData,
-        );
-        initData = {'layout': defaultPreset.layoutData};
-      } else if (savedLayoutId != null) {
-        final savedLayout = DockManager.getStoredLayout(savedLayoutId);
-        if (savedLayout != null) {
-          print(
-            'Found saved layout for $savedLayoutId, length: ${savedLayout.length}',
-          );
-          initData = {'layout': savedLayout};
-        } else {
-          print('No saved layout found for $savedLayoutId');
-        }
-      }
-    } catch (e) {
-      print('Error loading default preset: $e');
-      // 如果加载默认预设失败，尝试加载保存的布局
-      if (savedLayoutId != null) {
-        final savedLayout = DockManager.getStoredLayout(savedLayoutId);
-        if (savedLayout != null) {
-          print(
-            'Fallback to saved layout for $savedLayoutId, length: ${savedLayout.length}',
-          );
-          initData = {'layout': savedLayout};
-        }
-      }
-    }
+    // 使用布局控制器初始化布局数据
+    final initData = await _layoutController.initializeLayoutData(
+      savedLayoutId: savedLayoutId,
+    );
 
     // 创建主要的DockTabs，使用延迟初始化模式
     _dockTabs = DockManager.createDockTabs(
@@ -106,31 +80,14 @@ class DockController extends ChangeNotifier {
       deferInitialization: true, // 启用延迟初始化
     );
 
-    if (_dockTabs?.isEmpty ?? true) {
-      // 创建默认tab和内容
-      _createDefaultTabs();
-    }
-    loadLayout();
+    // 应用待处理的布局
+    _layoutController.applyPendingLayout(_dockTabs);
 
     // 完成延迟初始化，统一重建布局
     DockManager.finishDeferredInitialization(dockTabsId);
 
     // 通知UI更新
     notifyListeners();
-  }
-
-  /// 创建默认的tabs和内容
-  void _createDefaultTabs() {
-    // 创建一个默认的DockTab，但不添加任何DockItem
-    // 这样它会自动显示HomePageDockItem，并且标记为默认空状态
-    DockManager.createDockTab(
-      dockTabsId,
-      'home',
-      displayName: '首页',
-      closable: false, // 默认tab不可关闭
-      maximizable: false,
-      buttons: [],
-    );
   }
 
   /// 处理Dock事件
@@ -148,29 +105,21 @@ class DockController extends ChangeNotifier {
         // shouldNotifyListeners = true;
         break;
       case DockEventType.itemSelected:
-        // 保存activeTabId
-        if (event is DockTabEvent && event.tabId != null) {
-          final tabId = event.tabId!;
-          _dockTabs?.setActiveTab(tabId);
-          shouldNotifyListeners = true;
-        }
         break;
       case DockEventType.itemPositionChanged:
         break;
     }
     _saveLayoutForEvent(event.dockTabsId);
-    if (shouldNotifyListeners) {
-      notifyListeners();
-    }
+    // if (shouldNotifyListeners) {
+    //   notifyListeners();
+    // }
   }
 
   /// 根据事件的dockTabsId保存布局
   void _saveLayoutForEvent(String eventDockTabsId) {
-    final success = DockManager.saveLayoutForDockTabs(eventDockTabsId);
-    if (success && eventDockTabsId == dockTabsId) {
-      // 如果是当前控制器的布局，也更新本地的_lastSavedLayout
-      _lastSavedLayout =
-          DockManager.getStoredLayout('${eventDockTabsId}_layout') ?? '';
+    if (eventDockTabsId == dockTabsId) {
+      // 委托给布局控制器处理
+      _layoutController.handleLayoutChanged(eventDockTabsId);
     }
   }
 
@@ -182,24 +131,12 @@ class DockController extends ChangeNotifier {
 
   /// 保存布局
   bool saveLayout() {
-    final success = DockManager.saveLayoutForDockTabs(dockTabsId);
-    if (success) {
-      _lastSavedLayout =
-          DockManager.getStoredLayout('${dockTabsId}_layout') ?? '';
-      notifyListeners();
-    }
-    return success;
+    return _layoutController.saveLayout();
   }
 
   /// 加载布局
   bool loadLayout() {
-    final success = DockManager.loadLayoutForDockTabs(dockTabsId);
-    if (success) {
-      _lastSavedLayout =
-          DockManager.getStoredLayout('${dockTabsId}_layout') ?? '';
-      notifyListeners();
-    }
-    return success;
+    return _layoutController.loadLayout();
   }
 
   /// 处理DockItem关闭事件
@@ -212,6 +149,8 @@ class DockController extends ChangeNotifier {
   void dispose() {
     _eventSubscription.cancel();
     _eventStreamController.dispose();
+    _layoutController.removeListener(_onLayoutControllerChanged);
+    _layoutController.dispose();
     super.dispose();
   }
 }

@@ -180,16 +180,6 @@ class DockManager {
     return dockTabs?.getDockTab(tabId);
   }
 
-  /// 激活指定的Tab
-  static bool setActiveTab(String dockTabsId, String tabId) {
-    final dockTabs = getDockTabs(dockTabsId);
-    if (dockTabs != null) {
-      dockTabs.setActiveTab(tabId);
-      return true;
-    }
-    return false;
-  }
-
   /// 添加DockItem到指定的DockTab
   static bool addDockItem(String dockTabsId, String? tabId, DockItem dockItem) {
     final dockTabs = getDockTabs(dockTabsId);
