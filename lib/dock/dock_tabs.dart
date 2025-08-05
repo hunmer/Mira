@@ -6,6 +6,7 @@ import 'package:tabbed_view/tabbed_view.dart';
 import 'dock_tab.dart';
 import 'dock_item.dart';
 import 'dock_layout_parser.dart';
+import 'dock_events.dart';
 
 /// DockTabs类 - 管理多个DockTab，提供全局的TabbedViewTheme和Docking
 class DockTabs {
@@ -16,15 +17,20 @@ class DockTabs {
   void Function(DockingItem)? _onItemClose;
   String? _activeTabId;
   TabbedViewThemeData? _themeData;
+  DefaultDockLayoutParser? mainParser;
+  DockEventStreamController? _eventStreamController;
 
   DockTabs({
     required this.id,
     Map<String, dynamic>? initData,
     TabbedViewThemeData? themeData,
     void Function(DockingItem)? onItemClose,
+    DockEventStreamController? eventStreamController,
   }) {
     _themeData = themeData;
     _onItemClose = onItemClose;
+    _eventStreamController = eventStreamController;
+
     if (initData != null) {
       _initializeFromJson(initData);
     } else {
@@ -81,6 +87,7 @@ class DockTabs {
       parentDockTabId: id,
       initData: initData,
       onLayoutChanged: _rebuildGlobalLayout,
+      eventStreamController: _eventStreamController,
       // 传递 DockingItem 属性配置
       defaultDockingItemConfig: {
         'closable': closable,
@@ -102,6 +109,16 @@ class DockTabs {
       _activeTabId = tabId;
     }
 
+    // 发送tab创建事件
+    _eventStreamController?.emit(
+      DockTabEvent(
+        type: DockEventType.tabCreated,
+        dockTabsId: id,
+        tabId: tabId,
+        displayName: displayName,
+      ),
+    );
+
     _rebuildGlobalLayout();
     return dockTab;
   }
@@ -110,6 +127,16 @@ class DockTabs {
   bool removeDockTab(String tabId) {
     final dockTab = _dockTabs.remove(tabId);
     if (dockTab != null) {
+      // 发送tab关闭事件
+      _eventStreamController?.emit(
+        DockTabEvent(
+          type: DockEventType.tabClosed,
+          dockTabsId: id,
+          tabId: tabId,
+          displayName: dockTab.displayName,
+        ),
+      );
+
       dockTab.dispose();
       _rebuildGlobalLayout();
       return true;
@@ -129,8 +156,21 @@ class DockTabs {
 
   /// 设置激活的Tab
   void setActiveTab(String tabId) {
-    if (_dockTabs.containsKey(tabId)) {
+    if (_dockTabs.containsKey(tabId) && _activeTabId != tabId) {
+      final previousTabId = _activeTabId;
       _activeTabId = tabId;
+
+      // 发送tab切换事件
+      _eventStreamController?.emit(
+        DockTabEvent(
+          type: DockEventType.tabSwitched,
+          dockTabsId: id,
+          tabId: tabId,
+          displayName: _dockTabs[tabId]?.displayName,
+          data: {'previousTabId': previousTabId},
+        ),
+      );
+
       _rebuildGlobalLayout();
     }
   }
@@ -302,15 +342,11 @@ class DockTabs {
               Docking(
                 layout: _globalLayout,
                 onItemClose: (DockingItem item) {
-                  print(
-                    '❌ OnItemClose - Item: ${item.name ?? item.id}, ID: ${item.id}',
-                  );
                   _handleItemClose(item);
+                  // add stream with closed item
                 },
                 onItemSelection: (DockingItem item) {
-                  print(
-                    '🎯 OnItemSelection - Item: ${item.name ?? item.id}, ID: ${item.id}',
-                  );
+                  // add stream with selected item
                 },
               ),
             );
@@ -427,25 +463,30 @@ class DockTabs {
     };
 
     // 为每个tab创建parser，而不是只为活动tab
-    final mainParser = DefaultDockLayoutParser(
-      dockTabsId: id,
-      tabId: _activeTabId ?? _dockTabs.keys.first,
-    );
-    DockLayoutManager.registerParser('${id}_layout', mainParser);
-
-    // 同时为每个子tab注册parser
-    for (var entry in _dockTabs.entries) {
-      final tabParser = DefaultDockLayoutParser(
+    if (mainParser == null) {
+      mainParser = DefaultDockLayoutParser(
         dockTabsId: id,
-        tabId: entry.key,
+        tabId: _activeTabId!,
       );
-      DockLayoutManager.registerParser('${id}_${entry.key}_layout', tabParser);
+      DockLayoutManager.registerParser('${id}_layout', mainParser!);
+
+      // 同时为每个子tab注册parser
+      for (var entry in _dockTabs.entries) {
+        final tabParser = DefaultDockLayoutParser(
+          dockTabsId: id,
+          tabId: entry.key,
+        );
+        DockLayoutManager.registerParser(
+          '${id}_${entry.key}_layout',
+          tabParser,
+        );
+      }
     }
 
     final layoutString = DockLayoutManager.saveLayout(
       '${id}_layout',
       _globalLayout,
-      mainParser,
+      mainParser!,
     );
 
     // 保存元数据

@@ -1,27 +1,62 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:mira/dock/homepage_dock_item.dart';
 import 'dock_manager.dart';
 import 'dock_tabs.dart';
+import 'dock_events.dart';
 
 /// DockController - 控制器类，管理Dock系统的业务逻辑
 class DockController extends ChangeNotifier {
+  final String dockTabsId;
   late DockTabs _dockTabs;
   String _lastSavedLayout = '';
+  late DockEventStreamController _eventStreamController;
+  late StreamSubscription<DockEvent> _eventSubscription;
+
+  DockController({this.dockTabsId = 'main'});
 
   DockTabs get dockTabs => _dockTabs;
   String get lastSavedLayout => _lastSavedLayout;
   bool get hasValidSavedLayout => _lastSavedLayout.isNotEmpty;
+  Stream<DockEvent> get eventStream => _eventStreamController.stream;
 
   /// 初始化Dock系统
-  void initializeDockSystem() {
-    // 创建主要的DockTabs，添加onItemClose回调
+  void initializeDockSystem({String? savedLayoutId}) {
+    // 创建事件流控制器
+    _eventStreamController = DockEventStreamController(id: dockTabsId);
+
+    // 监听事件并处理
+    _eventSubscription = _eventStreamController.stream.listen(_handleDockEvent);
+
+    // 尝试加载保存的布局
+    Map<String, dynamic>? initData;
+    if (savedLayoutId != null) {
+      final savedLayout = DockManager.getStoredLayout(savedLayoutId);
+      if (savedLayout != null) {
+        initData = {'layout': savedLayout};
+      }
+    }
+
+    // 创建主要的DockTabs，添加onItemClose回调和事件流
     _dockTabs = DockManager.createDockTabs(
-      'main',
+      dockTabsId,
+      initData: initData,
+      eventStreamController: _eventStreamController,
       onItemClose: (DockingItem item) {
         // 这个回调将在UI层处理
+        _eventStreamController.emit(
+          DockItemEvent(
+            type: DockEventType.itemClosed,
+            dockTabsId: dockTabsId,
+            tabId: _dockTabs.activeTabId ?? 'home',
+            itemTitle: item.name ?? 'unknown',
+          ),
+        );
         notifyListeners();
       },
     );
+
     if (_dockTabs.isEmpty) {
       // 创建默认tab和内容
       _createDefaultTabs();
@@ -32,22 +67,40 @@ class DockController extends ChangeNotifier {
   void _createDefaultTabs() {
     // 创建一个默认的DockTab，包含HomePage
     DockManager.createDockTab(
-      'main',
+      dockTabsId,
       'home',
       displayName: '首页',
       closable: true,
       maximizable: false,
       buttons: [],
     );
+  }
 
-    // 添加默认的HomePage DockItem
-    final homePageItem = DockManager.createHomePageDockItem(
-      'Home',
-      onCreateNewTab: () {
-        createNewTab();
-      },
-    );
-    DockManager.addDockItem('main', 'home', homePageItem);
+  /// 处理Dock事件
+  void _handleDockEvent(DockEvent event) {
+    print('Dock Event: ${event.type} for dockTabsId: ${event.dockTabsId}');
+    switch (event.type) {
+      case DockEventType.tabClosed:
+      case DockEventType.tabCreated:
+      case DockEventType.tabSwitched:
+      case DockEventType.itemClosed:
+      case DockEventType.itemCreated:
+      case DockEventType.layoutChanged:
+        // 任何事件都触发布局保存，传递对应的dockTabsId
+        _saveLayoutForEvent(event.dockTabsId);
+        break;
+    }
+    notifyListeners();
+  }
+
+  /// 根据事件的dockTabsId保存布局
+  void _saveLayoutForEvent(String eventDockTabsId) {
+    final success = DockManager.saveLayoutForDockTabs(eventDockTabsId);
+    if (success && eventDockTabsId == dockTabsId) {
+      // 如果是当前控制器的布局，也更新本地的_lastSavedLayout
+      _lastSavedLayout =
+          DockManager.getStoredLayout('${eventDockTabsId}_layout') ?? '';
+    }
   }
 
   /// 创建新tab
@@ -62,7 +115,7 @@ class DockController extends ChangeNotifier {
 
     // 创建新Tab
     DockManager.createDockTab(
-      'main',
+      dockTabsId,
       tabId,
       displayName: name,
       closable: true,
@@ -79,43 +132,50 @@ class DockController extends ChangeNotifier {
     }
 
     // 激活新创建的Tab
-    DockManager.setActiveTab('main', tabId);
+    DockManager.setActiveTab(dockTabsId, tabId);
+
+    // 发送tab创建和切换事件
+    _eventStreamController.emit(
+      DockTabEvent(
+        type: DockEventType.tabCreated,
+        dockTabsId: dockTabsId,
+        tabId: tabId,
+        displayName: name,
+      ),
+    );
+
+    _eventStreamController.emit(
+      DockTabEvent(
+        type: DockEventType.tabSwitched,
+        dockTabsId: dockTabsId,
+        tabId: tabId,
+        displayName: name,
+      ),
+    );
+
     notifyListeners();
   }
 
   /// 保存布局
   bool saveLayout() {
-    try {
-      final layoutString = DockManager.saveDockTabsLayout('main');
-      if (layoutString != null) {
-        _lastSavedLayout = layoutString;
-        notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      print('Error saving layout: $e');
-      return false;
+    final success = DockManager.saveLayoutForDockTabs(dockTabsId);
+    if (success) {
+      _lastSavedLayout =
+          DockManager.getStoredLayout('${dockTabsId}_layout') ?? '';
+      notifyListeners();
     }
+    return success;
   }
 
   /// 加载布局
   bool loadLayout() {
-    if (_lastSavedLayout.isEmpty) {
-      return false;
+    final success = DockManager.loadLayoutForDockTabs(dockTabsId);
+    if (success) {
+      _lastSavedLayout =
+          DockManager.getStoredLayout('${dockTabsId}_layout') ?? '';
+      notifyListeners();
     }
-
-    try {
-      final success = DockManager.loadDockTabsLayout('main', _lastSavedLayout);
-      if (success) {
-        notifyListeners();
-        return true;
-      }
-      return false;
-    } catch (e) {
-      print('Error loading layout: $e');
-      return false;
-    }
+    return success;
   }
 
   /// 处理DockItem关闭事件
@@ -126,7 +186,8 @@ class DockController extends ChangeNotifier {
 
   @override
   void dispose() {
-    DockManager.clearAll();
+    _eventSubscription.cancel();
+    _eventStreamController.dispose();
     super.dispose();
   }
 }

@@ -106,12 +106,18 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   }
 
   @override
-  void addTab(Library library, {String title = '', bool isRecycleBin = false}) {
+  void addTab(
+    Library library, {
+    String title = '',
+    bool isRecycleBin = false,
+    String dockTabsId = 'main',
+    String? dockTabId,
+  }) {
     // 使用dock系统添加库标签页
-    DockManager.addLibraryTab(
-      library,
-      title: title,
-      isRecycleBin: isRecycleBin,
-    );
+    // DockManager.addDockItem(
+    //   dockTabsId,
+    //   dockTabId,
+    //   LibraryDockItem(tabData: {library: library}),
+    // );
   }
 }

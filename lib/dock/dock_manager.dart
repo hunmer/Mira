@@ -1,20 +1,20 @@
-import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:tabbed_view/tabbed_view.dart';
 import 'dock_tabs.dart';
 import 'dock_tab.dart';
 import 'dock_item.dart';
-import 'homepage_dock_item.dart';
 import 'dock_layout_parser.dart';
+import 'dock_events.dart';
 
 /// DockManager类 - 全局管理器，提供静态方法管理DockTabs
 class DockManager {
   static final DockManager _instance = DockManager._internal();
   factory DockManager() => _instance;
+  static DockManager get instance => _instance;
   DockManager._internal();
 
   final Map<String, DockTabs> _dockTabsMap = {};
-  static DockManager get instance => _instance;
+  final Map<String, String> _layoutStorage = {};
 
   /// 创建DockTabs
   static DockTabs createDockTabs(
@@ -22,12 +22,14 @@ class DockManager {
     Map<String, dynamic>? initData,
     TabbedViewThemeData? themeData,
     void Function(DockingItem)? onItemClose,
+    DockEventStreamController? eventStreamController,
   }) {
     final dockTabs = DockTabs(
       id: id,
       initData: initData,
       themeData: themeData,
       onItemClose: onItemClose,
+      eventStreamController: eventStreamController,
     );
     _instance._dockTabsMap[id] = dockTabs;
     return dockTabs;
@@ -115,14 +117,6 @@ class DockManager {
       return true;
     }
     return false;
-  }
-
-  /// 创建HomePage类型的DockItem
-  static DockItem createHomePageDockItem(
-    String title, {
-    VoidCallback? onCreateNewTab,
-  }) {
-    return HomePageDockItem(onCreateNewTab: onCreateNewTab, title: title);
   }
 
   /// 添加DockItem到指定的DockTab
@@ -267,19 +261,6 @@ class DockManager {
 
   // ===================== Library Tab Management =====================
 
-  /// 添加库标签页
-  static String addLibraryTab(
-    dynamic library, {
-    String title = '',
-    bool isRecycleBin = false,
-    String dockTabsId = 'main',
-    String? dockTabId, // 改为可为空，默认不指定
-  }) {
-    // 动态导入LibraryDockItem以避免循环依赖
-    // 这个方法将在LibraryDockItem中实现
-    throw UnimplementedError('Use LibraryDockItem.addTab instead');
-  }
-
   /// 关闭库标签页
   static bool closeLibraryTab(
     String tabId, {
@@ -369,15 +350,60 @@ class DockManager {
     }
   }
 
-  /// 保存库标签页数据到存储
-  static Future<void> saveLibraryTabsToStorage() async {
-    // 这里需要实现保存到插件存储的逻辑
-    // 暂时不实现，等待与LibrariesPlugin的集成
+  /// 存储布局到内存
+  static void storeLayout(String id, String layoutData) {
+    _instance._layoutStorage[id] = layoutData;
   }
 
-  /// 从存储加载库标签页数据
-  static Future<void> loadLibraryTabsFromStorage() async {
-    // 这里需要实现从插件存储加载的逻辑
-    // 暂时不实现，等待与LibrariesPlugin的集成
+  /// 获取存储的布局
+  static String? getStoredLayout(String id) {
+    return _instance._layoutStorage[id];
+  }
+
+  /// 清除存储的布局
+  static void clearStoredLayout(String id) {
+    _instance._layoutStorage.remove(id);
+  }
+
+  /// 清除所有存储的布局
+  static void clearAllStoredLayouts() {
+    _instance._layoutStorage.clear();
+  }
+
+  /// 统一保存布局方法 - 由DockController调用
+  static bool saveLayoutForDockTabs(String dockTabsId) {
+    try {
+      final layoutString = saveDockTabsLayout(dockTabsId);
+      if (layoutString != null) {
+        // 使用统一的布局ID命名规则
+        final layoutId = '${dockTabsId}_layout';
+        storeLayout(layoutId, layoutString);
+        print('Layout saved for dockTabsId: $dockTabsId');
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Error saving layout for dockTabsId $dockTabsId: $e');
+      return false;
+    }
+  }
+
+  /// 统一加载布局方法 - 由DockController调用
+  static bool loadLayoutForDockTabs(String dockTabsId) {
+    try {
+      final layoutId = '${dockTabsId}_layout';
+      final layoutString = getStoredLayout(layoutId);
+      if (layoutString != null) {
+        final success = loadDockTabsLayout(dockTabsId, layoutString);
+        if (success) {
+          print('Layout loaded for dockTabsId: $dockTabsId');
+          return true;
+        }
+      }
+      return false;
+    } catch (e) {
+      print('Error loading layout for dockTabsId $dockTabsId: $e');
+      return false;
+    }
   }
 }

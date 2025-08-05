@@ -100,6 +100,21 @@ class DockItem {
     );
   }
 
+  // copyWith
+  DockItem copyWith({
+    String? type,
+    String? title,
+    Map<String, ValueNotifier<dynamic>>? values,
+    DockingItem Function(DockItem)? builder,
+  }) {
+    return DockItem(
+      type: type ?? this.type,
+      title: title ?? this.title,
+      values: values ?? this.values,
+      builder: builder ?? this.builder,
+    );
+  }
+
   /// 转换为JSON
   Map<String, dynamic> toJson() {
     final valuesMap = <String, dynamic>{};

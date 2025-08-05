@@ -34,9 +34,9 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
 
     // 初始化dock controller
-    _dockController = DockController();
+    _dockController = DockController(dockTabsId: 'main');
     _dockController.addListener(_onDockControllerChanged);
-    _dockController.initializeDockSystem();
+    _dockController.initializeDockSystem(savedLayoutId: 'main_layout');
 
     init();
   }

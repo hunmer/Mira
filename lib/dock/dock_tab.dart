@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'dock_item.dart';
+import 'dock_events.dart';
 
 /// DockTab类 - 管理单个tab的DockItem集合
 class DockTab {
@@ -12,6 +13,7 @@ class DockTab {
   final ValueNotifier<int> _layoutChangeNotifier = ValueNotifier<int>(0);
   VoidCallback? _onLayoutChanged;
   final Map<String, dynamic> _defaultDockingItemConfig;
+  DockEventStreamController? _eventStreamController;
 
   DockTab({
     required this.id,
@@ -21,9 +23,11 @@ class DockTab {
     VoidCallback? onLayoutChanged,
     void Function(DockingItem)? onItemClose,
     Map<String, dynamic>? defaultDockingItemConfig,
+    DockEventStreamController? eventStreamController,
   }) : _displayName = displayName ?? id,
        _onLayoutChanged = onLayoutChanged,
-       _defaultDockingItemConfig = defaultDockingItemConfig ?? {} {
+       _defaultDockingItemConfig = defaultDockingItemConfig ?? {},
+       _eventStreamController = eventStreamController {
     if (initData != null) {
       _initializeFromJson(initData);
     } else {
@@ -147,7 +151,22 @@ class DockTab {
 
   /// 添加DockItem
   void addDockItem(DockItem dockItem) {
+    if (dockItem.title.isEmpty) {
+      dockItem = dockItem.copyWith(title: _displayName);
+    }
     _dockItems.add(dockItem);
+
+    // 发送item创建事件
+    _eventStreamController?.emit(
+      DockItemEvent(
+        type: DockEventType.itemCreated,
+        dockTabsId: parentDockTabId ?? 'unknown',
+        tabId: id,
+        itemTitle: dockItem.title,
+        itemType: dockItem.type,
+      ),
+    );
+
     _rebuildLayout();
   }
 
@@ -155,7 +174,20 @@ class DockTab {
   bool removeDockItem(String title) {
     final index = _dockItems.indexWhere((item) => item.title == title);
     if (index != -1) {
-      _dockItems[index].dispose();
+      final dockItem = _dockItems[index];
+
+      // 发送item关闭事件
+      _eventStreamController?.emit(
+        DockItemEvent(
+          type: DockEventType.itemClosed,
+          dockTabsId: parentDockTabId ?? 'unknown',
+          tabId: id,
+          itemTitle: dockItem.title,
+          itemType: dockItem.type,
+        ),
+      );
+
+      dockItem.dispose();
       _dockItems.removeAt(index);
       _rebuildLayout();
       return true;
