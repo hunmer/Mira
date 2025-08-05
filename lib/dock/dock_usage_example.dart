@@ -96,9 +96,7 @@ class _DockUsageExampleState extends State<DockUsageExample> {
             icon: const Icon(Icons.add),
             onPressed: () {
               // 创建新的tab
-              _dockController.createTabWithName(
-                '新Tab ${DateTime.now().millisecondsSinceEpoch}',
-              );
+              _dockController.createNewTab();
             },
             tooltip: '创建新Tab',
           ),

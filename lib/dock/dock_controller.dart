@@ -62,11 +62,12 @@ class DockController extends ChangeNotifier {
       }
     }
 
-    // 创建主要的DockTabs，添加回调和事件流
+    // 创建主要的DockTabs，使用延迟初始化模式
     _dockTabs = DockManager.createDockTabs(
       dockTabsId,
       initData: initData,
       eventStreamController: _eventStreamController,
+      deferInitialization: true, // 启用延迟初始化
       onItemClose: (DockingItem item) {
         // 这个回调将在UI层处理
         _eventStreamController.emit(
@@ -145,6 +146,9 @@ class DockController extends ChangeNotifier {
     }
     loadLayout();
 
+    // 完成延迟初始化，统一重建布局
+    DockManager.finishDeferredInitialization(dockTabsId);
+
     // 通知UI更新
     notifyListeners();
   }
@@ -193,53 +197,6 @@ class DockController extends ChangeNotifier {
   /// 创建新tab
   void createNewTab() {
     // 这个方法将在UI层处理用户交互
-    notifyListeners();
-  }
-
-  /// 使用指定名称创建Tab
-  void createTabWithName(String name, {String type = 'empty'}) {
-    final tabId = 'tab_${DateTime.now().millisecondsSinceEpoch}';
-
-    // 创建新Tab
-    DockManager.createDockTab(
-      dockTabsId,
-      tabId,
-      displayName: name,
-      closable: true,
-      maximizable: false,
-      buttons: [],
-    );
-
-    // 根据类型添加默认内容
-    switch (type) {
-      case 'empty':
-      default:
-        // 空白tab不添加任何内容
-        break;
-    }
-
-    // 激活新创建的Tab
-    DockManager.setActiveTab(dockTabsId, tabId);
-
-    // 发送tab创建和切换事件
-    _eventStreamController.emit(
-      DockTabEvent(
-        type: DockEventType.tabCreated,
-        dockTabsId: dockTabsId,
-        tabId: tabId,
-        displayName: name,
-      ),
-    );
-
-    _eventStreamController.emit(
-      DockTabEvent(
-        type: DockEventType.tabSwitched,
-        dockTabsId: dockTabsId,
-        tabId: tabId,
-        displayName: name,
-      ),
-    );
-
     notifyListeners();
   }
 

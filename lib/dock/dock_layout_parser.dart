@@ -84,16 +84,7 @@ class DefaultDockLayoutParser extends DockLayoutParser
     //   'Building DockingItem for ID: $id, tabId: $tabId, dockTabsId: $dockTabsId',
     // );
 
-    if (id == null) {
-      return DockingItem(
-        weight: weight,
-        maximized: maximized,
-        widget: const Center(child: Text('Empty')),
-      );
-    }
-
     final idString = id.toString();
-
     try {
       // 检查是否是tab ID（用于处理DockingTabs布局）
       final dockTabs = DockManager.getDockTabs(dockTabsId);

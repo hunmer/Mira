@@ -3,6 +3,7 @@ import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'dock_item.dart';
 import 'dock_events.dart';
 import 'homepage_dock_item.dart';
+import 'dock_manager.dart';
 
 /// DockTab类 - 管理单个tab的DockItem集合
 class DockTab {
@@ -37,10 +38,7 @@ class DockTab {
       _initializeFromJson(initData);
     } else {
       _layout = DockingLayout(
-        root: DockingItem(
-          name: 'empty',
-          widget: const Center(child: Text('No items in this tab')),
-        ),
+        root: DockManager.createDefaultHomePageDockItem(),
       );
     }
   }
@@ -294,12 +292,9 @@ class DockTab {
   /// 重建布局
   void _rebuildLayout() {
     if (_dockItems.isEmpty) {
-      // 当没有items时，创建一个HomePageDockItem作为默认内容
-      final homePageItem = HomePageDockItem();
+      // 当没有items时，使用DockManager创建默认HomePageDockItem
       _layout = DockingLayout(
-        root: homePageItem.buildDockingItem(
-          defaultConfig: _defaultDockingItemConfig,
-        ),
+        root: DockManager.createDefaultHomePageDockItem(),
       );
     } else if (_dockItems.length == 1) {
       // 如果只有一个item，直接使用它
@@ -364,8 +359,12 @@ class DockTab {
 
   /// 转换为JSON
   Map<String, dynamic> toJson() {
-    // 如果是默认空状态，返回标记信息而不是完整数据
-    if (shouldSkipSerialization) {
+    // 过滤掉 HomePageDockItem，它们不应该被保存
+    final filteredItems =
+        _dockItems.where((item) => item.type != 'homepage').toList();
+
+    // 如果过滤后没有项目或是默认空状态，返回标记信息而不是完整数据
+    if (filteredItems.isEmpty || shouldSkipSerialization) {
       return {
         'id': id,
         'parentDockTabId': parentDockTabId,
@@ -379,7 +378,7 @@ class DockTab {
       'id': id,
       'parentDockTabId': parentDockTabId,
       'isDefaultEmpty': false,
-      'items': _dockItems.map((item) => item.toJson()).toList(),
+      'items': filteredItems.map((item) => item.toJson()).toList(),
       'defaultDockingItemConfig': _defaultDockingItemConfig,
     };
   }

@@ -8,6 +8,7 @@ import 'dock_tab.dart';
 import 'dock_item.dart';
 import 'dock_layout_parser.dart';
 import 'dock_events.dart';
+import 'homepage_dock_item.dart';
 
 /// DockManager类 - 全局管理器，提供静态方法管理DockTabs
 class DockManager {
@@ -24,6 +25,12 @@ class DockManager {
 
   /// 检查是否已初始化
   static bool get isInitialized => _instance._isInitialized;
+
+  /// 创建默认的HomePageDockItem
+  static DockingItem createDefaultHomePageDockItem() {
+    final homePageItem = HomePageDockItem();
+    return homePageItem.buildDockingItem();
+  }
 
   /// 设置StorageManager实例
   static Future<void> setStorageManager(StorageManager storageManager) async {
@@ -77,6 +84,7 @@ class DockManager {
     void Function(DockingItem, DockingItem, DropArea, DropPosition?, int?)?
     onItemLayoutChanged,
     DockEventStreamController? eventStreamController,
+    bool deferInitialization = false, // 新增参数：是否延迟初始化
   }) {
     final dockTabs = DockTabs(
       id: id,
@@ -87,9 +95,23 @@ class DockManager {
       onItemMove: onItemMove,
       onItemLayoutChanged: onItemLayoutChanged,
       eventStreamController: eventStreamController,
+      deferInitialization: deferInitialization,
     );
     _instance._dockTabsMap[id] = dockTabs;
     return dockTabs;
+  }
+
+  /// 完成指定DockTabs的延迟初始化
+  static void finishDeferredInitialization(String dockTabsId) {
+    final dockTabs = getDockTabs(dockTabsId);
+    dockTabs?.finishDeferredInitialization();
+  }
+
+  /// 批量完成所有DockTabs的延迟初始化
+  static void finishAllDeferredInitializations() {
+    for (var dockTabs in _instance._dockTabsMap.values) {
+      dockTabs.finishDeferredInitialization();
+    }
   }
 
   /// 移除DockTabs
@@ -125,7 +147,7 @@ class DockManager {
     Map<String, dynamic>? initData,
     // DockingItem 默认属性配置
     bool closable = true,
-    bool keepAlive = false,
+    bool keepAlive = true,
     List<TabButton>? buttons,
     bool? maximizable = false, // 默认不显示全屏按钮
     bool maximized = false,
