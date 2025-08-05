@@ -105,19 +105,6 @@ class DockTabs {
       if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
         _activeTabId = activeTabId;
       }
-
-      // 检查是否需要创建默认空tab
-      if (false) {
-        // 如果没有tab或者之前有默认空tab，创建一个新的默认空tab
-        createDockTab(
-          'home',
-          displayName: '首页',
-          closable: false,
-          maximizable: false,
-          buttons: [],
-          rebuildLayout: false, // 不立即重建布局
-        );
-      }
     } else {
       _performBatchOperation(() {
         // 清除现有数据（不触发布局重建）
@@ -130,21 +117,6 @@ class DockTabs {
         final activeTabId = json['activeTabId'] as String?;
         if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
           _activeTabId = activeTabId;
-        }
-
-        // 检查是否需要创建默认空tab
-        final hasDefaultEmptyTabs =
-            json['hasDefaultEmptyTabs'] as bool? ?? false;
-        if (_dockTabs.isEmpty || hasDefaultEmptyTabs) {
-          // 如果没有tab或者之前有默认空tab，创建一个新的默认空tab
-          createDockTab(
-            'home',
-            displayName: '首页',
-            closable: false,
-            maximizable: false,
-            buttons: [],
-            rebuildLayout: false, // 不立即重建布局
-          );
         }
       });
     }
@@ -192,7 +164,6 @@ class DockTabs {
 
     // 在添加新tab之前，检查并清除所有默认空tab
     _clearDefaultEmptyTabs();
-
     _dockTabs[tabId] = dockTab;
 
     // 如果这是第一个tab或者没有激活的tab，将其设为激活状态
@@ -235,33 +206,13 @@ class DockTabs {
     return false;
   }
 
-  /// 清除所有默认空tab（只显示HomePageDockItem，没有真正DockItem的tab）
+  /// 清除所有类型为homepage的tab
   void _clearDefaultEmptyTabs() {
-    final tabsToRemove = <String>[];
-    for (var tabId in tabsToRemove) {
-      final dockTab = _dockTabs.remove(tabId);
-      if (dockTab != null) {
-        // 如果删除的是当前激活的tab，需要重新选择激活tab
-        if (_activeTabId == tabId) {
-          _activeTabId =
-              _dockTabs.keys.isNotEmpty ? _dockTabs.keys.first : null;
-        }
-
-        // 发送tab关闭事件
-        _eventStreamController?.emit(
-          DockTabEvent(
-            type: DockEventType.tabClosed,
-            dockTabsId: id,
-            values: {'tabId': tabId, 'displayName': dockTab.displayName},
-          ),
-        );
-
-        dockTab.dispose();
+    for (var entry in _dockTabs.entries) {
+      final dockTab = entry.value;
+      if (dockTab.getAllDockItems().any((item) => item.type == 'homepage')) {
+        removeDockTab(entry.key);
       }
-    }
-
-    if (tabsToRemove.isNotEmpty) {
-      print('Cleared ${tabsToRemove.length} default empty tabs: $tabsToRemove');
     }
   }
 
@@ -568,7 +519,6 @@ class DockTabs {
         dockTabsId: id,
         values: {
           'itemId': dockingItem.id,
-          'itemTitle': dockingItem.name,
           'itemType': dockingItem.widget.runtimeType.toString(),
         },
       ),
@@ -586,7 +536,7 @@ class DockTabs {
         type: DockEventType.itemSelected,
         dockTabsId: id,
         values: {
-          'itemTitle': dockingItem.name,
+          'itemId': dockingItem.id,
           'itemType': dockingItem.widget.runtimeType.toString(),
         },
       ),
@@ -700,7 +650,6 @@ class DockTabs {
           values: {
             'tabId': tabId,
             'itemId': dockItem.id,
-            'itemTitle': dockItem.title,
             'itemType': dockItem.type,
           },
         ),
@@ -730,36 +679,6 @@ class DockTabs {
             values: {
               'tabId': tabId,
               'itemId': itemId,
-              'itemTitle': dockItem?.title,
-              'itemType': dockItem?.type,
-            },
-          ),
-        );
-
-        _refreshGlobalLayout();
-      }
-      return result;
-    }
-    return false;
-  }
-
-  /// 从指定的DockTab移除DockItem (基于title，保持向后兼容)
-  bool removeDockItemFromTab(String tabId, String itemTitle) {
-    final dockTab = getDockTab(tabId);
-    if (dockTab != null) {
-      // 获取item信息用于事件发射
-      final dockItem = dockTab.getDockItem(itemTitle);
-      final result = dockTab.removeDockItem(itemTitle);
-      if (result) {
-        // 发送item关闭事件
-        _eventStreamController?.emit(
-          DockTabEvent(
-            type: DockEventType.itemClosed,
-            dockTabsId: id,
-            values: {
-              'tabId': tabId,
-              'itemId': dockItem?.id,
-              'itemTitle': itemTitle,
               'itemType': dockItem?.type,
             },
           ),
@@ -778,12 +697,6 @@ class DockTabs {
     return dockTab?.getDockItemById(itemId);
   }
 
-  /// 获取指定DockTab中的DockItem (基于title，保持向后兼容)
-  DockItem? getDockItemFromTab(String tabId, String itemTitle) {
-    final dockTab = getDockTab(tabId);
-    return dockTab?.getDockItem(itemTitle);
-  }
-
   /// 更新指定DockTab中的DockItem (基于ID)
   bool updateDockItemInTabById(
     String tabId,
@@ -793,19 +706,6 @@ class DockTabs {
     final dockTab = getDockTab(tabId);
     if (dockTab != null) {
       return dockTab.updateDockItemById(itemId, updates);
-    }
-    return false;
-  }
-
-  /// 更新指定DockTab中的DockItem (基于title，保持向后兼容)
-  bool updateDockItemInTab(
-    String tabId,
-    String itemTitle,
-    Map<String, dynamic> updates,
-  ) {
-    final dockTab = getDockTab(tabId);
-    if (dockTab != null) {
-      return dockTab.updateDockItem(itemTitle, updates);
     }
     return false;
   }
@@ -852,15 +752,8 @@ class DockTabs {
 
     for (var entry in _dockTabs.entries) {
       final dockTab = entry.value;
-
-      // 如果tab不应该被序列化（默认空状态），则跳过
-
-      // 如果跳过的tab是当前激活的tab，需要重新选择一个激活tab
-      if (_activeTabId == entry.key) {
-        activeTabIdToSave = tabsMap.keys.isNotEmpty ? tabsMap.keys.first : null;
-      }
+      tabsMap[entry.key] = dockTab.toJson();
     }
-
     return {'id': id, 'tabs': tabsMap, 'activeTabId': activeTabIdToSave};
   }
 

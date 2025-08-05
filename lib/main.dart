@@ -27,6 +27,7 @@ import 'core/storage/storage_manager.dart';
 import 'core/config_manager.dart';
 import 'screens/route.dart';
 import 'screens/settings_screen/controllers/auto_update_controller.dart'; // 自动更新控制器
+import 'package:window_manager/window_manager.dart';
 
 // 全局导航键
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -39,6 +40,20 @@ late PermissionController _permissionController;
 void main() async {
   // 确保Flutter绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
+
+  await windowManager.ensureInitialized();
+
+  WindowOptions windowOptions = WindowOptions(
+    size: Size(800, 600),
+    center: true,
+    backgroundColor: Colors.transparent,
+    skipTaskbar: false,
+    titleBarStyle: TitleBarStyle.hidden,
+  );
+  windowManager.waitUntilReadyToShow(windowOptions, () async {
+    await windowManager.show();
+    await windowManager.focus();
+  });
 
   // 初始化 MediaKit
   // MediaKit.ensureInitialized();

@@ -44,7 +44,11 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   @override
   LibraryTabData? getTabData(String tabId) {
     // 首先尝试从dock系统获取DockItem
-    final dockItem = DockManager.getDockItem('main', 'home', 'library_$tabId');
+    final dockItem = DockManager.getDockItemById(
+      'main',
+      'home',
+      'library_$tabId',
+    );
 
     if (dockItem != null && dockItem is LibraryDockItem) {
       return dockItem.tabData;

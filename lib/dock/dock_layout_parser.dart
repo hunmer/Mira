@@ -141,10 +141,6 @@ class DefaultDockLayoutParser extends DockLayoutParser
         for (var tab in dockTabs.getAllDockTabs().values) {
           // 优先使用ID查找
           var foundItem = tab.getDockItemById(idString);
-          if (foundItem == null) {
-            // 如果ID查找失败，尝试title查找
-            foundItem = tab.getDockItem(idString);
-          }
           if (foundItem != null) {
             // print(
             //   'Found DockItem: ${foundItem.title} (ID: ${foundItem.id}) in tab: ${tab.id} (different from expected tab: $tabId)',

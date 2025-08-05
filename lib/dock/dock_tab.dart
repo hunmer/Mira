@@ -206,43 +206,6 @@ class DockTab {
     }
   }
 
-  /// 获取DockItem (基于title，保持向后兼容)
-  DockItem? getDockItem(String title) {
-    print('Searching for DockItem with title: "$title" in tab: $id');
-    print(
-      'Available items in this tab: ${_dockItems.map((item) => item.title).toList()}',
-    );
-
-    if (_dockItems.isEmpty) {
-      print('No items in this tab');
-      return null;
-    }
-
-    try {
-      // 首先尝试精确匹配
-      for (var item in _dockItems) {
-        if (item.title == title) {
-          print('Found exact match: ${item.title}');
-          return item;
-        }
-      }
-
-      // 如果精确匹配失败，尝试忽略大小写匹配
-      for (var item in _dockItems) {
-        if (item.title.toLowerCase() == title.toLowerCase()) {
-          print('Found case-insensitive match: ${item.title}');
-          return item;
-        }
-      }
-
-      print('No match found for title: "$title"');
-      return null;
-    } catch (e) {
-      print('Error in getDockItem for title "$title": $e');
-      return null;
-    }
-  }
-
   /// 获取所有DockItem
   List<DockItem> getAllDockItems() {
     return List.unmodifiable(_dockItems);
@@ -264,11 +227,6 @@ class DockTab {
   bool updateDockItem(String title, Map<String, dynamic> updates) {
     // 优先尝试作为ID查找
     var dockItem = getDockItemById(title);
-    if (dockItem == null) {
-      // 如果ID查找失败，尝试title查找
-      dockItem = getDockItem(title);
-    }
-
     if (dockItem != null) {
       for (var entry in updates.entries) {
         dockItem.update(entry.key, entry.value);

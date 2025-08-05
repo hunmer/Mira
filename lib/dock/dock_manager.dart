@@ -289,16 +289,6 @@ class DockManager {
     return dockTabs?.removeDockItemFromTabById(tabId, itemId) ?? false;
   }
 
-  /// 移除DockItem (基于title，保持向后兼容)
-  static bool removeDockItem(
-    String dockTabsId,
-    String tabId,
-    String itemTitle,
-  ) {
-    final dockTabs = getDockTabs(dockTabsId);
-    return dockTabs?.removeDockItemFromTab(tabId, itemTitle) ?? false;
-  }
-
   /// 获取DockItem (基于ID)
   static DockItem? getDockItemById(
     String dockTabsId,
@@ -316,7 +306,8 @@ class DockManager {
     String itemTitle,
   ) {
     final dockTabs = getDockTabs(dockTabsId);
-    return dockTabs?.getDockItemFromTab(tabId, itemTitle);
+    // 先尝试按ID查找，如果找不到再按title查找（为了向后兼容）
+    return dockTabs?.getDockItemFromTabById(tabId, itemTitle);
   }
 
   /// 更新DockItem (基于ID)
@@ -328,17 +319,6 @@ class DockManager {
   ) {
     final dockTabs = getDockTabs(dockTabsId);
     return dockTabs?.updateDockItemInTabById(tabId, itemId, updates) ?? false;
-  }
-
-  /// 更新DockItem (基于title，保持向后兼容)
-  static bool updateDockItem(
-    String dockTabsId,
-    String tabId,
-    String itemTitle,
-    Map<String, dynamic> updates,
-  ) {
-    final dockTabs = getDockTabs(dockTabsId);
-    return dockTabs?.updateDockItemInTab(tabId, itemTitle, updates) ?? false;
   }
 
   /// 清空所有DockTabs
