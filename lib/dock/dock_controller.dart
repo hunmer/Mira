@@ -73,8 +73,6 @@ class DockController extends ChangeNotifier {
   /// 处理Dock事件
   void _handleDockEvent(DockEvent event) {
     print('Dock Event: ${event.type} for dockTabsId: ${event.dockTabsId}');
-
-    bool shouldNotifyListeners = false;
     switch (event.type) {
       case DockEventType.tabClosed:
       case DockEventType.tabCreated:

@@ -419,10 +419,6 @@ class DockLayoutController extends ChangeNotifier {
       } else {
         _lastSavedLayout = '';
       }
-      notifyListeners();
-      print(
-        'DockLayoutController: Layout auto-saved with debounce for $eventDockTabsId',
-      );
     }
   }
 

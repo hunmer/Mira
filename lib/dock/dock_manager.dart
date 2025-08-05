@@ -59,11 +59,8 @@ class DockManager {
 
   /// 保存布局到持久化存储
   void _saveLayoutsToStorage() async {
-    if (_storageManager == null) return;
-
     try {
       await _storageManager!.writeJson(_layoutStorageKey, _layoutStorage);
-      print('Saved ${_layoutStorage.length} layouts to persistent storage');
     } catch (e) {
       print('Error saving layouts to storage: $e');
     }
@@ -417,10 +414,6 @@ class DockManager {
         final layoutId = '${dockTabsId}_layout';
         final jsonString = json.encode(completeLayoutData);
         storeLayout(layoutId, jsonString);
-
-        print('Complete layout saved for dockTabsId: $dockTabsId');
-        print('Layout string length: ${layoutString.length}');
-        print('DockTabs data keys: ${dockTabsData.keys.toList()}');
         return true;
       }
       return false;
