@@ -56,7 +56,12 @@ class DockItem {
         widget: dockingItem.widget,
         value: dockingItem.value,
         closable: defaultConfig['closable'] ?? true,
-        buttons: (defaultConfig['buttons'] as List<TabButton>?) ?? [],
+        buttons:
+            defaultConfig['buttons'] != null
+                ? (defaultConfig['buttons'] as List)
+                    .map((e) => e as TabButton)
+                    .toList()
+                : [],
         maximizable: defaultConfig['maximizable'] ?? false,
         maximized: defaultConfig['maximized'] ?? false,
         leading: defaultConfig['leading'],
@@ -64,9 +69,9 @@ class DockItem {
         weight: defaultConfig['weight'],
         minimalWeight: defaultConfig['minimalWeight'],
         minimalSize: defaultConfig['minimalSize'],
+        keepAlive: defaultConfig['keepAlive'] ?? true,
       );
     }
-
     return dockingItem;
   }
 

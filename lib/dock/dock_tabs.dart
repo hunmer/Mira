@@ -56,6 +56,8 @@ class DockTabs {
         id: entry.key,
         parentDockTabId: id,
         initData: tabData,
+        defaultDockingItemConfig:
+            tabData['defaultDockingItemConfig'] as Map<String, dynamic>? ?? {},
         onLayoutChanged: _rebuildGlobalLayout,
       );
       _dockTabs[entry.key] = dockTab;
@@ -99,7 +101,7 @@ class DockTabs {
     Map<String, dynamic>? initData,
     // DockingItem 默认属性配置
     bool closable = true,
-    bool keepAlive = false,
+    bool keepAlive = true,
     List<TabButton>? buttons,
     bool? maximizable = false,
     bool maximized = false,
@@ -315,7 +317,12 @@ class DockTabs {
               widget: _buildTabContentWithEvents(tab),
               // 应用默认配置
               closable: config['closable'] ?? true,
-              buttons: (config['buttons'] as List<TabButton>?) ?? [],
+              buttons:
+                  (config['buttons'] is List
+                      ? (config['buttons'] as List)
+                          .whereType<TabButton>()
+                          .toList()
+                      : []),
               maximizable: config['maximizable'] ?? false,
               maximized: config['maximized'] ?? false,
               leading: config['leading'],
@@ -323,6 +330,7 @@ class DockTabs {
               weight: config['weight'],
               minimalWeight: config['minimalWeight'],
               minimalSize: config['minimalSize'],
+              keepAlive: config['keepAlive'] ?? true,
             );
           }).toList();
 

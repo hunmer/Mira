@@ -22,24 +22,14 @@ class _LibraryContentViewState extends State<LibraryContentView>
   @override
   bool get wantKeepAlive => true;
 
-  // 缓存LibraryGalleryView实例，避免重复创建
-  late final Widget _cachedGalleryView;
-
-  @override
-  void initState() {
-    super.initState();
-    // 初始化时创建一次LibraryGalleryView
-    _cachedGalleryView = LibraryGalleryView(
-      plugin: widget.plugin,
-      tabId: widget.tabData.id,
-      library: widget.tabData.library,
-      tabData: widget.tabData,
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     super.build(context);
-    return _cachedGalleryView;
+    return LibraryGalleryView(
+      plugin: widget.plugin,
+      tabId: widget.tabData.id,
+      library: widget.tabData.library,
+      tabData: widget.tabData, // 传递tabData
+    );
   }
 }

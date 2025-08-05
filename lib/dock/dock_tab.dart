@@ -296,6 +296,7 @@ class DockTab {
         'parentDockTabId': parentDockTabId,
         'isDefaultEmpty': true,
         'items': [], // 空列表表示这是默认状态
+        'defaultDockingItemConfig': _defaultDockingItemConfig,
       };
     }
 
@@ -304,6 +305,7 @@ class DockTab {
       'parentDockTabId': parentDockTabId,
       'isDefaultEmpty': false,
       'items': _dockItems.map((item) => item.toJson()).toList(),
+      'defaultDockingItemConfig': _defaultDockingItemConfig,
     };
   }
 }

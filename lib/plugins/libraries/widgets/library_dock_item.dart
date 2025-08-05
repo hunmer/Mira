@@ -16,10 +16,6 @@ class LibraryDockItem extends DockItem {
   late final LibrariesPlugin plugin;
   static bool _isBuilderRegistered = false;
 
-  // 缓存widget实例和DockingItem实例，避免重复创建
-  late final Widget _cachedWidget;
-  late final DockingItem _cachedDockingItem;
-
   LibraryDockItem({
     required this.tabData,
     Map<String, ValueNotifier<dynamic>>? initialValues,
@@ -27,30 +23,25 @@ class LibraryDockItem extends DockItem {
          type: 'library_tab',
          title: tabData.title.isNotEmpty ? tabData.title : tabData.library.name,
          values: _initializeValues(tabData, initialValues),
-         builder: (item) => (item as LibraryDockItem)._cachedDockingItem,
+         builder:
+             (item) => DockingItem(
+               id: 'library_${tabData.id}',
+               name: item.title,
+               closable: true,
+               widget: LibraryContentView(
+                 plugin:
+                     PluginManager.instance.getPlugin('libraries')
+                         as LibrariesPlugin,
+                 tabData: tabData,
+               ),
+             ),
        ) {
-    // 初始化缓存的widget
-    _cachedWidget = LibraryContentView(
-      plugin: PluginManager.instance.getPlugin('libraries') as LibrariesPlugin,
-      tabData: tabData,
-    );
-
-    // 初始化缓存的DockingItem
-    _cachedDockingItem = DockingItem(
-      id: 'library_${tabData.id}',
-      name: title,
-      closable: true,
-      widget: _cachedWidget,
-    );
+    plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
 
     // 确保builder已注册
     _ensureBuilderRegistered();
-    _setupValueListeners();
-  }
 
-  /// 构建DockingItem（返回缓存的实例）
-  DockingItem _buildDockingItem() {
-    return _cachedDockingItem;
+    _setupValueListeners();
   }
 
   /// 确保library_tab类型的builder已经注册
@@ -84,8 +75,7 @@ class LibraryDockItem extends DockItem {
             tabData: tabData,
             initialValues: dockItem.values,
           );
-
-          return libraryDockItem._cachedDockingItem;
+          return libraryDockItem.buildDockingItem();
         }
       } catch (e) {
         print('LibraryDockItem: Error restoring from saved data: $e');

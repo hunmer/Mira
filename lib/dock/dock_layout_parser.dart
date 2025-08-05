@@ -117,7 +117,14 @@ class DefaultDockLayoutParser extends DockLayoutParser
 
       if (dockItem != null) {
         print('Found DockItem: ${dockItem.title} in tab: $tabId');
-        final dockingItem = dockItem.builder(dockItem);
+        // 获取对应tab的默认配置
+        final dockTab = dockTabs?.getDockTab(tabId);
+        final defaultConfig = dockTab?.getDefaultDockingItemConfig() ?? {};
+
+        // 使用DockItem的buildDockingItem方法，传入默认配置
+        final dockingItem = dockItem.buildDockingItem(
+          defaultConfig: defaultConfig,
+        );
         return DockingItem(
           id: id,
           name: dockingItem.name,
@@ -138,7 +145,11 @@ class DefaultDockLayoutParser extends DockLayoutParser
             print(
               'Found DockItem: ${foundItem.title} in tab: ${tab.id} (different from expected tab: $tabId)',
             );
-            final dockingItem = foundItem.builder(foundItem);
+            // 使用找到的tab的默认配置
+            final defaultConfig = tab.getDefaultDockingItemConfig();
+            final dockingItem = foundItem.buildDockingItem(
+              defaultConfig: defaultConfig,
+            );
             return DockingItem(
               id: id,
               name: dockingItem.name,
@@ -193,12 +204,20 @@ class DefaultDockLayoutParser extends DockLayoutParser
     if (items.isEmpty) {
       return const Center(child: Text('Empty tab'));
     } else if (items.length == 1) {
-      return items.first.buildDockingItem().widget;
+      return items.first
+          .buildDockingItem(defaultConfig: tab.getDefaultDockingItemConfig())
+          .widget;
     } else {
       return Docking(
         layout: DockingLayout(
           root: DockingTabs(
-            items.map((item) => item.buildDockingItem()).toList(),
+            items
+                .map(
+                  (item) => item.buildDockingItem(
+                    defaultConfig: tab.getDefaultDockingItemConfig(),
+                  ),
+                )
+                .toList(),
           ),
         ),
       );

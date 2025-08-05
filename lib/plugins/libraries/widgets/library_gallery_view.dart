@@ -32,11 +32,7 @@ class LibraryGalleryView extends StatefulWidget {
   LibraryGalleryViewState createState() => LibraryGalleryViewState();
 }
 
-class LibraryGalleryViewState extends State<LibraryGalleryView>
-    with AutomaticKeepAliveClientMixin {
-  @override
-  bool get wantKeepAlive => true;
-
+class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late LibraryGalleryState _state;
   late LibraryGalleryEvents _events;
   late LibraryGalleryBuilders _builders;
@@ -149,7 +145,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView>
 
   @override
   Widget build(BuildContext context) {
-    super.build(context); // 调用super.build以满足AutomaticKeepAliveClientMixin的要求
     return FutureBuilder<dynamic>(
       future: widget.plugin.libraryController.loadLibraryInst(widget.library),
       builder: (context, snapshot) {
