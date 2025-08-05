@@ -228,6 +228,7 @@ class StorageManager {
       _cache[key] = content;
       return content;
     }
+    return null;
   }
 
   Future<void> _saveJson(String key, dynamic data) async {

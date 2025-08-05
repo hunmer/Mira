@@ -1,6 +1,8 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
+import 'package:rxdart/rxdart.dart';
 import 'dock_manager.dart';
 import 'dock_tabs.dart';
 import 'dock_layout_preset_dialog.dart';
@@ -13,11 +15,23 @@ class DockLayoutController extends ChangeNotifier {
   String? _pendingLayoutData;
   bool _isLayoutLoading = false;
 
-  // 防抖相关
-  Timer? _debounceTimer;
+  // 防抖相关 - 使用 RxDart
+  final PublishSubject<void> _saveLayoutSubject = PublishSubject<void>();
+  final PublishSubject<String> _layoutChangedSubject = PublishSubject<String>();
+  late final StreamSubscription _saveLayoutSubscription;
+  late final StreamSubscription _layoutChangedSubscription;
   static const Duration _debounceDuration = Duration(milliseconds: 500);
 
-  DockLayoutController({required this.dockTabsId});
+  DockLayoutController({required this.dockTabsId}) {
+    // 初始化防抖订阅
+    _saveLayoutSubscription = _saveLayoutSubject
+        .debounceTime(_debounceDuration)
+        .listen((_) => _performImmediateSave());
+
+    _layoutChangedSubscription = _layoutChangedSubject
+        .debounceTime(_debounceDuration)
+        .listen((eventDockTabsId) => _performLayoutSave(eventDockTabsId));
+  }
 
   /// 获取上次保存的布局
   String get lastSavedLayout => _lastSavedLayout;
@@ -75,12 +89,6 @@ class DockLayoutController extends ChangeNotifier {
               }
 
               initData = dockTabsData;
-            } else {
-              // 这可能是旧格式或其他JSON数据，直接使用
-              print(
-                'DockLayoutController: Found JSON layout data for $savedLayoutId',
-              );
-              initData = layoutData;
             }
           } catch (jsonError) {
             // 如果JSON解析失败，当作纯布局字符串处理（兼容旧格式）
@@ -117,13 +125,8 @@ class DockLayoutController extends ChangeNotifier {
       final success = dockTabs.loadLayout(_pendingLayoutData!);
 
       if (success) {
-        // 仅设置_lastSavedLayout，不直接调用storeLayout
-        // 让正常的自动保存机制来处理数据的持久化存储
         _lastSavedLayout = _pendingLayoutData!;
         _pendingLayoutData = null; // 清除待处理数据
-        print('DockLayoutController: Successfully applied pending layout');
-      } else {
-        print('DockLayoutController: Failed to apply pending layout');
       }
 
       return success;
@@ -139,11 +142,8 @@ class DockLayoutController extends ChangeNotifier {
   /// 保存当前布局
   bool saveLayout({bool useDebounce = false}) {
     if (useDebounce) {
-      // 使用防抖保存
-      _debounceTimer?.cancel();
-      _debounceTimer = Timer(_debounceDuration, () {
-        _performImmediateSave();
-      });
+      // 使用 RxDart 防抖保存
+      _saveLayoutSubject.add(null);
       return true; // 防抖模式下总是返回true，实际结果在异步回调中
     } else {
       // 立即保存
@@ -188,10 +188,9 @@ class DockLayoutController extends ChangeNotifier {
 
   /// 强制执行待处理的防抖保存操作
   void flushPendingSave() {
-    if (_debounceTimer?.isActive == true) {
-      _debounceTimer!.cancel();
-      _performImmediateSave();
-    }
+    // 在 RxDart 防抖模式下，直接执行保存
+    // 因为 RxDart 会自动处理防抖，我们只需要强制执行一次保存
+    _performImmediateSave();
   }
 
   /// 加载布局
@@ -245,13 +244,21 @@ class DockLayoutController extends ChangeNotifier {
       _isLayoutLoading = true;
       notifyListeners();
 
-      // 使用DockManager存储布局数据
-      DockManager.storeLayout('${dockTabsId}_layout', layoutString);
+      // 直接应用布局字符串，不通过存储
+      final dockTabs = DockManager.getDockTabs(dockTabsId);
+      if (dockTabs == null) {
+        print('DockLayoutController: DockTabs not found for $dockTabsId');
+        return false;
+      }
 
-      final success = DockManager.loadLayoutForDockTabs(dockTabsId);
+      final success = dockTabs.loadLayout(layoutString);
       if (success) {
         _lastSavedLayout = layoutString;
         print('DockLayoutController: Layout loaded from string successfully');
+
+        // 触发自动保存，让正常的保存机制来处理数据的持久化
+        // 这将确保以正确的JSON格式保存
+        DockManager.saveLayoutForDockTabs(dockTabsId);
       } else {
         print('DockLayoutController: Failed to load layout from string');
       }
@@ -335,11 +342,10 @@ class DockLayoutController extends ChangeNotifier {
 
       // 获取所有预设并找到指定的预设
       final presets = await LayoutPresetManager.getAllPresets();
-      final preset = presets.firstWhere(
-        (p) => p.id == presetId,
-        orElse: () => throw Exception('Preset not found'),
-      );
-
+      final preset = presets.firstWhereOrNull((p) => p.id == presetId);
+      if (preset == null) {
+        return false;
+      }
       final success = loadLayoutFromString(preset.layoutData);
 
       if (success) {
@@ -383,11 +389,8 @@ class DockLayoutController extends ChangeNotifier {
   /// 处理布局变化事件（由DockController调用）
   void handleLayoutChanged(String eventDockTabsId) {
     if (eventDockTabsId == dockTabsId) {
-      // 使用防抖来避免频繁保存布局
-      _debounceTimer?.cancel();
-      _debounceTimer = Timer(_debounceDuration, () {
-        _performLayoutSave(eventDockTabsId);
-      });
+      // 使用 RxDart 防抖来避免频繁保存布局
+      _layoutChangedSubject.add(eventDockTabsId);
     }
   }
 
@@ -437,7 +440,10 @@ class DockLayoutController extends ChangeNotifier {
 
   @override
   void dispose() {
-    _debounceTimer?.cancel();
+    _saveLayoutSubscription.cancel();
+    _layoutChangedSubscription.cancel();
+    _saveLayoutSubject.close();
+    _layoutChangedSubject.close();
     _pendingLayoutData = null;
     super.dispose();
   }

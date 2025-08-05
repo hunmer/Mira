@@ -1,7 +1,5 @@
 import 'dart:convert';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
-import 'package:mira/dock/docking/lib/src/layout/drop_position.dart'
-    as docking_drop;
 import 'package:tabbed_view/tabbed_view.dart';
 import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_tabs.dart';
@@ -38,13 +36,10 @@ class DockManager {
     _instance._storageManager = storageManager;
     await _instance._loadLayoutsFromStorage();
     _instance._isInitialized = true;
-    print('DockManager initialization completed');
   }
 
   /// 从持久化存储加载布局
   Future<void> _loadLayoutsFromStorage() async {
-    if (_storageManager == null) return;
-
     try {
       final layouts = await _storageManager!.readJson(
         _layoutStorageKey,
@@ -80,30 +75,16 @@ class DockManager {
     Map<String, dynamic>? initData,
     TabbedViewThemeData? themeData,
     DockEventStreamController? eventStreamController,
-    bool deferInitialization = false, // 新增参数：是否延迟初始化
+    bool deferInitialization = false, // 保留参数以兼容，但不再使用
   }) {
     final dockTabs = DockTabs(
       id: id,
       initData: initData,
       themeData: themeData,
       eventStreamController: eventStreamController,
-      deferInitialization: deferInitialization,
     );
     _instance._dockTabsMap[id] = dockTabs;
     return dockTabs;
-  }
-
-  /// 完成指定DockTabs的延迟初始化
-  static void finishDeferredInitialization(String dockTabsId) {
-    final dockTabs = getDockTabs(dockTabsId);
-    dockTabs?.finishDeferredInitialization();
-  }
-
-  /// 批量完成所有DockTabs的延迟初始化
-  static void finishAllDeferredInitializations() {
-    for (var dockTabs in _instance._dockTabsMap.values) {
-      dockTabs.finishDeferredInitialization();
-    }
   }
 
   /// 移除DockTabs
@@ -319,27 +300,6 @@ class DockManager {
     _instance._dockTabsMap.clear();
   }
 
-  /// 保存所有DockTabs为JSON
-  static Map<String, dynamic> saveToJson() {
-    final result = <String, dynamic>{};
-    for (var entry in _instance._dockTabsMap.entries) {
-      result[entry.key] = entry.value.toJson();
-    }
-    return result;
-  }
-
-  /// 从JSON恢复DockTabs
-  static void loadFromJson(Map<String, dynamic> json) {
-    clearAll();
-    for (var entry in json.entries) {
-      final dockTabs = DockTabs(
-        id: entry.key,
-        initData: entry.value as Map<String, dynamic>,
-      );
-      _instance._dockTabsMap[entry.key] = dockTabs;
-    }
-  }
-
   /// 保存指定DockTabs的布局
   static String? saveDockTabsLayout(String dockTabsId) {
     final dockTabs = getDockTabs(dockTabsId);
@@ -350,50 +310,6 @@ class DockManager {
   static bool loadDockTabsLayout(String dockTabsId, String layoutString) {
     final dockTabs = getDockTabs(dockTabsId);
     return dockTabs?.loadLayout(layoutString) ?? false;
-  }
-
-  /// 保存指定Tab的布局
-  static String? saveTabLayout(String dockTabsId, String tabId) {
-    final dockTabs = getDockTabs(dockTabsId);
-    return dockTabs?.saveTabLayout(tabId);
-  }
-
-  /// 加载指定Tab的布局
-  static bool loadTabLayout(
-    String dockTabsId,
-    String tabId,
-    String layoutString,
-  ) {
-    final dockTabs = getDockTabs(dockTabsId);
-    return dockTabs?.loadTabLayout(tabId, layoutString) ?? false;
-  }
-
-  /// 保存所有布局数据
-  static Map<String, dynamic> saveAllLayouts() {
-    final result = <String, dynamic>{};
-
-    // 保存基础JSON数据
-    result['dockTabsData'] = saveToJson();
-
-    // 保存布局字符串
-    result['layouts'] = DockLayoutManager.saveAllLayoutsToJson();
-
-    return result;
-  }
-
-  /// 加载所有布局数据
-  static void loadAllLayouts(Map<String, dynamic> data) {
-    // 加载基础JSON数据
-    if (data.containsKey('dockTabsData')) {
-      loadFromJson(data['dockTabsData'] as Map<String, dynamic>);
-    }
-
-    // 加载布局字符串
-    if (data.containsKey('layouts')) {
-      DockLayoutManager.loadAllLayoutsFromJson(
-        data['layouts'] as Map<String, dynamic>,
-      );
-    }
   }
 
   // ===================== Library Tab Management =====================

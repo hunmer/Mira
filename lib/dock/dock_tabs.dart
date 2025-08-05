@@ -1,4 +1,4 @@
-import 'dart:convert';
+import 'dart:async';
 
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
@@ -9,6 +9,7 @@ import 'package:mira/dock/docking/lib/src/layout/drop_position.dart'
     as docking_drop;
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:tabbed_view/tabbed_view.dart';
+import 'package:rxdart/rxdart.dart';
 import 'dock_tab.dart';
 import 'dock_item.dart';
 import 'dock_layout_parser.dart';
@@ -21,15 +22,17 @@ class DockTabs {
   final String id;
   late final LibrariesPlugin? _plugin;
   final Map<String, DockTab> _dockTabs = {};
-  late DockingLayout _globalLayout;
+  DockingLayout? _globalLayout;
   final ValueNotifier<int> _layoutChangeNotifier = ValueNotifier<int>(0);
   String? _activeTabId;
   TabbedViewThemeData? _themeData;
   DefaultDockLayoutParser? mainParser;
   DockEventStreamController? _eventStreamController;
 
-  // 新增：批量操作标志，用于避免多次重建布局
-  bool _batchOperationInProgress = false;
+  // 防抖控制 - 使用 RxDart
+  final PublishSubject<void> _rebuildSubject = PublishSubject<void>();
+  late final StreamSubscription _rebuildSubscription;
+  static const Duration _rebuildDelay = Duration(milliseconds: 200);
 
   // 临时调试：重建布局计数器
   static int _rebuildCount = 0;
@@ -39,21 +42,19 @@ class DockTabs {
     Map<String, dynamic>? initData,
     TabbedViewThemeData? themeData,
     DockEventStreamController? eventStreamController,
-    bool deferInitialization = false, // 新增参数：是否延迟初始化布局
+    bool deferInitialization = false, // 保留参数但简化逻辑
   }) {
     _themeData = themeData;
     _eventStreamController = eventStreamController;
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin?;
 
+    // 初始化防抖订阅
+    _rebuildSubscription = _rebuildSubject
+        .debounceTime(_rebuildDelay)
+        .listen((_) => _performRebuild());
+
     if (initData != null) {
-      if (deferInitialization) {
-        // 延迟初始化模式：不立即重建布局
-        _batchOperationInProgress = true;
-        _initializeFromJsonWithoutBatch(initData);
-        // 注意：这里不调用_rebuildGlobalLayout，等待外部调用finishDeferredInitialization
-      } else {
-        _initializeFromJson(initData);
-      }
+      _initializeFromJson(initData);
     } else {
       // 创建一个默认的空布局
       _globalLayout = DockingLayout(
@@ -64,8 +65,18 @@ class DockTabs {
 
   bool get isEmpty => _dockTabs.isEmpty;
 
-  /// 从JSON数据初始化（不使用批量操作包装）
-  void _initializeFromJsonWithoutBatch(Map<String, dynamic> data) {
+  /// 安全获取全局布局，如果未初始化则创建默认布局
+  DockingLayout get _safeGlobalLayout {
+    if (_globalLayout == null) {
+      _globalLayout = DockingLayout(
+        root: DockManager.createDefaultHomePageDockItem(),
+      );
+    }
+    return _globalLayout!;
+  }
+
+  /// 从JSON数据初始化
+  void _initializeFromJson(Map<String, dynamic> data) {
     final tabs = data['tabs'] as Map<String, dynamic>? ?? {};
 
     for (var entry in tabs.entries) {
@@ -80,53 +91,25 @@ class DockTabs {
       );
       _dockTabs[entry.key] = dockTab;
     }
-  }
 
-  /// 从JSON数据初始化
-  void _initializeFromJson(Map<String, dynamic> json) {
-    _performBatchOperation(() {
-      _initializeFromJsonWithoutBatch(json);
-    });
-  }
-
-  /// 完成延迟初始化
-  void finishDeferredInitialization() {
-    if (_batchOperationInProgress) {
-      _batchOperationInProgress = false;
-      _rebuildGlobalLayout();
+    // 恢复激活状态
+    final activeTabId = data['activeTabId'] as String?;
+    if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
+      _activeTabId = activeTabId;
     }
+
+    _rebuildGlobalLayout();
   }
 
-  /// 公共方法：从JSON数据重新加载
   void loadFromJson(Map<String, dynamic> json) {
-    // 如果当前已经在延迟初始化状态，直接在当前状态下操作
-    if (_batchOperationInProgress) {
-      // 清除现有数据（不触发布局重建）
-      _clearWithoutRebuild();
-
-      // 重新初始化（不使用批量操作包装）
-      _initializeFromJsonWithoutBatch(json);
-
-      // 恢复激活状态
-      final activeTabId = json['activeTabId'] as String?;
-      if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
-        _activeTabId = activeTabId;
-      }
-    } else {
-      _performBatchOperation(() {
-        // 清除现有数据（不触发布局重建）
-        _clearWithoutRebuild();
-
-        // 重新初始化
-        _initializeFromJsonWithoutBatch(json);
-
-        // 恢复激活状态
-        final activeTabId = json['activeTabId'] as String?;
-        if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
-          _activeTabId = activeTabId;
-        }
-      });
+    // 清除现有数据
+    for (var dockTab in _dockTabs.values) {
+      dockTab.dispose();
     }
+    _dockTabs.clear();
+
+    // 重新初始化
+    _initializeFromJson(json);
   }
 
   /// 创建新的DockTab
@@ -278,16 +261,17 @@ class DockTabs {
     }
   }
 
-  /// 重建全局布局
+  /// 重建全局布局（使用 RxDart 防抖控制）
   void _rebuildGlobalLayout() {
-    // 如果正在进行批量操作，延迟重建布局
-    if (_batchOperationInProgress) {
-      return;
-    }
+    // 触发防抖事件
+    _rebuildSubject.add(null);
+  }
 
+  /// 执行实际的布局重建
+  void _performRebuild() {
     _rebuildCount++;
     print(
-      '🔄 DockTabs._rebuildGlobalLayout #$_rebuildCount called for DockTabs: $id',
+      '🔄 DockTabs._performRebuild #$_rebuildCount called for DockTabs: $id',
     );
 
     if (_dockTabs.isEmpty) {
@@ -492,7 +476,7 @@ class DockTabs {
           builder: (context, value, child) {
             return _buildContextMenuWrapper(
               Docking(
-                layout: _globalLayout,
+                layout: _safeGlobalLayout,
                 dockingButtonsBuilder: (
                   BuildContext context,
                   DockingTabs? dockingTabs,
@@ -531,26 +515,29 @@ class DockTabs {
 
   /// 批量操作：创建多个DockTab，避免多次重建布局
   void createMultipleDockTabs(List<Map<String, dynamic>> tabConfigs) {
-    _performBatchOperation(() {
-      for (var config in tabConfigs) {
-        createDockTab(
-          config['tabId'] as String,
-          displayName: config['displayName'] as String?,
-          initData: config['initData'] as Map<String, dynamic>?,
-          closable: config['closable'] as bool? ?? true,
-          keepAlive: config['keepAlive'] as bool? ?? true,
-          buttons: config['buttons'] as List<TabButton>?,
-          maximizable: config['maximizable'] as bool? ?? false,
-          maximized: config['maximized'] as bool? ?? false,
-          leading: config['leading'] as TabLeadingBuilder?,
-          size: config['size'] as double?,
-          weight: config['weight'] as double?,
-          minimalWeight: config['minimalWeight'] as double?,
-          minimalSize: config['minimalSize'] as double?,
-          rebuildLayout: false, // 批量操作期间不重建布局
-        );
-      }
-    });
+    // 注意：由于使用了 RxDart 防抖，无需手动取消，自动防抖处理
+
+    for (var config in tabConfigs) {
+      createDockTab(
+        config['tabId'] as String,
+        displayName: config['displayName'] as String?,
+        initData: config['initData'] as Map<String, dynamic>?,
+        closable: config['closable'] as bool? ?? true,
+        keepAlive: config['keepAlive'] as bool? ?? true,
+        buttons: config['buttons'] as List<TabButton>?,
+        maximizable: config['maximizable'] as bool? ?? false,
+        maximized: config['maximized'] as bool? ?? false,
+        leading: config['leading'] as TabLeadingBuilder?,
+        size: config['size'] as double?,
+        weight: config['weight'] as double?,
+        minimalWeight: config['minimalWeight'] as double?,
+        minimalSize: config['minimalSize'] as double?,
+        rebuildLayout: false, // 创建时不重建布局
+      );
+    }
+
+    // 批量创建完成后重建一次布局
+    _rebuildGlobalLayout();
   }
 
   /// 处理DockItem关闭事件
@@ -771,37 +758,19 @@ class DockTabs {
     return false;
   }
 
-  /// 执行批量操作，避免多次重建布局
-  void _performBatchOperation(void Function() operation) {
-    final wasBatchOperationInProgress = _batchOperationInProgress;
-    _batchOperationInProgress = true;
-
-    try {
-      operation();
-    } finally {
-      _batchOperationInProgress = wasBatchOperationInProgress;
-      if (!wasBatchOperationInProgress) {
-        _rebuildGlobalLayout(); // 只有在最外层批量操作结束时才重建布局
-      }
-    }
-  }
-
-  /// 清空所有DockTab，但不重建布局（用于批量操作）
-  void _clearWithoutRebuild() {
-    for (var dockTab in _dockTabs.values) {
-      dockTab.dispose(rebuildLayout: false); // 不重建布局
-    }
-    _dockTabs.clear();
-  }
-
   /// 清空所有DockTab
   void clear() {
-    _clearWithoutRebuild();
+    for (var dockTab in _dockTabs.values) {
+      dockTab.dispose();
+    }
+    _dockTabs.clear();
     _rebuildGlobalLayout();
   }
 
   /// 释放资源
   void dispose() {
+    _rebuildSubscription.cancel();
+    _rebuildSubject.close();
     clear();
     _layoutChangeNotifier.dispose();
   }
@@ -826,12 +795,8 @@ class DockTabs {
     };
 
     // 为每个tab创建parser，而不是只为活动tab
-    if (_activeTabId == null) return '';
     if (mainParser == null) {
-      mainParser = DefaultDockLayoutParser(
-        dockTabsId: id,
-        tabId: _activeTabId!,
-      );
+      mainParser = DefaultDockLayoutParser(dockTabsId: id, tabId: id);
       DockLayoutManager.registerParser('${id}_layout', mainParser!);
 
       // 同时为每个子tab注册parser
@@ -849,12 +814,9 @@ class DockTabs {
 
     final layoutString = DockLayoutManager.saveLayout(
       '${id}_layout',
-      _globalLayout,
+      _safeGlobalLayout,
       mainParser!,
     );
-
-    // 保存元数据
-    DockLayoutManager.setSavedLayout('${id}_metadata', layoutData.toString());
 
     return layoutString;
   }

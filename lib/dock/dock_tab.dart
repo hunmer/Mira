@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'dock_item.dart';
@@ -15,6 +16,10 @@ class DockTab {
   VoidCallback? _onLayoutChanged;
   final Map<String, dynamic> _defaultDockingItemConfig;
   DockEventStreamController? _eventStreamController;
+
+  // 防抖控制
+  Timer? _rebuildTimer;
+  static const Duration _rebuildDelay = Duration(milliseconds: 500);
 
   // 静态注册的builder映射
   static final Map<String, DockingItem Function(DockItem)> _registeredBuilders =
@@ -238,8 +243,19 @@ class DockTab {
     return false;
   }
 
-  /// 重建布局
+  /// 重建布局（使用防抖控制）
   void _rebuildLayout() {
+    // 取消之前的定时器
+    _rebuildTimer?.cancel();
+
+    // 使用防抖延迟重建
+    _rebuildTimer = Timer(_rebuildDelay, () {
+      _performRebuild();
+    });
+  }
+
+  /// 执行实际的布局重建
+  void _performRebuild() {
     try {
       // 检查是否真的需要重建布局
       if (_layout.root != null && _dockItems.isNotEmpty) {
@@ -391,6 +407,7 @@ class DockTab {
 
   /// 释放资源
   void dispose({bool rebuildLayout = true}) {
+    _rebuildTimer?.cancel();
     clear(rebuildLayout: rebuildLayout);
     _layoutChangeNotifier.dispose();
   }

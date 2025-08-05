@@ -23,12 +23,6 @@ class DockController extends ChangeNotifier {
   DockTabs? get dockTabs => _dockTabs;
   bool get isInitialized => _isInitialized;
   DockLayoutController get layoutController => _layoutController;
-
-  // 布局相关的便捷访问器
-  String get lastSavedLayout => _layoutController.lastSavedLayout;
-  bool get hasValidSavedLayout => _layoutController.hasValidSavedLayout;
-  bool get isLayoutLoading => _layoutController.isLayoutLoading;
-
   Stream<DockEvent> get eventStream => _eventStreamController.stream;
 
   /// 布局控制器状态变化时的回调
@@ -54,40 +48,26 @@ class DockController extends ChangeNotifier {
   /// 异步初始化布局
   Future<void> _initializeWithLayout(String? savedLayoutId) async {
     print('Initializing DockController for $dockTabsId');
-
-    // 等待DockManager完成初始化
-    int attempts = 0;
-    const maxAttempts = 50; // 最多等待5秒
-    while (!DockManager.isInitialized && attempts < maxAttempts) {
-      await Future.delayed(const Duration(milliseconds: 100));
-      attempts++;
-    }
-
-    if (!DockManager.isInitialized) {
-      print('Warning: DockManager initialization timeout');
-    }
-
     // 使用布局控制器初始化布局数据
     final initData = await _layoutController.initializeLayoutData(
       savedLayoutId: savedLayoutId,
     );
 
-    // 创建主要的DockTabs，使用延迟初始化模式
+    // 创建主要的DockTabs
     _dockTabs = DockManager.createDockTabs(
       dockTabsId,
       initData: initData,
       eventStreamController: _eventStreamController,
-      deferInitialization: true, // 启用延迟初始化
     );
-
-    // 应用待处理的布局
-    _layoutController.applyPendingLayout(_dockTabs);
-
-    // 完成延迟初始化，统一重建布局
-    DockManager.finishDeferredInitialization(dockTabsId);
 
     // 通知UI更新
     notifyListeners();
+
+    // 应用待处理的布局
+    // 延迟执行应用待处理的布局
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      _layoutController.applyPendingLayout(_dockTabs);
+    });
   }
 
   /// 处理Dock事件
