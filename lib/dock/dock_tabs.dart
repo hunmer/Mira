@@ -409,7 +409,7 @@ class DockTabs {
   Widget _buildTabContentWithEvents(DockTab tab) {
     final items = tab.getAllDockItems();
     if (items.isEmpty) {
-      return const Center(child: Text('Empty tab'));
+      return DockManager.createDefaultHomePageDockItem().widget;
     } else if (items.length == 1) {
       return items.first
           .buildDockingItem(defaultConfig: tab.getDefaultDockingItemConfig())

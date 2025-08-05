@@ -198,11 +198,8 @@ class DockManager {
     // 如果没有指定tabId，创建一个新的tab
     if (tabId == null || tabId.isEmpty) {
       // 根据DockItem类型生成不同的前缀
-      String prefix = 'tab';
-      if (dockItem.type == 'library_tab') {
-        prefix = 'library';
-      }
-      final newTabId = '${prefix}_${DateTime.now().millisecondsSinceEpoch}';
+      final newTabId =
+          '${dockItem.type}_${DateTime.now().millisecondsSinceEpoch}';
       final newTab = dockTabs.createDockTab(
         newTabId,
         displayName: dockItem.title,
@@ -236,11 +233,8 @@ class DockManager {
     if (tabId == null || tabId.isEmpty) {
       // 为第一个item创建新tab
       final firstItem = dockItems.first;
-      String prefix = 'tab';
-      if (firstItem.type == 'library_tab') {
-        prefix = 'library';
-      }
-      final newTabId = '${prefix}_${DateTime.now().millisecondsSinceEpoch}';
+      final newTabId =
+          '${firstItem.type}_${DateTime.now().millisecondsSinceEpoch}';
       final newTab = dockTabs.createDockTab(
         newTabId,
         displayName: firstItem.title,
@@ -480,9 +474,7 @@ class DockManager {
       // 获取所有library类型的dock items并移除
       final itemsToRemove = <String>[];
       for (final item in dockTab.getAllDockItems()) {
-        if (item.type == 'library_tab') {
-          itemsToRemove.add(item.id); // 收集ID而不是title
-        }
+        itemsToRemove.add(item.id);
       }
       for (final itemId in itemsToRemove) {
         removeDockItemById(dockTabsId, dockTabId, itemId); // 使用ID删除

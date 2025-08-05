@@ -145,7 +145,6 @@ class DefaultDockLayoutParser extends DockLayoutParser
             // 如果ID查找失败，尝试title查找
             foundItem = tab.getDockItem(idString);
           }
-
           if (foundItem != null) {
             // print(
             //   'Found DockItem: ${foundItem.title} (ID: ${foundItem.id}) in tab: ${tab.id} (different from expected tab: $tabId)',
@@ -207,7 +206,7 @@ class DefaultDockLayoutParser extends DockLayoutParser
   Widget _buildTabContent(DockTab tab) {
     final items = tab.getAllDockItems();
     if (items.isEmpty) {
-      return const Center(child: Text('Empty tab'));
+      return DockManager.createDefaultHomePageDockItem().widget;
     } else if (items.length == 1) {
       return items.first
           .buildDockingItem(defaultConfig: tab.getDefaultDockingItemConfig())
