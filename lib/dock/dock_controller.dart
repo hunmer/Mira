@@ -29,12 +29,36 @@ class DockController extends ChangeNotifier {
     // 监听事件并处理
     _eventSubscription = _eventStreamController.stream.listen(_handleDockEvent);
 
-    // 尝试加载保存的布局
+    // 等待DockManager完成初始化后再尝试加载布局
+    _initializeWithLayout(savedLayoutId);
+  }
+
+  /// 异步初始化布局
+  void _initializeWithLayout(String? savedLayoutId) async {
+    print('Initializing DockController for $dockTabsId');
+
+    // 等待DockManager完成初始化
+    int attempts = 0;
+    const maxAttempts = 50; // 最多等待5秒
+    while (!DockManager.isInitialized && attempts < maxAttempts) {
+      await Future.delayed(const Duration(milliseconds: 100));
+      attempts++;
+    }
+
+    if (!DockManager.isInitialized) {
+      print('Warning: DockManager initialization timeout');
+    }
+
     Map<String, dynamic>? initData;
     if (savedLayoutId != null) {
       final savedLayout = DockManager.getStoredLayout(savedLayoutId);
       if (savedLayout != null) {
+        print(
+          'Found saved layout for $savedLayoutId, length: ${savedLayout.length}',
+        );
         initData = {'layout': savedLayout};
+      } else {
+        print('No saved layout found for $savedLayoutId');
       }
     }
 
@@ -61,6 +85,10 @@ class DockController extends ChangeNotifier {
       // 创建默认tab和内容
       _createDefaultTabs();
     }
+    loadLayout();
+
+    // 通知UI更新
+    notifyListeners();
   }
 
   /// 创建默认的tabs和内容

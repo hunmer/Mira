@@ -5,6 +5,7 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/dock/dock_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:mira/core/theme_controller.dart';
 import 'package:mira/plugins/login/l10n/login_localizations.dart';
@@ -62,6 +63,10 @@ void main() async {
     // 获取插件管理器单例实例并初始化
     globalPluginManager = PluginManager();
     await globalPluginManager.setStorageManager(globalStorage);
+
+    // 初始化DockManager的持久化存储
+    await DockManager.setStorageManager(globalStorage);
+
     // 注册内置插件
     final plugins = [LibrariesPlugin()];
 
@@ -96,6 +101,9 @@ void main() async {
         EventArgs('plugins_initialized'),
       );
     });
+
+    // 初始化DockManager的持久化存储
+    DockManager.setStorageManager(globalStorage);
   } catch (e) {
     debugPrint('初始化失败: $e');
   }

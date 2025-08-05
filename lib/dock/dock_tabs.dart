@@ -64,6 +64,19 @@ class DockTabs {
     _rebuildGlobalLayout();
   }
 
+  /// 公共方法：从JSON数据重新加载
+  void loadFromJson(Map<String, dynamic> json) {
+    // 清除现有数据
+    clear();
+    // 重新初始化
+    _initializeFromJson(json);
+    // 恢复激活状态
+    final activeTabId = json['activeTabId'] as String?;
+    if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
+      _activeTabId = activeTabId;
+    }
+  }
+
   /// 创建新的DockTab
   DockTab createDockTab(
     String tabId, {
