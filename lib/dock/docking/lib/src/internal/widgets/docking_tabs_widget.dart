@@ -2,6 +2,7 @@ import 'dart:math' as math;
 
 import '../../docking_buttons_builder.dart';
 import '../../drag_over_position.dart';
+import '../../on_item_position_changed.dart';
 import 'draggable_config_mixin.dart';
 import 'drop/content_wrapper.dart';
 import 'drop/drop_feedback_widget.dart';
@@ -9,8 +10,8 @@ import '../../layout/docking_layout.dart';
 import '../../layout/drop_position.dart';
 import '../../on_item_close.dart';
 import '../../on_item_selection.dart';
-import '../../on_item_move.dart';
-import '../../on_item_layout_changed.dart';
+import '../../on_tab_move.dart';
+import '../../on_tab_layout_changed.dart';
 import '../../theme/docking_theme.dart';
 import '../../theme/docking_theme_data.dart';
 import 'package:flutter/material.dart';
@@ -25,8 +26,9 @@ class DockingTabsWidget extends StatefulWidget {
     required this.dockingTabs,
     this.onItemSelection,
     this.onItemClose,
-    this.onItemMove,
-    this.onItemLayoutChanged,
+    this.onTabMove,
+    this.onTabLayoutChanged,
+    this.onItemPositionChanged,
     this.itemCloseInterceptor,
     this.dockingButtonsBuilder,
     required this.maximizableTab,
@@ -38,8 +40,9 @@ class DockingTabsWidget extends StatefulWidget {
   final DockingTabs dockingTabs;
   final OnItemSelection? onItemSelection;
   final OnItemClose? onItemClose;
-  final OnItemMove? onItemMove;
-  final OnItemLayoutChanged? onItemLayoutChanged;
+  final OnTabMove? onTabMove;
+  final OnTabLayoutChanged? onTabLayoutChanged;
+  final OnItemPositionChanged? onItemPositionChanged;
   final ItemCloseInterceptor? itemCloseInterceptor;
   final DockingButtonsBuilder? dockingButtonsBuilder;
   final bool maximizableTab;
@@ -145,6 +148,7 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
             listener: _updateActiveDropPosition,
             layout: widget.layout,
             dockingTabs: widget.dockingTabs,
+            onItemPositionChanged: widget.onItemPositionChanged,
             child: controller.tabs[tabIndex].content!,
           ),
       onBeforeDropAccept: widget.draggable ? _onBeforeDropAccept : null,
@@ -205,8 +209,8 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
         // 标记跨layout拖动已完成，这样源layout会在拖动结束时移除原item
         DraggableConfigMixin.markCrossLayoutDropCompleted();
 
-        if (widget.onItemLayoutChanged != null) {
-          widget.onItemLayoutChanged!(
+        if (widget.onTabLayoutChanged != null) {
+          widget.onTabLayoutChanged!(
             oldItem: dockingItem,
             newItem: newItem,
             targetArea: widget.dockingTabs,
@@ -227,8 +231,8 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
         targetArea: widget.dockingTabs,
         dropIndex: newIndex,
       );
-      if (widget.onItemMove != null) {
-        widget.onItemMove!(
+      if (widget.onTabMove != null) {
+        widget.onTabMove!(
           draggedItem: dockingItem,
           targetArea: widget.dockingTabs,
           dropIndex: newIndex,

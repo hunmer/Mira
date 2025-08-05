@@ -4,10 +4,11 @@ import 'dart:async';
 enum DockEventType {
   tabClosed,
   tabCreated,
-  tabSwitched,
   itemClosed,
+  itemSelected,
   itemCreated,
   layoutChanged,
+  itemPositionChanged,
 }
 
 /// 基础Dock事件类
@@ -22,34 +23,20 @@ abstract class DockEvent {
 
 /// Tab相关事件
 class DockTabEvent extends DockEvent {
-  final String tabId;
-  final String? displayName;
-  final Map<String, dynamic>? data;
+  final Map<String, dynamic> values;
 
   DockTabEvent({
     required super.type,
     required super.dockTabsId,
-    required this.tabId,
-    this.displayName,
-    this.data,
+    required this.values,
   });
-}
 
-/// Item相关事件
-class DockItemEvent extends DockEvent {
-  final String tabId;
-  final String itemTitle;
-  final String? itemType;
-  final Map<String, dynamic>? data;
-
-  DockItemEvent({
-    required super.type,
-    required super.dockTabsId,
-    required this.tabId,
-    required this.itemTitle,
-    this.itemType,
-    this.data,
-  });
+  // 便捷访问器
+  String? get tabId => values['tabId'] as String?;
+  String? get displayName => values['displayName'] as String?;
+  String? get itemTitle => values['itemTitle'] as String?;
+  String? get itemType => values['itemType'] as String?;
+  Map<String, dynamic>? get data => values['data'] as Map<String, dynamic>?;
 }
 
 /// 布局变更事件

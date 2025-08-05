@@ -1,6 +1,7 @@
 import 'drop_anchor_widget.dart';
 import '../../../layout/docking_layout.dart';
 import '../../../layout/drop_position.dart';
+import '../../../on_item_position_changed.dart';
 import 'package:flutter/material.dart';
 
 abstract class ContentWrapperBase extends StatelessWidget {
@@ -85,11 +86,13 @@ class ItemContentWrapper extends ContentWrapperBase {
     required DockingLayout layout,
     required DropWidgetListener listener,
     required DockingItem dockingItem,
+    this.onItemPositionChanged,
     required Widget child,
   }) : _dockingItem = dockingItem,
        super(layout: layout, listener: listener, child: child);
 
   final DockingItem _dockingItem;
+  final OnItemPositionChanged? onItemPositionChanged;
 
   @override
   DropAnchorBaseWidget buildDropAnchor(DropPosition dropPosition) {
@@ -98,6 +101,7 @@ class ItemContentWrapper extends ContentWrapperBase {
       listener: listener,
       dropPosition: dropPosition,
       dockingItem: _dockingItem,
+      onItemPositionChanged: onItemPositionChanged,
     );
   }
 }
@@ -107,11 +111,13 @@ class TabsContentWrapper extends ContentWrapperBase {
     required DockingLayout layout,
     required DropWidgetListener listener,
     required DockingTabs dockingTabs,
+    this.onItemPositionChanged,
     required Widget child,
   }) : _dockingTabs = dockingTabs,
        super(layout: layout, listener: listener, child: child);
 
   final DockingTabs _dockingTabs;
+  final OnItemPositionChanged? onItemPositionChanged;
 
   @override
   DropAnchorBaseWidget buildDropAnchor(DropPosition dropPosition) {
@@ -120,6 +126,7 @@ class TabsContentWrapper extends ContentWrapperBase {
       listener: listener,
       dropPosition: dropPosition,
       dockingTabs: _dockingTabs,
+      onItemPositionChanged: onItemPositionChanged,
     );
   }
 }

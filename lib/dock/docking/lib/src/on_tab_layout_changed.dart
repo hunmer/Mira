@@ -1,9 +1,9 @@
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 
 import 'layout/docking_layout.dart';
 
 /// Event that will be triggered after a [DockingItem] layout changed.
-typedef OnItemLayoutChanged =
+typedef OnTabLayoutChanged =
     void Function({
       required DockingItem oldItem,
       required DockingItem newItem,
@@ -13,4 +13,4 @@ typedef OnItemLayoutChanged =
     });
 
 /// Intercepts a [DockingItem] layout changed event to indicates whether it can be changed.
-typedef ItemLayoutChangedInterceptor = bool Function(DockingItem item);
+typedef TabLayoutChangedInterceptor = bool Function(DockingItem item);

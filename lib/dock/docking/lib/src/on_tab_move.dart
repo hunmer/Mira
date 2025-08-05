@@ -1,15 +1,14 @@
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
-
+import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'layout/docking_layout.dart';
 
-typedef OnItemMove =
+typedef OnTabMove =
     void Function({
       required DockingItem draggedItem,
       required DropArea targetArea,
       DropPosition? dropPosition,
       int? dropIndex,
     });
-typedef ItemMoveInterceptor =
+typedef TabMoveInterceptor =
     bool Function({
       required DockingItem draggedItem,
       required DropArea targetArea,

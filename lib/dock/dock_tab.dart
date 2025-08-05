@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'dock_item.dart';
 import 'dock_events.dart';
-import 'homepage_dock_item.dart';
 import 'dock_manager.dart';
 
 /// DockTab类 - 管理单个tab的DockItem集合
@@ -34,26 +33,24 @@ class DockTab {
        _onLayoutChanged = onLayoutChanged,
        _defaultDockingItemConfig = defaultDockingItemConfig ?? {},
        _eventStreamController = eventStreamController {
+    // 首先初始化默认布局，确保_layout字段不为null
+    _layout = DockingLayout(root: DockManager.createDefaultHomePageDockItem());
+
+    // 然后如果有initData，尝试从JSON初始化
     if (initData != null) {
-      _initializeFromJson(initData);
-    } else {
-      _layout = DockingLayout(
-        root: DockManager.createDefaultHomePageDockItem(),
-      );
+      try {
+        _initializeFromJson(initData);
+      } catch (e) {
+        print(
+          'DockTab: Failed to initialize from JSON, using default layout. Error: $e',
+        );
+        // 如果初始化失败，保持默认布局
+      }
     }
   }
 
   /// 从JSON数据初始化
   void _initializeFromJson(Map<String, dynamic> json) {
-    // 检查是否为默认空状态
-    final isDefaultEmpty = json['isDefaultEmpty'] as bool? ?? false;
-
-    // 如果标记为默认空状态，直接使用空布局（会自动显示HomePageDockItem）
-    if (isDefaultEmpty) {
-      _rebuildLayout();
-      return;
-    }
-
     final items = json['items'] as List<dynamic>? ?? [];
 
     for (var itemData in items) {
@@ -119,12 +116,14 @@ class DockTab {
 
     // 发送item创建事件
     _eventStreamController?.emit(
-      DockItemEvent(
+      DockTabEvent(
         type: DockEventType.itemCreated,
         dockTabsId: parentDockTabId ?? 'unknown',
-        tabId: id,
-        itemTitle: dockItem.title,
-        itemType: dockItem.type,
+        values: {
+          'tabId': id,
+          'itemTitle': dockItem.title,
+          'itemType': dockItem.type,
+        },
       ),
     );
 
@@ -141,12 +140,10 @@ class DockTab {
 
       // 发送item关闭事件
       _eventStreamController?.emit(
-        DockItemEvent(
+        DockTabEvent(
           type: DockEventType.itemClosed,
           dockTabsId: parentDockTabId ?? 'unknown',
-          tabId: this.id,
-          itemTitle: dockItem.title,
-          itemType: dockItem.type,
+          values: {'dockItem': dockItem},
         ),
       );
 
@@ -166,12 +163,10 @@ class DockTab {
 
       // 发送item关闭事件
       _eventStreamController?.emit(
-        DockItemEvent(
+        DockTabEvent(
           type: DockEventType.itemClosed,
           dockTabsId: parentDockTabId ?? 'unknown',
-          tabId: this.id,
-          itemTitle: dockItem.title,
-          itemType: dockItem.type,
+          values: {'dockItem': dockItem},
         ),
       );
 
@@ -253,12 +248,6 @@ class DockTab {
     return List.unmodifiable(_dockItems);
   }
 
-  /// 检查是否为默认空状态（只显示HomePageDockItem，没有真正的DockItem）
-  bool get isDefaultEmpty => _dockItems.isEmpty;
-
-  /// 检查是否应该在序列化时忽略（当只有默认内容时不保存）
-  bool get shouldSkipSerialization => isDefaultEmpty;
-
   /// 更新DockItem (基于ID)
   bool updateDockItemById(String id, Map<String, dynamic> updates) {
     final dockItem = getDockItemById(id);
@@ -291,36 +280,125 @@ class DockTab {
 
   /// 重建布局
   void _rebuildLayout() {
-    if (_dockItems.isEmpty) {
-      // 当没有items时，使用DockManager创建默认HomePageDockItem
+    try {
+      // 检查是否真的需要重建布局
+      if (_layout.root != null && _dockItems.isNotEmpty) {
+        // 如果当前布局结构与期望结构一致，避免重建
+        if (_shouldSkipRebuild()) {
+          print(
+            'DockTab: Skipping layout rebuild - layout is already up to date',
+          );
+          return;
+        }
+      }
+
+      print('DockTab: Rebuilding layout for ${_dockItems.length} items');
+
+      if (_dockItems.isEmpty) {
+        // 当没有items时，使用DockManager创建默认HomePageDockItem
+        _layout = DockingLayout(
+          root: DockManager.createDefaultHomePageDockItem(),
+        );
+      } else if (_dockItems.length == 1) {
+        // 如果只有一个item，直接使用它
+        final dockingItem = _dockItems.first.buildDockingItem(
+          defaultConfig: _defaultDockingItemConfig,
+        );
+        _layout = DockingLayout(root: dockingItem);
+      } else {
+        // 多个item时，使用Tabs布局
+        final dockingItems =
+            _dockItems
+                .map(
+                  (item) => item.buildDockingItem(
+                    defaultConfig: _defaultDockingItemConfig,
+                  ),
+                )
+                .where((item) => item != null) // 过滤掉null项
+                .toList();
+
+        // 确保dockingItems不为空，如果为空则使用默认布局
+        if (dockingItems.isEmpty) {
+          print(
+            'DockTab: All docking items failed to build, using default layout',
+          );
+          _layout = DockingLayout(
+            root: DockManager.createDefaultHomePageDockItem(),
+          );
+        } else if (dockingItems.length == 1) {
+          // 如果只剩一个有效item，直接使用它
+          _layout = DockingLayout(root: dockingItems.first);
+        } else {
+          // 使用DockingTabs包装多个items
+          _layout = DockingLayout(root: DockingTabs(dockingItems));
+        }
+      }
+
+      // 触发布局变化通知
+      _layoutChangeNotifier.value++;
+
+      // 通知父级DockTabs布局变化
+      _onLayoutChanged?.call();
+    } catch (e) {
+      print('DockTab: Error during layout rebuild: $e');
+      // 发生错误时，使用默认布局
       _layout = DockingLayout(
         root: DockManager.createDefaultHomePageDockItem(),
       );
-    } else if (_dockItems.length == 1) {
-      // 如果只有一个item，直接使用它
-      _layout = DockingLayout(
-        root: _dockItems.first.buildDockingItem(
-          defaultConfig: _defaultDockingItemConfig,
-        ),
-      );
-    } else {
-      // 多个item时，使用Tabs布局
-      final dockingItems =
-          _dockItems
-              .map(
-                (item) => item.buildDockingItem(
-                  defaultConfig: _defaultDockingItemConfig,
-                ),
-              )
-              .toList();
-      _layout = DockingLayout(root: DockingTabs(dockingItems));
+      _layoutChangeNotifier.value++;
+      _onLayoutChanged?.call();
     }
+  }
 
-    // 触发布局变化通知
-    _layoutChangeNotifier.value++;
+  /// 检查是否应该跳过重建
+  bool _shouldSkipRebuild() {
+    try {
+      final root = _layout.root;
+      if (root == null) {
+        return false;
+      }
 
-    // 通知父级DockTabs布局变化
-    _onLayoutChanged?.call();
+      print(
+        'DockTab: Checking if should skip rebuild - items: ${_dockItems.length}, root type: ${root.runtimeType}',
+      );
+
+      if (_dockItems.length == 1) {
+        // 单个item的情况：检查root是否是同一个DockingItem
+        if (root is DockingItem) {
+          final currentItem = _dockItems.first;
+          final shouldSkip =
+              root.id == currentItem.id && currentItem.hasCachedDockingItem;
+          print(
+            'DockTab: Single item check - root.id: ${root.id}, current.id: ${currentItem.id}, hasCached: ${currentItem.hasCachedDockingItem}, shouldSkip: $shouldSkip',
+          );
+          return shouldSkip;
+        }
+      } else if (_dockItems.length > 1) {
+        // 多个item的情况：检查root是否是DockingTabs且包含相同的items
+        if (root is DockingTabs && root.childrenCount == _dockItems.length) {
+          bool allMatched = true;
+          for (int i = 0; i < _dockItems.length; i++) {
+            final currentItem = _dockItems[i];
+            final rootChild = root.childAt(i);
+            if (rootChild.id != currentItem.id ||
+                !currentItem.hasCachedDockingItem) {
+              allMatched = false;
+              print(
+                'DockTab: Multi item mismatch at index $i - rootChild.id: ${rootChild.id}, current.id: ${currentItem.id}, hasCached: ${currentItem.hasCachedDockingItem}',
+              );
+              break;
+            }
+          }
+          print('DockTab: Multi item check - allMatched: $allMatched');
+          return allMatched;
+        }
+      }
+
+      return false;
+    } catch (e) {
+      print('DockTab: Error in _shouldSkipRebuild: $e');
+      return false; // 出错时总是重建
+    }
   }
 
   /// 获取布局
@@ -362,22 +440,9 @@ class DockTab {
     // 过滤掉 HomePageDockItem，它们不应该被保存
     final filteredItems =
         _dockItems.where((item) => item.type != 'homepage').toList();
-
-    // 如果过滤后没有项目或是默认空状态，返回标记信息而不是完整数据
-    if (filteredItems.isEmpty || shouldSkipSerialization) {
-      return {
-        'id': id,
-        'parentDockTabId': parentDockTabId,
-        'isDefaultEmpty': true,
-        'items': [], // 空列表表示这是默认状态
-        'defaultDockingItemConfig': _defaultDockingItemConfig,
-      };
-    }
-
     return {
       'id': id,
       'parentDockTabId': parentDockTabId,
-      'isDefaultEmpty': false,
       'items': filteredItems.map((item) => item.toJson()).toList(),
       'defaultDockingItemConfig': _defaultDockingItemConfig,
     };

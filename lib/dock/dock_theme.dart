@@ -10,13 +10,19 @@ class DockTheme {
     const inactiveColor = Color(0xFF9E9E9E); // 灰色
     const hoverColor = Color(0xFFE3F2FD); // 浅蓝色悬停
 
+    Radius radius = Radius.circular(10.0);
+    BorderRadiusGeometry? borderRadius = BorderRadius.only(
+      topLeft: radius,
+      topRight: radius,
+    );
+
     // 创建完全自定义的主题，不基于任何预设主题
     final themeData = TabbedViewThemeData(
       // TabsArea 主题配置 - 标签区域
       tabsArea: TabsAreaThemeData(
         visible: true, // 显示标签区域
-        color: backgroundColor, // 背景色
-        border: null, // 取消描边
+        // color: backgroundColor, // 背景色
+        border: Border(bottom: BorderSide(color: primaryColor, width: 3)), // 描边
         initialGap: 0.0, // 初始间距
         middleGap: 0.0, // 标签间距
         minimalFinalGap: 0.0, // 最小结束间距
@@ -99,15 +105,14 @@ class DockTheme {
 
         buttonIconSize: 12.0, // 减少按钮图标大小（从16.0减少到12.0）
         verticalAlignment: VerticalAlignment.center, // 垂直对齐
-        buttonsOffset: 0.0, // 按钮偏移
         buttonPadding: const EdgeInsets.all(2), // 减少按钮内边距（从4减少到2）
         buttonsGap: 8.0, // 增加按钮间距（从4.0增加到8.0，增加文字和按钮之间的边距）
         // Tab 装饰
-        decoration: BoxDecoration(
-          color: cardColor,
-          borderRadius: BorderRadius.circular(8.0), // 圆角
-          border: Border.all(color: Colors.transparent), // 取消描边
-        ),
+        // decoration: BoxDecoration(
+        //   color: cardColor,
+        //   borderRadius: BorderRadius.circular(8.0), // 圆角
+        //   border: Border.all(color: Colors.transparent), // 取消描边
+        // ),
         draggingDecoration: BoxDecoration(
           color: primaryColor.withOpacity(0.1),
           borderRadius: BorderRadius.circular(8.0), // 圆角
@@ -125,10 +130,16 @@ class DockTheme {
         ),
 
         // 内边距和外边距
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+        padding: EdgeInsets.fromLTRB(10, 4, 10, 4),
         paddingWithoutButton: const EdgeInsets.symmetric(
           horizontal: 16,
           vertical: 10,
+        ),
+        buttonsOffset: 8,
+        decoration: BoxDecoration(
+          shape: BoxShape.rectangle,
+          color: primaryColor,
+          borderRadius: borderRadius,
         ),
         margin: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
 
@@ -136,21 +147,14 @@ class DockTheme {
         selectedStatus: TabStatusThemeData(
           fontColor: Colors.white, // 激活状态文字颜色
           decoration: BoxDecoration(
-            color: primaryColor, // 激活状态改为白色（原来是primaryColor）
-            borderRadius: BorderRadius.circular(8.0), // 圆角
-            boxShadow: [
-              BoxShadow(
-                color: primaryColor.withOpacity(0.2),
-                blurRadius: 3,
-                offset: const Offset(0, 1),
-              ),
-            ],
+            color: primaryColor,
+            borderRadius: borderRadius,
           ),
         ),
         highlightedStatus: TabStatusThemeData(
           decoration: BoxDecoration(
-            color: primaryColor.withOpacity(0.2),
-            borderRadius: BorderRadius.circular(8.0), // 圆角
+            color: primaryColor,
+            borderRadius: borderRadius,
           ),
         ),
         disabledStatus: TabStatusThemeData(

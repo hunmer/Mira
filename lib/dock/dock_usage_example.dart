@@ -53,6 +53,10 @@ class _DockUsageExampleState extends State<DockUsageExample> {
         '${event.timestamp.hour}:${event.timestamp.minute}:${event.timestamp.second}';
 
     switch (event.type) {
+      case DockEventType.itemPositionChanged:
+        final tabEvent = event as DockTabEvent;
+        return '[$time] Tab位置变更: ${tabEvent.displayName} (ID: ${tabEvent.tabId})';
+
       case DockEventType.tabCreated:
         final tabEvent = event as DockTabEvent;
         return '[$time] Tab创建: ${tabEvent.displayName} (ID: ${tabEvent.tabId})';
@@ -61,16 +65,16 @@ class _DockUsageExampleState extends State<DockUsageExample> {
         final tabEvent = event as DockTabEvent;
         return '[$time] Tab关闭: ${tabEvent.displayName} (ID: ${tabEvent.tabId})';
 
-      case DockEventType.tabSwitched:
+      case DockEventType.itemSelected:
         final tabEvent = event as DockTabEvent;
         return '[$time] Tab切换: ${tabEvent.displayName} (ID: ${tabEvent.tabId})';
 
       case DockEventType.itemCreated:
-        final itemEvent = event as DockItemEvent;
+        final itemEvent = event as DockTabEvent;
         return '[$time] Item创建: ${itemEvent.itemTitle} (类型: ${itemEvent.itemType})';
 
       case DockEventType.itemClosed:
-        final itemEvent = event as DockItemEvent;
+        final itemEvent = event as DockTabEvent;
         return '[$time] Item关闭: ${itemEvent.itemTitle} (类型: ${itemEvent.itemType})';
 
       case DockEventType.layoutChanged:

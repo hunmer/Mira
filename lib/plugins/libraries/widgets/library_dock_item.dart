@@ -16,6 +16,9 @@ class LibraryDockItem extends DockItem {
   late final LibrariesPlugin plugin;
   static bool _isBuilderRegistered = false;
 
+  // 为每个实例创建固定的GlobalKey
+  late final GlobalKey _contentKey;
+
   LibraryDockItem({
     required this.tabData,
     Map<String, ValueNotifier<dynamic>>? initialValues,
@@ -23,19 +26,25 @@ class LibraryDockItem extends DockItem {
          type: 'library_tab',
          title: tabData.title.isNotEmpty ? tabData.title : tabData.library.name,
          values: _initializeValues(tabData, initialValues),
-         builder:
-             (item) => DockingItem(
-               id: 'library_${tabData.id}',
-               name: item.title,
-               closable: true,
-               widget: LibraryContentView(
-                 plugin:
-                     PluginManager.instance.getPlugin('libraries')
-                         as LibrariesPlugin,
-                 tabData: tabData,
-               ),
+         builder: (item) {
+           final libraryItem = item as LibraryDockItem;
+           return DockingItem(
+             id: 'library_${tabData.id}',
+             name: item.title,
+             closable: true,
+             keepAlive: true, // 启用keepAlive
+             widget: LibraryContentView(
+               key: libraryItem._contentKey, // 使用固定的GlobalKey
+               plugin:
+                   PluginManager.instance.getPlugin('libraries')
+                       as LibrariesPlugin,
+               tabData: tabData,
              ),
+           );
+         },
        ) {
+    // 初始化固定的GlobalKey
+    _contentKey = GlobalKey(debugLabel: 'library_content_${tabData.id}');
     plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
 
     // 确保builder已注册
@@ -86,6 +95,7 @@ class LibraryDockItem extends DockItem {
         id: 'library_${dockItem.title}',
         name: dockItem.title,
         closable: true,
+        keepAlive: true, // 启用keepAlive
         widget: const Center(
           child: Text(
             'Library content not available',

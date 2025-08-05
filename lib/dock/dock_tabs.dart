@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mira/dock/dock_theme.dart';
 import 'package:mira/dock/docking/lib/src/docking.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
-import 'package:super_drag_and_drop/super_drag_and_drop.dart';
+import 'package:mira/dock/docking/lib/src/layout/drop_position.dart'
+    as docking_drop;
 import 'package:tabbed_view/tabbed_view.dart';
 import 'dock_tab.dart';
 import 'dock_item.dart';
@@ -16,12 +17,6 @@ class DockTabs {
   final Map<String, DockTab> _dockTabs = {};
   late DockingLayout _globalLayout;
   final ValueNotifier<int> _layoutChangeNotifier = ValueNotifier<int>(0);
-  void Function(DockingItem)? _onItemClose;
-  void Function(DockingItem)? _onItemSelection;
-  void Function(DockingItem, DropArea, DropPosition?, int?)? _onItemMove;
-  void Function(DockingItem, DockingItem, DropArea, DropPosition?, int?)?
-  _onItemLayoutChanged;
-
   String? _activeTabId;
   TabbedViewThemeData? _themeData;
   DefaultDockLayoutParser? mainParser;
@@ -37,19 +32,10 @@ class DockTabs {
     required this.id,
     Map<String, dynamic>? initData,
     TabbedViewThemeData? themeData,
-    void Function(DockingItem)? onItemClose,
-    void Function(DockingItem)? onItemSelection,
-    void Function(DockingItem, DropArea, DropPosition?, int?)? onItemMove,
-    void Function(DockingItem, DockingItem, DropArea, DropPosition?, int?)?
-    onItemLayoutChanged,
     DockEventStreamController? eventStreamController,
     bool deferInitialization = false, // 新增参数：是否延迟初始化布局
   }) {
     _themeData = themeData;
-    _onItemClose = onItemClose;
-    _onItemSelection = onItemSelection;
-    _onItemMove = onItemMove;
-    _onItemLayoutChanged = onItemLayoutChanged;
     _eventStreamController = eventStreamController;
 
     if (initData != null) {
@@ -121,8 +107,7 @@ class DockTabs {
       }
 
       // 检查是否需要创建默认空tab
-      final hasDefaultEmptyTabs = json['hasDefaultEmptyTabs'] as bool? ?? false;
-      if (_dockTabs.isEmpty || hasDefaultEmptyTabs) {
+      if (false) {
         // 如果没有tab或者之前有默认空tab，创建一个新的默认空tab
         createDockTab(
           'home',
@@ -220,8 +205,7 @@ class DockTabs {
       DockTabEvent(
         type: DockEventType.tabCreated,
         dockTabsId: id,
-        tabId: tabId,
-        displayName: displayName,
+        values: {'tabId': tabId, 'displayName': displayName},
       ),
     );
 
@@ -240,8 +224,7 @@ class DockTabs {
         DockTabEvent(
           type: DockEventType.tabClosed,
           dockTabsId: id,
-          tabId: tabId,
-          displayName: dockTab.displayName,
+          values: {'tabId': tabId, 'displayName': dockTab.displayName},
         ),
       );
 
@@ -255,13 +238,6 @@ class DockTabs {
   /// 清除所有默认空tab（只显示HomePageDockItem，没有真正DockItem的tab）
   void _clearDefaultEmptyTabs() {
     final tabsToRemove = <String>[];
-
-    for (var entry in _dockTabs.entries) {
-      if (entry.value.isDefaultEmpty) {
-        tabsToRemove.add(entry.key);
-      }
-    }
-
     for (var tabId in tabsToRemove) {
       final dockTab = _dockTabs.remove(tabId);
       if (dockTab != null) {
@@ -276,8 +252,7 @@ class DockTabs {
           DockTabEvent(
             type: DockEventType.tabClosed,
             dockTabsId: id,
-            tabId: tabId,
-            displayName: dockTab.displayName,
+            values: {'tabId': tabId, 'displayName': dockTab.displayName},
           ),
         );
 
@@ -309,11 +284,13 @@ class DockTabs {
       // 发送tab切换事件
       _eventStreamController?.emit(
         DockTabEvent(
-          type: DockEventType.tabSwitched,
+          type: DockEventType.itemSelected,
           dockTabsId: id,
-          tabId: tabId,
-          displayName: _dockTabs[tabId]?.displayName,
-          data: {'previousTabId': previousTabId},
+          values: {
+            'tabId': tabId,
+            'displayName': _dockTabs[tabId]?.displayName,
+            'data': {'previousTabId': previousTabId},
+          },
         ),
       );
 
@@ -445,41 +422,49 @@ class DockTabs {
               defaultConfig: tab.getDefaultDockingItemConfig(),
             );
             return TabData(
-              value: dockingItem, // 🔧 修复：添加 value 字段
+              value: dockingItem,
               text: dockingItem.name ?? 'Untitled',
               content: dockingItem.widget,
               closable: dockingItem.closable,
             );
           }).toList();
 
+      // TODO: 正确的TabbedView位置
       return TabbedView(
         controller: TabbedViewController(tabDataList),
         onDraggableBuild: (controller, tabIndex, tabData) {
-          // 🔧 修复：正确实现拖拽配置
           final dockingItem = tabData.value as DockingItem;
           return DraggableConfig(
             feedback: Material(
+              color: Colors.transparent,
               child: Container(
-                padding: const EdgeInsets.all(8),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
-                  border: Border.all(),
-                  color: Colors.grey[300],
+                  color: Colors.blueAccent.withOpacity(0.85),
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black12,
+                      blurRadius: 6,
+                      offset: Offset(0, 2),
+                    ),
+                  ],
                 ),
                 child: Text(
                   dockingItem.name ?? 'Untitled',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 14,
+                  ),
                   overflow: TextOverflow.ellipsis,
                 ),
               ),
             ),
           );
-        },
-
-        onTabClose: (tabIndex, tabData) {
-          print('❌ OnTabClose - TabIndex: $tabIndex, TabData: ${tabData.text}');
-        },
-        onTabSelection: (newTabIndex) {
-          print('🎯 OnTabSelection - NewTabIndex: $newTabIndex');
-          return true;
         },
       );
     }
@@ -497,40 +482,11 @@ class DockTabs {
             return _buildContextMenuWrapper(
               Docking(
                 layout: _globalLayout,
-                onItemClose: (DockingItem item) {
-                  _handleItemClose(item);
-                },
-                onItemSelection: (DockingItem item) {
-                  _handleItemSelection(item);
-                },
-                onItemMove: ({
-                  required DockingItem draggedItem,
-                  required DropArea targetArea,
-                  DropPosition? dropPosition,
-                  int? dropIndex,
-                }) {
-                  _handleItemMove(
-                    draggedItem,
-                    targetArea,
-                    dropPosition,
-                    dropIndex,
-                  );
-                },
-                onItemLayoutChanged: ({
-                  required DockingItem oldItem,
-                  required DockingItem newItem,
-                  required DropArea targetArea,
-                  DropPosition? newIndex,
-                  int? dropIndex,
-                }) {
-                  _handleItemLayoutChanged(
-                    oldItem,
-                    newItem,
-                    targetArea,
-                    newIndex,
-                    dropIndex,
-                  );
-                },
+                onItemClose: _handleItemClose,
+                onItemSelection: _handleItemSelection,
+                onTabMove: _handleItemMove,
+                onTabLayoutChanged: _handleItemLayoutChanged,
+                onItemPositionChanged: _handleItemPositionChanged,
               ),
             );
           },
@@ -605,51 +561,120 @@ class DockTabs {
       }
     }
 
-    // 调用外部回调
-    _onItemClose?.call(dockingItem);
+    // 发送关闭事件
+    _eventStreamController?.emit(
+      DockTabEvent(
+        type: DockEventType.itemClosed,
+        dockTabsId: id,
+        values: {
+          'itemId': dockingItem.id,
+          'itemTitle': dockingItem.name,
+          'itemType': dockingItem.widget.runtimeType.toString(),
+        },
+      ),
+    );
   }
 
   /// 处理DockItem选择事件
-
   void _handleItemSelection(DockingItem dockingItem) {
     // 这里可以添加选择事件的处理逻辑
     print('Item selected: ${dockingItem.name}');
-    _onItemSelection?.call(dockingItem);
+
+    // 发送item选择事件
+    _eventStreamController?.emit(
+      DockTabEvent(
+        type: DockEventType.itemSelected,
+        dockTabsId: id,
+        values: {
+          'itemTitle': dockingItem.name,
+          'itemType': dockingItem.widget.runtimeType.toString(),
+        },
+      ),
+    );
   }
 
   /// 处理DockItem移动事件
-  void _handleItemMove(
-    DockingItem draggedItem,
-    DropArea targetArea,
-    DropPosition? dropPosition,
+  void _handleItemMove({
+    required DockingItem draggedItem,
+    required DropArea targetArea,
+    docking_drop.DropPosition? dropPosition,
     int? dropIndex,
-  ) {
+  }) {
     // 这里可以添加移动事件的处理逻辑
     print(
       'Dragged item: ${draggedItem.name}, Target area: $targetArea, Drop position: $dropPosition, Drop index: $dropIndex',
     );
-    _onItemMove?.call(draggedItem, targetArea, dropPosition, dropIndex);
+
+    // 发送item移动事件
+    _eventStreamController?.emit(
+      DockTabEvent(
+        type: DockEventType.layoutChanged,
+        dockTabsId: id,
+        values: {
+          'action': 'itemMove',
+          'draggedItem': draggedItem.name,
+          'targetArea': targetArea.toString(),
+          'dropPosition': dropPosition.toString(),
+          'dropIndex': dropIndex,
+        },
+      ),
+    );
   }
 
   /// 处理DockItem布局变化事件
   ///
-  void _handleItemLayoutChanged(
-    DockingItem oldItem,
-    DockingItem newItem,
-    DropArea targetArea,
-    DropPosition? newIndex,
+  void _handleItemLayoutChanged({
+    required DockingItem oldItem,
+    required DockingItem newItem,
+    required DropArea targetArea,
+    docking_drop.DropPosition? newIndex,
     int? dropIndex,
-  ) {
+  }) {
     // 这里可以添加布局变化事件的处理逻辑
     print(
       'Old item: ${oldItem.name}, New item: ${newItem.name}, Target area: $targetArea, Drop position: $newIndex, Drop index: $dropIndex',
     );
-    _onItemLayoutChanged?.call(
-      oldItem,
-      newItem,
-      targetArea,
-      newIndex,
-      dropIndex,
+
+    // 发送tab布局变化事件
+    _eventStreamController?.emit(
+      DockTabEvent(
+        type: DockEventType.layoutChanged,
+        dockTabsId: id,
+        values: {
+          'action': 'tabLayoutChanged',
+          'oldItem': oldItem.name,
+          'newItem': newItem.name,
+          'targetArea': targetArea.toString(),
+          'newIndex': newIndex.toString(),
+          'dropIndex': dropIndex,
+        },
+      ),
+    );
+  }
+
+  /// 处理DockItem位置变化事件 (内容区域拖拽)
+  void _handleItemPositionChanged({
+    required DockingItem draggedItem,
+    required DropArea targetArea,
+    required docking_drop.DropPosition dropPosition,
+  }) {
+    // 这里可以添加位置变化事件的处理逻辑
+    print(
+      'Item position changed: ${draggedItem.name}, Target area: $targetArea, Drop position: $dropPosition',
+    );
+
+    // 发送item位置变化事件
+    _eventStreamController?.emit(
+      DockTabEvent(
+        type: DockEventType.itemPositionChanged,
+        dockTabsId: id,
+        values: {
+          'action': 'itemPositionChanged',
+          'draggedItem': draggedItem.name,
+          'targetArea': targetArea.toString(),
+          'dropPosition': dropPosition.toString(),
+        },
+      ),
     );
   }
 
@@ -667,6 +692,20 @@ class DockTabs {
       // 传递rebuildLayout参数，避免DockTab内部立即刷新布局
       dockTab.addDockItem(dockItem, rebuildLayout: false);
 
+      // 发送item创建事件
+      _eventStreamController?.emit(
+        DockTabEvent(
+          type: DockEventType.itemCreated,
+          dockTabsId: id,
+          values: {
+            'tabId': tabId,
+            'itemId': dockItem.id,
+            'itemTitle': dockItem.title,
+            'itemType': dockItem.type,
+          },
+        ),
+      );
+
       if (rebuildLayout) {
         _refreshGlobalLayout();
       }
@@ -679,8 +718,24 @@ class DockTabs {
   bool removeDockItemFromTabById(String tabId, String itemId) {
     final dockTab = getDockTab(tabId);
     if (dockTab != null) {
+      // 获取item信息用于事件发射
+      final dockItem = dockTab.getDockItemById(itemId);
       final result = dockTab.removeDockItemById(itemId);
       if (result) {
+        // 发送item关闭事件
+        _eventStreamController?.emit(
+          DockTabEvent(
+            type: DockEventType.itemClosed,
+            dockTabsId: id,
+            values: {
+              'tabId': tabId,
+              'itemId': itemId,
+              'itemTitle': dockItem?.title,
+              'itemType': dockItem?.type,
+            },
+          ),
+        );
+
         _refreshGlobalLayout();
       }
       return result;
@@ -692,8 +747,24 @@ class DockTabs {
   bool removeDockItemFromTab(String tabId, String itemTitle) {
     final dockTab = getDockTab(tabId);
     if (dockTab != null) {
+      // 获取item信息用于事件发射
+      final dockItem = dockTab.getDockItem(itemTitle);
       final result = dockTab.removeDockItem(itemTitle);
       if (result) {
+        // 发送item关闭事件
+        _eventStreamController?.emit(
+          DockTabEvent(
+            type: DockEventType.itemClosed,
+            dockTabsId: id,
+            values: {
+              'tabId': tabId,
+              'itemId': dockItem?.id,
+              'itemTitle': itemTitle,
+              'itemType': dockItem?.type,
+            },
+          ),
+        );
+
         _refreshGlobalLayout();
       }
       return result;
@@ -783,23 +854,14 @@ class DockTabs {
       final dockTab = entry.value;
 
       // 如果tab不应该被序列化（默认空状态），则跳过
-      if (!dockTab.shouldSkipSerialization) {
-        tabsMap[entry.key] = dockTab.toJson();
-      } else {
-        // 如果跳过的tab是当前激活的tab，需要重新选择一个激活tab
-        if (_activeTabId == entry.key) {
-          activeTabIdToSave =
-              tabsMap.keys.isNotEmpty ? tabsMap.keys.first : null;
-        }
+
+      // 如果跳过的tab是当前激活的tab，需要重新选择一个激活tab
+      if (_activeTabId == entry.key) {
+        activeTabIdToSave = tabsMap.keys.isNotEmpty ? tabsMap.keys.first : null;
       }
     }
 
-    return {
-      'id': id,
-      'tabs': tabsMap,
-      'activeTabId': activeTabIdToSave,
-      'hasDefaultEmptyTabs': _dockTabs.values.any((tab) => tab.isDefaultEmpty),
-    };
+    return {'id': id, 'tabs': tabsMap, 'activeTabId': activeTabIdToSave};
   }
 
   /// 保存当前布局

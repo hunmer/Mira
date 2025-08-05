@@ -1,6 +1,7 @@
 import '../../debug.dart';
 import '../../../layout/docking_layout.dart';
 import '../../../layout/drop_position.dart';
+import '../../../on_item_position_changed.dart';
 import 'package:flutter/material.dart';
 
 import 'package:tabbed_view/tabbed_view.dart';
@@ -82,10 +83,12 @@ class ItemDropAnchorWidget extends DropAnchorBaseWidget {
     required DropPosition dropPosition,
     required DropWidgetListener listener,
     required DockingItem dockingItem,
+    this.onItemPositionChanged,
   }) : _dockingItem = dockingItem,
        super(layout: layout, dropPosition: dropPosition, listener: listener);
 
   final DockingItem _dockingItem;
+  final OnItemPositionChanged? onItemPositionChanged;
 
   @override
   void onAccept(DockingItem draggedItem) {
@@ -94,6 +97,15 @@ class ItemDropAnchorWidget extends DropAnchorBaseWidget {
       targetArea: _dockingItem,
       dropPosition: dropPosition,
     );
+
+    // 触发onItemPositionChanged回调
+    if (onItemPositionChanged != null) {
+      onItemPositionChanged!(
+        draggedItem: draggedItem,
+        targetArea: _dockingItem,
+        dropPosition: dropPosition,
+      );
+    }
   }
 
   @override
@@ -108,10 +120,12 @@ class TabsDropAnchorWidget extends DropAnchorBaseWidget {
     required DropPosition dropPosition,
     required DropWidgetListener listener,
     required DockingTabs dockingTabs,
+    this.onItemPositionChanged,
   }) : _dockingTabs = dockingTabs,
        super(layout: layout, dropPosition: dropPosition, listener: listener);
 
   final DockingTabs _dockingTabs;
+  final OnItemPositionChanged? onItemPositionChanged;
 
   @override
   void onAccept(DockingItem draggedItem) {
@@ -120,6 +134,15 @@ class TabsDropAnchorWidget extends DropAnchorBaseWidget {
       targetArea: _dockingTabs,
       dropPosition: dropPosition,
     );
+
+    // 触发onItemPositionChanged回调
+    if (onItemPositionChanged != null) {
+      onItemPositionChanged!(
+        draggedItem: draggedItem,
+        targetArea: _dockingTabs,
+        dropPosition: dropPosition,
+      );
+    }
   }
 
   @override

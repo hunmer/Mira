@@ -1,5 +1,6 @@
-import 'package:mira/dock/docking/lib/src/on_item_layout_changed.dart';
-import 'package:mira/dock/docking/lib/src/on_item_move.dart';
+import 'package:mira/dock/docking/lib/src/on_tab_layout_changed.dart';
+import 'package:mira/dock/docking/lib/src/on_tab_move.dart';
+import 'package:mira/dock/docking/lib/src/on_item_position_changed.dart';
 
 import '../../docking_buttons_builder.dart';
 import '../../drag_over_position.dart';
@@ -26,8 +27,9 @@ class DockingItemWidget extends StatefulWidget {
     required this.item,
     this.onItemSelection,
     this.onItemClose,
-    this.onItemMove,
-    this.onItemLayoutChanged,
+    this.onTabMove,
+    this.onTabLayoutChanged,
+    this.onItemPositionChanged,
     this.itemCloseInterceptor,
     this.dockingButtonsBuilder,
     required this.maximizable,
@@ -38,8 +40,9 @@ class DockingItemWidget extends StatefulWidget {
   final DockingItem item;
   final OnItemSelection? onItemSelection;
   final OnItemClose? onItemClose;
-  final OnItemMove? onItemMove;
-  final OnItemLayoutChanged? onItemLayoutChanged;
+  final OnTabMove? onTabMove;
+  final OnTabLayoutChanged? onTabLayoutChanged;
+  final OnItemPositionChanged? onItemPositionChanged;
 
   final ItemCloseInterceptor? itemCloseInterceptor;
   final DockingButtonsBuilder? dockingButtonsBuilder;
@@ -142,6 +145,7 @@ class DockingItemWidgetState extends State<DockingItemWidget>
             listener: _updateActiveDropPosition,
             layout: widget.layout,
             dockingItem: widget.item,
+            onItemPositionChanged: widget.onItemPositionChanged,
             child: controller.tabs[tabIndex].content!,
           ),
       onBeforeDropAccept: widget.draggable ? _onBeforeDropAccept : null,
@@ -155,6 +159,7 @@ class DockingItemWidgetState extends State<DockingItemWidget>
     return tabbedView;
   }
 
+  // tab拖拽事件（非内容）
   bool _onBeforeDropAccept(
     DraggableData source,
     TabbedViewController target,
@@ -195,8 +200,8 @@ class DockingItemWidgetState extends State<DockingItemWidget>
           // 标记跨layout拖动已完成，这样源layout会在拖动结束时移除原item
           DraggableConfigMixin.markCrossLayoutDropCompleted();
 
-          if (widget.onItemLayoutChanged != null) {
-            widget.onItemLayoutChanged!(
+          if (widget.onTabLayoutChanged != null) {
+            widget.onTabLayoutChanged!(
               oldItem: dockingItem,
               newItem: newItem,
               targetArea: widget.item,
@@ -217,8 +222,8 @@ class DockingItemWidgetState extends State<DockingItemWidget>
           targetArea: widget.item,
           dropIndex: newIndex,
         );
-        if (widget.onItemMove != null) {
-          widget.onItemMove!(
+        if (widget.onTabMove != null) {
+          widget.onTabMove!(
             draggedItem: dockingItem,
             targetArea: widget.item,
             dropIndex: newIndex,

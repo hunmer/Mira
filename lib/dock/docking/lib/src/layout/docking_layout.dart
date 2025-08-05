@@ -270,7 +270,7 @@ class DockingItem extends DockingArea with DropArea {
     required this.widget,
     this.value,
     this.closable = true,
-    bool keepAlive = false,
+    bool keepAlive = true,
     List<TabButton>? buttons,
     this.maximizable,
     bool maximized = false,

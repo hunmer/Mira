@@ -10,6 +10,9 @@ class DockItem {
   final Map<String, ValueNotifier<dynamic>> values;
   final DockingItem Function(DockItem) builder;
 
+  // 缓存已构建的DockingItem，避免重复创建
+  DockingItem? _cachedDockingItem;
+
   DockItem({
     String? id,
     required this.type,
@@ -56,11 +59,16 @@ class DockItem {
 
   /// 构建DockingItem
   DockingItem buildDockingItem({Map<String, dynamic>? defaultConfig}) {
+    // 如果已有缓存的DockingItem，直接返回
+    if (_cachedDockingItem != null) {
+      return _cachedDockingItem!;
+    }
+
     final dockingItem = builder(this);
 
     // 应用默认配置（如果提供）
     if (defaultConfig != null) {
-      return DockingItem(
+      _cachedDockingItem = DockingItem(
         id: dockingItem.id,
         name: dockingItem.name,
         widget: dockingItem.widget,
@@ -81,9 +89,20 @@ class DockItem {
         minimalSize: defaultConfig['minimalSize'],
         keepAlive: defaultConfig['keepAlive'] ?? true,
       );
+    } else {
+      _cachedDockingItem = dockingItem;
     }
-    return dockingItem;
+
+    return _cachedDockingItem!;
   }
+
+  /// 清除缓存的DockingItem，强制重新构建
+  void clearCache() {
+    _cachedDockingItem = null;
+  }
+
+  /// 检查是否有缓存的DockingItem
+  bool get hasCachedDockingItem => _cachedDockingItem != null;
 
   /// 释放资源
   void dispose() {
@@ -91,6 +110,8 @@ class DockItem {
       notifier.dispose();
     }
     values.clear();
+    // 清除缓存
+    _cachedDockingItem = null;
   }
 
   /// 从JSON创建DockItem
