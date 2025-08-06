@@ -210,8 +210,6 @@ class _DockingContentViewState extends State<DockingContentView>
     switch (iconName.toLowerCase()) {
       case 'refresh':
         return Icons.refresh;
-      case 'settings':
-        return Icons.settings;
       case 'add':
         return Icons.add;
       case 'dashboard':
@@ -231,9 +229,6 @@ class _DockingContentViewState extends State<DockingContentView>
       case 'refresh':
         _refreshLayout();
         break;
-      case 'settings':
-        _showSettings();
-        break;
       case 'add':
         _addNewItem();
         break;
@@ -248,24 +243,6 @@ class _DockingContentViewState extends State<DockingContentView>
     ScaffoldMessenger.of(
       context,
     ).showSnackBar(const SnackBar(content: Text('Layout refreshed')));
-  }
-
-  /// 显示设置
-  void _showSettings() {
-    showDialog(
-      context: context,
-      builder:
-          (context) => AlertDialog(
-            title: const Text('Docking Settings'),
-            content: const Text('Settings dialog for docking configuration'),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(),
-                child: const Text('Close'),
-              ),
-            ],
-          ),
-    );
   }
 
   /// 添加新项目
@@ -426,10 +403,6 @@ class _DockingContentViewState extends State<DockingContentView>
         TabButton(
           icon: IconProvider.data(Icons.add),
           onPressed: () => _addNewItem(),
-        ),
-        TabButton(
-          icon: IconProvider.data(Icons.settings),
-          onPressed: () => _showSettings(),
         ),
       ];
     }
