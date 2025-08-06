@@ -82,12 +82,6 @@ class DockController extends ChangeNotifier {
 
     // 通知UI更新
     notifyListeners();
-
-    // 应用待处理的布局
-    // 延迟执行应用待处理的布局
-    // Future.delayed(const Duration(milliseconds: 1000), () {
-    //   _layoutController.applyPendingLayout(_dockTabs);
-    // });
   }
 
   /// 处理Dock事件
@@ -100,6 +94,7 @@ class DockController extends ChangeNotifier {
       case DockEventType.layoutChanged:
         break;
       case DockEventType.itemClosed:
+        print('Dock Item Closed');
         break;
       case DockEventType.itemSelected:
         break;
@@ -111,7 +106,7 @@ class DockController extends ChangeNotifier {
       notifyListeners();
     }
 
-    // 延迟保存布局，确保项目已从数据结构中完全移除
+    // 延迟保存布局
     Future.delayed(const Duration(milliseconds: 1000), () {
       _saveLayoutForEvent(event.dockTabsId);
     });

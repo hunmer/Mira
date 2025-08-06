@@ -572,8 +572,6 @@ class DockLayoutController extends ChangeNotifier {
 
   /// 从持久化存储加载布局
   Future<void> _loadLayoutsFromStorage() async {
-    if (_storageManager == null) return;
-
     try {
       final layouts = await _storageManager!.readJson(
         _layoutStorageKey,

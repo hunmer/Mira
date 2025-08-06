@@ -116,6 +116,10 @@ class DockTab {
     }
     _dockItems.add(dockItem);
 
+    if (rebuildLayout) {
+      _rebuildLayout();
+    }
+
     // 发送item创建事件
     _eventStreamController?.emit(
       DockTabEvent(
@@ -128,10 +132,6 @@ class DockTab {
         },
       ),
     );
-
-    if (rebuildLayout) {
-      _rebuildLayout();
-    }
   }
 
   bool removeDockItem(DockItem dockItem, {bool rebuildLayout = true}) {

@@ -536,23 +536,17 @@ class DockTabs {
   void _handleItemClose(DockingItem dockingItem) {
     // 从所有DockTab中查找并移除对应的DockItem
     // 优先使用ID查找，如果没有ID则使用name
-    for (var dockTab in _dockTabs.values) {
-      bool removed = false;
-
-      // 如果DockingItem有ID，优先使用ID查找
-      if (dockingItem.id != null) {
-        // 通过ID查找对应的DockItem
-        final dockItem = dockTab.getDockItemById(dockingItem.id.toString());
-        if (dockItem != null) {
-          removed = dockTab.removeDockItemById(dockItem.id);
-        }
-      }
-      if (removed) {
-        break; // 找到并移除后跳出循环
-      }
+    final exists = _dockTabs.containsKey(dockingItem.id);
+    if (exists) {
+      _dockTabs.remove(dockingItem.id);
+      _eventStreamController?.emit(
+        DockTabEvent(
+          type: DockEventType.itemClosed,
+          dockTabsId: id,
+          values: {'item': dockingItem},
+        ),
+      );
     }
-
-    // 注意：不在这里发送事件，因为 dockTab.removeDockItemById 内部已经发送了事件
   }
 
   /// 处理DockItem选择事件
@@ -820,7 +814,6 @@ class DockTabs {
         tabId: _activeTabId ?? _dockTabs.keys.first,
       );
       DockLayoutManager.registerParser('${id}_layout', mainParser);
-
       // 临时保存布局字符串
       DockLayoutManager.setSavedLayout('${id}_layout', layoutString);
 
