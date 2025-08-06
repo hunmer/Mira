@@ -2,17 +2,18 @@ import 'package:flutter/material.dart';
 
 class SelectableItem extends StatefulWidget {
   const SelectableItem({
-    Key? key,
+    super.key,
     required this.index,
     required this.selected,
     this.child,
-  }) : super(key: key);
+  });
 
   final int index;
   final bool selected;
   final Widget? child;
 
   @override
+  // ignore: library_private_types_in_public_api
   _SelectableItemState createState() => _SelectableItemState();
 }
 

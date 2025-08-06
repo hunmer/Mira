@@ -55,7 +55,7 @@ class LayoutStringify {
       final DockingArea area = areas[i];
       str += '${area.index}(';
       str += '${area.areaAcronym};';
-      str += '${stringifyArea(parser: parser, area: area)}';
+      str += stringifyArea(parser: parser, area: area);
 
       if (area is DockingItem) {
         str += ';';

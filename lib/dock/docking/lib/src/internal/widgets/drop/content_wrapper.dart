@@ -6,11 +6,11 @@ import 'package:flutter/material.dart';
 
 abstract class ContentWrapperBase extends StatelessWidget {
   const ContentWrapperBase({
-    Key? key,
+    super.key,
     required this.layout,
     required this.listener,
     required this.child,
-  }) : super(key: key);
+  });
 
   final DockingLayout layout;
   final Widget child;
@@ -35,41 +35,41 @@ abstract class ContentWrapperBase extends StatelessWidget {
 
         children.add(
           Positioned(
-            child: buildDropAnchor(DropPosition.left),
             width: horizontalEdgeWidth,
             bottom: 0,
             top: 0,
             left: 0,
+            child: buildDropAnchor(DropPosition.left),
           ),
         );
 
         children.add(
           Positioned(
-            child: buildDropAnchor(DropPosition.right),
             width: horizontalEdgeWidth,
             bottom: 0,
             top: 0,
             right: 0,
+            child: buildDropAnchor(DropPosition.right),
           ),
         );
 
         children.add(
           Positioned(
-            child: buildDropAnchor(DropPosition.top),
             height: verticalEdgeHeight,
             top: 0,
             left: horizontalEdgeWidth,
             right: horizontalEdgeWidth,
+            child: buildDropAnchor(DropPosition.top),
           ),
         );
 
         children.add(
           Positioned(
-            child: buildDropAnchor(DropPosition.bottom),
             height: verticalEdgeHeight,
             bottom: 0,
             left: horizontalEdgeWidth,
             right: horizontalEdgeWidth,
+            child: buildDropAnchor(DropPosition.bottom),
           ),
         );
 
@@ -82,14 +82,14 @@ abstract class ContentWrapperBase extends StatelessWidget {
 }
 
 class ItemContentWrapper extends ContentWrapperBase {
-  ItemContentWrapper({
-    required DockingLayout layout,
-    required DropWidgetListener listener,
+  const ItemContentWrapper({
+    super.key,
+    required super.layout,
+    required super.listener,
     required DockingItem dockingItem,
     this.onItemPositionChanged,
-    required Widget child,
-  }) : _dockingItem = dockingItem,
-       super(layout: layout, listener: listener, child: child);
+    required super.child,
+  }) : _dockingItem = dockingItem;
 
   final DockingItem _dockingItem;
   final OnItemPositionChanged? onItemPositionChanged;
@@ -107,14 +107,14 @@ class ItemContentWrapper extends ContentWrapperBase {
 }
 
 class TabsContentWrapper extends ContentWrapperBase {
-  TabsContentWrapper({
-    required DockingLayout layout,
-    required DropWidgetListener listener,
+  const TabsContentWrapper({
+    super.key,
+    required super.layout,
+    required super.listener,
     required DockingTabs dockingTabs,
     this.onItemPositionChanged,
-    required Widget child,
-  }) : _dockingTabs = dockingTabs,
-       super(layout: layout, listener: listener, child: child);
+    required super.child,
+  }) : _dockingTabs = dockingTabs;
 
   final DockingTabs _dockingTabs;
   final OnItemPositionChanged? onItemPositionChanged;

@@ -62,21 +62,21 @@ mixin DraggableConfigMixin {
   Widget buildFeedback(String name) {
     return Material(
       child: Container(
+        decoration: BoxDecoration(
+          border: Border.all(),
+          color: Colors.grey[300],
+        ),
         child: ConstrainedBox(
-          constraints: new BoxConstraints(
+          constraints: BoxConstraints(
             minHeight: 0,
             minWidth: 30,
             maxHeight: double.infinity,
             maxWidth: 150.0,
           ),
           child: Padding(
-            child: Text(name, overflow: TextOverflow.ellipsis),
             padding: EdgeInsets.all(4),
+            child: Text(name, overflow: TextOverflow.ellipsis),
           ),
-        ),
-        decoration: BoxDecoration(
-          border: Border.all(),
-          color: Colors.grey[300],
         ),
       ),
     );

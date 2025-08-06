@@ -15,13 +15,13 @@ class SelectedFilesPage extends StatefulWidget {
   final LibraryGalleryState? galleryState;
 
   const SelectedFilesPage({
-    Key? key,
+    super.key,
     required this.plugin,
     required this.library,
     required this.selectedFiles,
     required this.onSelectionChanged,
     this.galleryState,
-  }) : super(key: key);
+  });
 
   @override
   State<SelectedFilesPage> createState() => _SelectedFilesPageState();
@@ -203,6 +203,7 @@ class _SelectedFilesPageState extends State<SelectedFilesPage> {
         child: Card(
           color:
               onTap != null
+                  // ignore: deprecated_member_use
                   ? Theme.of(context).primaryColor.withOpacity(0.1)
                   : null,
           child: Padding(
@@ -502,8 +503,9 @@ class _SelectedFilesPageState extends State<SelectedFilesPage> {
   String _formatFileSize(int bytes) {
     if (bytes < 1024) return '$bytes B';
     if (bytes < 1024 * 1024) return '${(bytes / 1024).toStringAsFixed(1)} KB';
-    if (bytes < 1024 * 1024 * 1024)
+    if (bytes < 1024 * 1024 * 1024) {
       return '${(bytes / (1024 * 1024)).toStringAsFixed(1)} MB';
+    }
     return '${(bytes / (1024 * 1024 * 1024)).toStringAsFixed(1)} GB';
   }
 }

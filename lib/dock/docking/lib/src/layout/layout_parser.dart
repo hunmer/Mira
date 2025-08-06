@@ -11,11 +11,13 @@ abstract class LayoutParser {
 
 mixin LayoutParserMixin implements LayoutParser {
   /// Default conversion from ID to String.
+  @override
   String idToString(dynamic id) {
     return id == null ? '' : id.toString();
   }
 
   /// Default conversion from String to ID.
+  @override
   dynamic stringToId(String id) {
     return id == '' ? null : id;
   }

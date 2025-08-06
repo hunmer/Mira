@@ -10,14 +10,15 @@ class DockLayoutPresetDialog extends StatefulWidget {
   final StorageManager storageManager;
 
   const DockLayoutPresetDialog({
-    Key? key,
+    super.key,
     required this.dockTabsId,
     required this.storageManager,
-  }) : super(key: key);
+  });
 
   @override
   State<DockLayoutPresetDialog> createState() =>
-      _DockLayoutPresetDialogState(storageManager);
+  // ignore: no_logic_in_create_state
+  _DockLayoutPresetDialogState(storageManager);
 }
 
 class _DockLayoutPresetDialogState extends State<DockLayoutPresetDialog> {

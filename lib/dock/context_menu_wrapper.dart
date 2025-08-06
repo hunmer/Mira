@@ -15,7 +15,7 @@ class ContextMenuWrapper extends StatelessWidget {
   final Map<String, VoidCallback>? customActions;
 
   const ContextMenuWrapper({
-    Key? key,
+    super.key,
     required this.child,
     required this.itemName,
     this.itemType,
@@ -27,7 +27,7 @@ class ContextMenuWrapper extends StatelessWidget {
     this.onSaveLayout,
     this.onExport,
     this.customActions,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -192,14 +192,15 @@ class ContextMenuWrapper extends StatelessWidget {
       if (overlay != null) {
         showMenu<String>(
           context: context,
-          position: position == Offset.zero
-              ? RelativeRect.fromLTRB(100, 100, 100, 100) // 长按时的默认位置
-              : RelativeRect.fromLTRB(
-                  position.dx,
-                  position.dy,
-                  overlay.size.width - position.dx,
-                  overlay.size.height - position.dy,
-                ),
+          position:
+              position == Offset.zero
+                  ? RelativeRect.fromLTRB(100, 100, 100, 100) // 长按时的默认位置
+                  : RelativeRect.fromLTRB(
+                    position.dx,
+                    position.dy,
+                    overlay.size.width - position.dx,
+                    overlay.size.height - position.dy,
+                  ),
           items: items,
           elevation: 8,
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
@@ -248,91 +249,93 @@ class ContextMenuWrapper extends StatelessWidget {
     final controller = TextEditingController(text: itemName);
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: Row(
-          children: [
-            const Icon(Icons.edit, color: Colors.blue),
-            const SizedBox(width: 8),
-            const Text('重命名'),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            if (itemType != null) ...[
-              Text(
-                '类型: $itemType',
-                style: const TextStyle(fontSize: 12, color: Colors.grey),
-              ),
-              const SizedBox(height: 8),
-            ],
-            TextField(
-              controller: controller,
-              decoration: const InputDecoration(
-                labelText: '新名称',
-                border: OutlineInputBorder(),
-                prefixIcon: Icon(Icons.label),
-              ),
-              autofocus: true,
-              onSubmitted: (value) {
-                if (value.trim().isNotEmpty) {
-                  Navigator.pop(context);
-                  onRename?.call();
-                }
-              },
+      builder:
+          (context) => AlertDialog(
+            title: Row(
+              children: [
+                const Icon(Icons.edit, color: Colors.blue),
+                const SizedBox(width: 8),
+                const Text('重命名'),
+              ],
             ),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                if (itemType != null) ...[
+                  Text(
+                    '类型: $itemType',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey),
+                  ),
+                  const SizedBox(height: 8),
+                ],
+                TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(
+                    labelText: '新名称',
+                    border: OutlineInputBorder(),
+                    prefixIcon: Icon(Icons.label),
+                  ),
+                  autofocus: true,
+                  onSubmitted: (value) {
+                    if (value.trim().isNotEmpty) {
+                      Navigator.pop(context);
+                      onRename?.call();
+                    }
+                  },
+                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  if (controller.text.trim().isNotEmpty) {
+                    Navigator.pop(context);
+                    onRename?.call();
+                  }
+                },
+                child: const Text('确定'),
+              ),
+            ],
           ),
-          ElevatedButton(
-            onPressed: () {
-              if (controller.text.trim().isNotEmpty) {
-                Navigator.pop(context);
-                onRename?.call();
-              }
-            },
-            child: const Text('确定'),
-          ),
-        ],
-      ),
     );
   }
 
   void _showCloseConfirmation(BuildContext context) {
     showDialog(
       context: context,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning, color: Colors.orange),
-            SizedBox(width: 8),
-            Text('确认关闭'),
-          ],
-        ),
-        content: Text('确定要关闭 "$itemName" 吗？\n\n此操作无法撤销。'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text('取消'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onClose?.call();
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.red,
-              foregroundColor: Colors.white,
+      builder:
+          (context) => AlertDialog(
+            title: const Row(
+              children: [
+                Icon(Icons.warning, color: Colors.orange),
+                SizedBox(width: 8),
+                Text('确认关闭'),
+              ],
             ),
-            child: const Text('关闭'),
+            content: Text('确定要关闭 "$itemName" 吗？\n\n此操作无法撤销。'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context),
+                child: const Text('取消'),
+              ),
+              ElevatedButton(
+                onPressed: () {
+                  Navigator.pop(context);
+                  onClose?.call();
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.red,
+                  foregroundColor: Colors.white,
+                ),
+                child: const Text('关闭'),
+              ),
+            ],
           ),
-        ],
-      ),
     );
   }
 }

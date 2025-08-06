@@ -154,6 +154,7 @@ class LibraryTabManager implements ILibraryTabManager {
   }
 
   // 添加tab
+  @override
   void addTab(Library library, {String title = '', bool isRecycleBin = false}) {
     tabDatas.add(
       LibraryTabData(
@@ -232,12 +233,14 @@ class LibraryTabManager implements ILibraryTabManager {
   }
 
   // getStoredValue
+  @override
   dynamic getStoredValue(String tabId, String key, dynamic defaultValue) {
     final value = getValue(tabId, 'stored', {});
     return value[key] ?? defaultValue;
   }
 
   // setStoreValue
+  @override
   void setStoreValue(String tabId, String key, dynamic value) {
     final tabData = getTabData(tabId);
     if (tabData != null) {
@@ -247,6 +250,7 @@ class LibraryTabManager implements ILibraryTabManager {
     }
   }
 
+  @override
   void setValue(String tabId, String key, dynamic value) {
     final index = getTabIds().indexOf(tabId);
     final tabData = tabDatas[index];
@@ -275,6 +279,7 @@ class LibraryTabManager implements ILibraryTabManager {
     );
   }
 
+  @override
   void tryUpdate(String tabId) {
     final tabData = getTabData(tabId);
     if (tabData != null && tabData.needUpdate) {
@@ -290,6 +295,7 @@ class LibraryTabManager implements ILibraryTabManager {
     setCurrentIndex(0);
   }
 
+  @override
   updateFilter(String tabId, Map<String, dynamic> filter) {
     final tabData = getTabData(tabId);
     if (tabData != null && tabId != null) {
@@ -309,6 +315,7 @@ class LibraryTabManager implements ILibraryTabManager {
     }
   }
 
+  @override
   setSortOptions(String tabId, Map<String, dynamic> sortOptions) {
     final tabData = getTabData(tabId);
     if (tabData != null && tabId != null) {
@@ -324,10 +331,12 @@ class LibraryTabManager implements ILibraryTabManager {
     }
   }
 
+  @override
   LibraryTabData? getTabData(String tabId) {
     return tabDatas.firstWhereOrNull((element) => element.id == tabId);
   }
 
+  @override
   String? getCurrentTabId() {
     final tabIds = getTabIds();
     final index = getCurrentIndex();

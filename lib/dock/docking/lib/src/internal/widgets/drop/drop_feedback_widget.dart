@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'package:flutter/material.dart';
 
 import '../../../layout/drop_position.dart';
@@ -6,8 +8,7 @@ class DropFeedbackWidget extends StatelessWidget {
   final Widget child;
   final DropPosition? dropPosition;
 
-  const DropFeedbackWidget({Key? key, this.dropPosition, required this.child})
-    : super(key: key);
+  const DropFeedbackWidget({super.key, this.dropPosition, required this.child});
 
   @override
   Widget build(BuildContext context) {

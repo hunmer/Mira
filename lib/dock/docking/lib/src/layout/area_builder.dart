@@ -34,6 +34,7 @@ abstract class AreaBuilder {
 }
 
 mixin AreaBuilderMixin implements AreaBuilder {
+  @override
   DockingRow buildDockingRow({
     required dynamic id,
     required double? weight,
@@ -42,6 +43,7 @@ mixin AreaBuilderMixin implements AreaBuilder {
     return DockingRow(children, id: id, weight: weight);
   }
 
+  @override
   DockingColumn buildDockingColumn({
     required dynamic id,
     required double? weight,
@@ -51,6 +53,7 @@ mixin AreaBuilderMixin implements AreaBuilder {
   }
 
   /// Builds a [DockingTabs].
+  @override
   DockingTabs buildDockingTabs({
     required dynamic id,
     required double? weight,

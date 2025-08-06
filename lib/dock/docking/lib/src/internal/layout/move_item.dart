@@ -1,21 +1,15 @@
 import 'drop_item.dart';
 import '../../layout/docking_layout.dart';
-import '../../layout/drop_position.dart';
 
 /// Rearranges the layout given a new location for a [DockingItem].
 
 class MoveItem extends DropItem {
   MoveItem({
     required DockingItem draggedItem,
-    required DropArea targetArea,
-    required DropPosition? dropPosition,
-    required int? dropIndex,
-  }) : super(
-         dropItem: draggedItem,
-         targetArea: targetArea,
-         dropPosition: dropPosition,
-         dropIndex: dropIndex,
-       );
+    required super.targetArea,
+    required super.dropPosition,
+    required super.dropIndex,
+  }) : super(dropItem: draggedItem);
 
   @override
   void validate(DockingLayout layout, DockingArea area) {

@@ -136,6 +136,7 @@ class _LibraryFileInformationViewState
                   borderRadius: BorderRadius.circular(8),
                   boxShadow: [
                     BoxShadow(
+                      // ignore: deprecated_member_use
                       color: Colors.black.withOpacity(0.1),
                       blurRadius: 8,
                       offset: const Offset(0, 4),

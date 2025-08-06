@@ -110,6 +110,7 @@ class LayoutFactory {
         areas: areas,
       );
     }
+    return null;
   }
 
   static DockingArea _buildArea({
@@ -126,7 +127,7 @@ class LayoutFactory {
       );
     } else if (parent is _ParentConfig) {
       List<DockingArea> children = [];
-      parent.childrenIndexes.forEach((childIndex) {
+      for (var childIndex in parent.childrenIndexes) {
         final _AreaConfig childConfig = areas.getArea(childIndex);
         children.add(
           _buildArea(
@@ -136,7 +137,7 @@ class LayoutFactory {
             areas: areas,
           ),
         );
-      });
+      }
       if (parent is _RowConfig) {
         return builder.buildDockingRow(
           id: parser.stringToId(parent.id),
@@ -176,38 +177,37 @@ class _AreaConfig {
 
 class _ParentConfig extends _AreaConfig {
   _ParentConfig({
-    required String id,
-    required double? weight,
+    required super.id,
+    required super.weight,
     required List<int> childrenIndexes,
-  }) : childrenIndexes = List.unmodifiable(childrenIndexes),
-       super(id: id, weight: weight);
+  }) : childrenIndexes = List.unmodifiable(childrenIndexes);
 
   final List<int> childrenIndexes;
 }
 
 class _RowConfig extends _ParentConfig {
   _RowConfig({
-    required String id,
-    required double? weight,
-    required List<int> childrenIndexes,
-  }) : super(id: id, weight: weight, childrenIndexes: childrenIndexes);
+    required super.id,
+    required super.weight,
+    required super.childrenIndexes,
+  });
 }
 
 class _ColumnConfig extends _ParentConfig {
   _ColumnConfig({
-    required String id,
-    required double? weight,
-    required List<int> childrenIndexes,
-  }) : super(id: id, weight: weight, childrenIndexes: childrenIndexes);
+    required super.id,
+    required super.weight,
+    required super.childrenIndexes,
+  });
 }
 
 class _TabsConfig extends _ParentConfig {
   _TabsConfig({
-    required String id,
-    required double? weight,
+    required super.id,
+    required super.weight,
     required this.maximized,
-    required List<int> childrenIndexes,
-  }) : super(id: id, weight: weight, childrenIndexes: childrenIndexes);
+    required super.childrenIndexes,
+  });
 
   final bool maximized;
 }
@@ -216,13 +216,15 @@ class _ItemConfig extends _AreaConfig {
   final bool maximized;
 
   _ItemConfig({
-    required String id,
-    required double? weight,
+    required super.id,
+    required super.weight,
     required this.maximized,
-  }) : super(id: id, weight: weight);
+  });
 }
 
+// ignore: library_private_types_in_public_api
 extension E on Map<int, _AreaConfig> {
+  // ignore: library_private_types_in_public_api
   _AreaConfig getArea(int index) {
     _AreaConfig? config = this[index];
     if (config == null) {

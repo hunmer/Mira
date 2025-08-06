@@ -5,7 +5,6 @@ import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_tabs.dart';
 import 'dock_tab.dart';
 import 'dock_item.dart';
-import 'dock_layout_parser.dart';
 import 'dock_events.dart';
 import 'homepage_dock_item.dart';
 
@@ -29,41 +28,6 @@ class DockManager {
   static DockingItem createDefaultHomePageDockItem() {
     final homePageItem = HomePageDockItem();
     return homePageItem.buildDockingItem();
-  }
-
-  /// 设置StorageManager实例
-  static Future<void> setStorageManager(StorageManager storageManager) async {
-    _instance._storageManager = storageManager;
-    await _instance._loadLayoutsFromStorage();
-    _instance._isInitialized = true;
-  }
-
-  /// 从持久化存储加载布局
-  Future<void> _loadLayoutsFromStorage() async {
-    try {
-      final layouts = await _storageManager!.readJson(
-        _layoutStorageKey,
-        <String, String>{},
-      );
-      if (layouts != null && layouts is Map) {
-        _layoutStorage.clear();
-        _layoutStorage.addAll(Map<String, String>.from(layouts));
-        print(
-          'Loaded ${_layoutStorage.length} layouts from persistent storage',
-        );
-      }
-    } catch (e) {
-      print('Error loading layouts from storage: $e');
-    }
-  }
-
-  /// 保存布局到持久化存储
-  void _saveLayoutsToStorage() async {
-    try {
-      await _storageManager!.writeJson(_layoutStorageKey, _layoutStorage);
-    } catch (e) {
-      print('Error saving layouts to storage: $e');
-    }
   }
 
   /// 创建DockTabs
@@ -472,6 +436,41 @@ class DockManager {
     } catch (e) {
       print('Error loading layout for dockTabsId $dockTabsId: $e');
       return false;
+    }
+  }
+
+  /// 设置StorageManager实例
+  static Future<void> setStorageManager(StorageManager storageManager) async {
+    _instance._storageManager = storageManager;
+    await _instance._loadLayoutsFromStorage();
+    _instance._isInitialized = true;
+  }
+
+  /// 从持久化存储加载布局
+  Future<void> _loadLayoutsFromStorage() async {
+    try {
+      final layouts = await _storageManager!.readJson(
+        _layoutStorageKey,
+        <String, String>{},
+      );
+      if (layouts != null && layouts is Map) {
+        _layoutStorage.clear();
+        _layoutStorage.addAll(Map<String, String>.from(layouts));
+        print(
+          'Loaded ${_layoutStorage.length} layouts from persistent storage',
+        );
+      }
+    } catch (e) {
+      print('Error loading layouts from storage: $e');
+    }
+  }
+
+  /// 保存布局到持久化存储
+  void _saveLayoutsToStorage() async {
+    try {
+      await _storageManager!.writeJson(_layoutStorageKey, _layoutStorage);
+    } catch (e) {
+      print('Error saving layouts to storage: $e');
     }
   }
 }

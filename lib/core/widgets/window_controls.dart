@@ -1,3 +1,5 @@
+// ignore_for_file: deprecated_member_use
+
 import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
@@ -13,12 +15,12 @@ class WindowControls extends StatefulWidget {
   final double? buttonSize;
 
   const WindowControls({
-    Key? key,
+    super.key,
     this.backgroundColor,
     this.hoverColor,
     this.iconColor,
     this.buttonSize = 32.0,
-  }) : super(key: key);
+  });
 
   @override
   State<WindowControls> createState() => _WindowControlsState();
@@ -274,7 +276,7 @@ class _WindowButtonState extends State<_WindowButton> {
 class DragToMoveArea extends StatelessWidget {
   final Widget child;
 
-  const DragToMoveArea({Key? key, required this.child}) : super(key: key);
+  const DragToMoveArea({super.key, required this.child});
 
   @override
   Widget build(BuildContext context) {

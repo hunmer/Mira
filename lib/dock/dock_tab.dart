@@ -13,9 +13,9 @@ class DockTab {
   final List<DockItem> _dockItems = [];
   late DockingLayout _layout;
   final ValueNotifier<int> _layoutChangeNotifier = ValueNotifier<int>(0);
-  VoidCallback? _onLayoutChanged;
+  final VoidCallback? _onLayoutChanged;
   final Map<String, dynamic> _defaultDockingItemConfig;
-  DockEventStreamController? _eventStreamController;
+  final DockEventStreamController? _eventStreamController;
 
   // 防抖控制
   Timer? _rebuildTimer;

@@ -22,7 +22,7 @@ enum DragSelectViewType {
 
 /// 自定义滚动物理配置，允许滚轮滚动但禁用拖拽滚动
 class DesktopScrollPhysics extends ScrollPhysics {
-  const DesktopScrollPhysics({ScrollPhysics? parent}) : super(parent: parent);
+  const DesktopScrollPhysics({super.parent});
 
   @override
   DesktopScrollPhysics applyTo(ScrollPhysics? ancestor) {
@@ -66,7 +66,7 @@ class DragSelectView extends StatefulWidget {
   final Function(Set<int>)? onSelectionChanged;
 
   const DragSelectView({
-    Key? key,
+    super.key,
     this.viewType = DragSelectViewType.grid,
     required this.plugin,
     required this.library,
@@ -81,7 +81,7 @@ class DragSelectView extends StatefulWidget {
     required this.onToggleSelected,
     this.scrollController,
     this.onSelectionChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<DragSelectView> createState() => _DragSelectViewState();

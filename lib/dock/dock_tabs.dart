@@ -67,11 +67,9 @@ class DockTabs {
 
   /// 安全获取全局布局，如果未初始化则创建默认布局
   DockingLayout get _safeGlobalLayout {
-    if (_globalLayout == null) {
-      _globalLayout = DockingLayout(
-        root: DockManager.createDefaultHomePageDockItem(),
-      );
-    }
+    _globalLayout ??= DockingLayout(
+      root: DockManager.createDefaultHomePageDockItem(),
+    );
     return _globalLayout!;
   }
 
@@ -364,6 +362,7 @@ class DockTabs {
                   vertical: 6,
                 ),
                 decoration: BoxDecoration(
+                  // ignore: deprecated_member_use
                   color: Colors.blueAccent.withOpacity(0.85),
                   borderRadius: BorderRadius.circular(16),
                   boxShadow: [

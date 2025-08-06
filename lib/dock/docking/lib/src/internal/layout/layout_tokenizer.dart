@@ -1,4 +1,5 @@
 /// Tokenizer for the layout string.
+library;
 
 class Tokenizer {
   Tokenizer(String layout) : _layout = layout;
@@ -13,7 +14,7 @@ class Tokenizer {
 
   String removeNext() {
     if (_layout.isEmpty) {
-      throw new StateError('Insufficient characters.');
+      throw StateError('Insufficient characters.');
     }
     final String next = _layout.substring(0, 1);
     _layout = _layout.substring(1);

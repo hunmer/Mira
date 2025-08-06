@@ -8,10 +8,9 @@ class HomePageDockItem extends DockItem {
   final VoidCallback? onCreateNewTab;
   static bool _isBuilderRegistered = false;
 
-  HomePageDockItem({this.onCreateNewTab, String title = 'Home'})
+  HomePageDockItem({this.onCreateNewTab, super.title = 'Home'})
     : super(
         type: 'homepage',
-        title: title,
         values: {},
         builder: (dockItem) => _buildDockingItem(dockItem),
       ) {

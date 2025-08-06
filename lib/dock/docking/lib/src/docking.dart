@@ -16,7 +16,7 @@ import 'package:multi_split_view/multi_split_view.dart';
 /// The docking widget.
 class Docking extends StatefulWidget {
   const Docking({
-    Key? key,
+    super.key,
     this.layout,
     this.onItemSelection,
     this.onItemClose,
@@ -30,7 +30,7 @@ class Docking extends StatefulWidget {
     this.maximizableTabsArea = true,
     this.antiAliasingWorkaround = true,
     this.draggable = true,
-  }) : super(key: key);
+  });
 
   final DockingLayout? layout;
   final OnItemSelection? onItemSelection;
@@ -162,9 +162,7 @@ class _DockingState extends State<Docking> {
         maximizableTabsArea: widget.maximizableTabsArea,
       );
     }
-    throw UnimplementedError(
-      'Unrecognized runtimeType: ' + area.runtimeType.toString(),
-    );
+    throw UnimplementedError('Unrecognized runtimeType: ${area.runtimeType}');
   }
 
   Widget _row(BuildContext context, DockingRow row) {
@@ -175,10 +173,10 @@ class _DockingState extends State<Docking> {
 
     return MultiSplitView(
       key: row.key,
-      children: children,
       axis: Axis.horizontal,
       controller: row.controller,
       antiAliasingWorkaround: widget.antiAliasingWorkaround,
+      children: children,
     );
   }
 
@@ -190,10 +188,10 @@ class _DockingState extends State<Docking> {
 
     return MultiSplitView(
       key: column.key,
-      children: children,
       axis: Axis.vertical,
       controller: column.controller,
       antiAliasingWorkaround: widget.antiAliasingWorkaround,
+      children: children,
     );
   }
 

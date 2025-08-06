@@ -8,6 +8,7 @@ import 'library_dock_item.dart';
 /// 提供与原LibraryTabManager兼容的接口，但使用dock系统作为后端
 class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   /// 获取存储值
+  @override
   dynamic getStoredValue(String tabId, String key, dynamic defaultValue) {
     return DockManager.getLibraryTabStoredValue(
       tabId,
@@ -17,6 +18,7 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   }
 
   /// 更新过滤器
+  @override
   void updateFilter(String tabId, Map<String, dynamic> filter) {
     DockManager.updateLibraryTabStoredValue(tabId, 'filter', {
       ..._getCurrentFilter(tabId),
@@ -60,11 +62,13 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   }
 
   /// 设置存储值
+  @override
   void setStoreValue(String tabId, String key, dynamic value) {
     DockManager.updateLibraryTabStoredValue(tabId, key, value);
   }
 
   /// 设置值
+  @override
   void setValue(String tabId, String key, dynamic value) {
     // 根据key的不同，映射到dock系统的不同存储位置
     switch (key) {
@@ -88,6 +92,7 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   }
 
   /// 尝试更新
+  @override
   void tryUpdate(String tabId) {
     final needUpdate = getStoredValue(tabId, 'needUpdate', false);
     if (needUpdate == true) {

@@ -63,6 +63,7 @@ class LibraryGalleryMobile {
     return Container(
       padding: EdgeInsets.all(8),
       decoration: BoxDecoration(
+        // ignore: deprecated_member_use
         color: Theme.of(context).primaryColor.withOpacity(0.1),
         border: Border(
           bottom: BorderSide(color: Theme.of(context).dividerColor),

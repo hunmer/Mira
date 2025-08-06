@@ -79,9 +79,6 @@ void main() async {
     globalPluginManager = PluginManager();
     await globalPluginManager.setStorageManager(globalStorage);
 
-    // 初始化DockManager的持久化存储
-    await DockManager.setStorageManager(globalStorage);
-
     // 注册内置插件
     final plugins = [LibrariesPlugin()];
 
@@ -116,9 +113,6 @@ void main() async {
         EventArgs('plugins_initialized'),
       );
     });
-
-    // 初始化DockManager的持久化存储
-    DockManager.setStorageManager(globalStorage);
   } catch (e) {
     debugPrint('初始化失败: $e');
   }

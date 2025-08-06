@@ -8,12 +8,8 @@ import 'package:mira/core/event/event_debounce.dart';
 import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/dock/dock_controller.dart';
-import 'package:mira/dock/dock_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
-import '../models/library.dart';
 import 'package:mira/core/widgets/hotkey_settings_view.dart';
 import 'package:mira/core/widgets/window_controls.dart';
 
@@ -139,6 +135,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                         size: 16,
                         color: Theme.of(
                           context,
+                          // ignore: deprecated_member_use
                         ).textTheme.titleMedium?.color?.withOpacity(0.6),
                       ),
                       const SizedBox(width: 8),
