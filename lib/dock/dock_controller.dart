@@ -83,11 +83,11 @@ class DockController extends ChangeNotifier {
 
     if (event is DockTabEvent) {
       final item = event.values['item'] as DockingItem?;
-      final tab = event.values['tabs'] as DockTabs;
+      final tab = event.values['tabs'] as DockTabs?;
       switch (event.type) {
         case DockEventType.tabClosed:
         case DockEventType.tabCreated:
-          if (tab.isEmpty) {
+          if (tab!.isEmpty) {
             print('is Empty');
           }
           _onLayoutControllerChanged();
