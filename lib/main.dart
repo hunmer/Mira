@@ -8,7 +8,6 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/dock/dock_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:mira/core/theme_controller.dart';
-import 'package:mira/plugins/login/l10n/login_localizations.dart';
 import 'package:mira/screens/settings_screen/controllers/permission_controller.dart';
 import 'package:mira/screens/settings_screen/l10n/log_settings_localizations.dart';
 import 'package:mira/screens/settings_screen/l10n/settings_screen_localizations.dart';
@@ -169,7 +168,6 @@ class _MyAppState extends State<MyApp> {
           debugShowCheckedModeBanner: false,
           localizationsDelegates: [
             AppLocalizations.delegate,
-            LoginLocalizations.delegate,
             ImagePickerLocalizations.delegate,
             SettingsScreenLocalizations.delegate,
             DataManagementLocalizations.delegate,
