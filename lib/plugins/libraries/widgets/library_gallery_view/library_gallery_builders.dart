@@ -11,6 +11,8 @@ import 'package:mira/plugins/libraries/widgets/library_file_information_view.dar
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/selected_files_page.dart';
+import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:mira/dock/docking/lib/src/docking.dart';
 import 'library_gallery_events.dart';
 import 'library_gallery_state.dart';
 import 'drag_select_view.dart';
@@ -26,6 +28,7 @@ class LibraryGalleryBuilders {
   final Function(LibraryFile) onFileOpen;
   final Function(LibraryFile) onFileSelected;
   final Function(LibraryFile) onToggleSelected;
+  late BuildContext context;
 
   LibraryGalleryBuilders({
     required this.state,
@@ -45,113 +48,365 @@ class LibraryGalleryBuilders {
     SizingInformation sizingInformation,
     bool isRecycleBin,
   ) {
-    switch (sizingInformation.deviceScreenType) {
+    this.context = context;
+    // 为不同设备类型创建不同的 Docking 布局
+    final layoutData = _createLayoutDataForDevice(
+      sizingInformation.deviceScreenType,
+    );
+
+    return _buildDockingLayout(
+      context,
+      layoutData,
+      isRecycleBin,
+      sizingInformation.screenSize.width,
+    );
+  }
+
+  /// 为不同设备创建布局数据
+  Map<String, dynamic> _createLayoutDataForDevice(DeviceScreenType deviceType) {
+    switch (deviceType) {
       case DeviceScreenType.mobile:
-        return buildMainContent(
-          isRecycleBin,
-          sizingInformation.screenSize.width,
-        );
+        return {
+          'type': 'item',
+          'id': 'main_content',
+          'name': 'Library Content',
+          'closable': false,
+          'maximizable': false,
+          'keepAlive': true,
+        };
 
       case DeviceScreenType.tablet:
-        return Row(
-          children: [
-            Flexible(
-              flex: 1,
-              child: Card(
-                elevation: 4,
-                margin: const EdgeInsets.all(6),
-                child: Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: buildSidebarSection(
-                    sizingInformation.screenSize.width,
-                  ),
-                ),
-              ),
-            ),
-            Flexible(
-              flex: 6,
-              child: Card(
-                elevation: 4,
-                margin: const EdgeInsets.all(6),
-                child: Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: buildMainContent(
-                    isRecycleBin,
-                    sizingInformation.screenSize.width,
-                  ),
-                ),
-              ),
-            ),
+        return {
+          'type': 'row',
+          'items': [
+            {
+              'id': 'sidebar',
+              'name': 'Sidebar',
+              'type': 'item',
+              'closable': false,
+              'maximizable': false,
+              'keepAlive': true,
+              'weight': 0.15,
+              'minimalSize': 250.0,
+            },
+            {
+              'id': 'main_content',
+              'name': 'Library Content',
+              'type': 'item',
+              'closable': false,
+              'maximizable': true,
+              'keepAlive': true,
+              'weight': 0.85,
+            },
           ],
-        );
+        };
 
       case DeviceScreenType.desktop:
-        return Row(
-          children: [
-            Card(
-              elevation: 4,
-              margin: const EdgeInsets.all(6),
-              child: Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: buildQuickActions(context),
-              ),
-            ),
-            Flexible(
-              flex: 1,
-              child: Card(
-                elevation: 4,
-                margin: const EdgeInsets.all(6),
-                child: Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: buildSidebarSection(
-                    sizingInformation.screenSize.width,
-                  ),
-                ),
-              ),
-            ),
-            Flexible(
-              flex: 6,
-              child: Card(
-                elevation: 4,
-                margin: const EdgeInsets.all(6),
-                child: Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: buildMainContent(
-                    isRecycleBin,
-                    sizingInformation.screenSize.width,
-                  ),
-                ),
-              ),
-            ),
-            Flexible(
-              flex: 2,
-              child: Card(
-                elevation: 4,
-                margin: const EdgeInsets.all(6),
-                child: Padding(
-                  padding: const EdgeInsets.all(6.0),
-                  child: buildMoreDetailsPage(),
-                ),
-              ),
-            ),
-            Card(
-              elevation: 4,
-              margin: const EdgeInsets.all(6),
-              child: Padding(
-                padding: const EdgeInsets.all(6.0),
-                child: buildAppBarActions(),
-              ),
-            ),
+        return {
+          'type': 'row',
+          'items': [
+            {
+              'id': 'quick_actions',
+              'name': 'Quick Actions',
+              'type': 'item',
+              'closable': false,
+              'maximizable': false,
+              'keepAlive': true,
+              'size': 60.0,
+            },
+            {
+              'id': 'sidebar',
+              'name': 'Sidebar',
+              'type': 'item',
+              'closable': false,
+              'maximizable': false,
+              'keepAlive': true,
+              'weight': 0.15,
+              'minimalSize': 250.0,
+            },
+            {
+              'id': 'main_content',
+              'name': 'Library Content',
+              'type': 'item',
+              'closable': false,
+              'maximizable': true,
+              'keepAlive': true,
+              'weight': 0.6,
+            },
+            {
+              'id': 'details',
+              'name': 'Details',
+              'type': 'item',
+              'closable': true,
+              'maximizable': false,
+              'keepAlive': true,
+              'weight': 0.2,
+              'minimalSize': 300.0,
+            },
+            {
+              'id': 'app_bar_actions',
+              'name': 'Actions',
+              'type': 'item',
+              'closable': false,
+              'maximizable': false,
+              'keepAlive': true,
+              'size': 60.0,
+            },
           ],
-        );
+        };
 
       case DeviceScreenType.watch:
       default:
-        return buildMainContent(
-          isRecycleBin,
-          sizingInformation.screenSize.width,
+        return {
+          'type': 'item',
+          'id': 'main_content',
+          'name': 'Library Content',
+          'closable': false,
+          'maximizable': false,
+          'keepAlive': true,
+        };
+    }
+  }
+
+  /// 构建 Docking 布局
+  Widget _buildDockingLayout(
+    BuildContext context,
+    Map<String, dynamic> layoutData,
+    bool isRecycleBin,
+    double screenWidth,
+  ) {
+    final dockingLayout = DockingLayout(
+      root: _buildAreaFromData(layoutData, isRecycleBin, screenWidth),
+    );
+
+    return Docking(
+      layout: dockingLayout,
+      onItemSelection: (DockingItem item) {
+        // 处理项目选择
+        print('Selected docking item: ${item.name}');
+      },
+      onItemClose: (DockingItem item) {
+        // 处理项目关闭
+        print('Closed docking item: ${item.name}');
+      },
+      itemCloseInterceptor: (DockingItem item) {
+        // 某些面板不允许关闭
+        final nonClosableItems = [
+          'main_content',
+          'sidebar',
+          'quick_actions',
+          'app_bar_actions',
+        ];
+        return !nonClosableItems.contains(item.id);
+      },
+    );
+  }
+
+  /// 从数据构建 Docking 区域
+  DockingArea _buildAreaFromData(
+    Map<String, dynamic> data,
+    bool isRecycleBin,
+    double screenWidth,
+  ) {
+    final type = data['type'] as String;
+
+    if (type == 'row') {
+      final items = data['items'] as List<dynamic>;
+      final areas =
+          items
+              .map(
+                (item) => _buildAreaFromData(
+                  item as Map<String, dynamic>,
+                  isRecycleBin,
+                  screenWidth,
+                ),
+              )
+              .toList();
+      return DockingRow(areas);
+    } else if (type == 'column') {
+      final items = data['items'] as List<dynamic>;
+      final areas =
+          items
+              .map(
+                (item) => _buildAreaFromData(
+                  item as Map<String, dynamic>,
+                  isRecycleBin,
+                  screenWidth,
+                ),
+              )
+              .toList();
+      return DockingColumn(areas);
+    } else if (type == 'tabs') {
+      final items = data['items'] as List<dynamic>;
+      final dockingItems =
+          items
+              .map(
+                (item) => _buildAreaFromData(
+                  item as Map<String, dynamic>,
+                  isRecycleBin,
+                  screenWidth,
+                ),
+              )
+              .whereType<DockingItem>()
+              .toList();
+      return DockingTabs(dockingItems);
+    } else {
+      // type == 'item'
+      return _buildDockingItem(data, isRecycleBin, screenWidth);
+    }
+  }
+
+  /// 构建单个 DockingItem
+  DockingItem _buildDockingItem(
+    Map<String, dynamic> data,
+    bool isRecycleBin,
+    double screenWidth,
+  ) {
+    final id = data['id'] as String;
+    final name = data['name'] as String;
+    final closable = data['closable'] as bool? ?? true;
+    final maximizable = data['maximizable'] as bool? ?? true;
+    final keepAlive = data['keepAlive'] as bool? ?? false;
+    final weight = data['weight'] as double?;
+    final size = data['size'] as double?;
+    final minimalSize = data['minimalSize'] as double?;
+
+    return DockingItem(
+      id: id,
+      name: name,
+      closable: closable,
+      maximizable: maximizable,
+      keepAlive: keepAlive,
+      weight: weight,
+      size: size,
+      minimalSize: minimalSize,
+      widget: _buildItemContent(id, isRecycleBin, screenWidth),
+    );
+  }
+
+  /// 构建项目内容
+  Widget _buildItemContent(
+    String itemId,
+    bool isRecycleBin,
+    double screenWidth,
+  ) {
+    switch (itemId) {
+      case 'quick_actions':
+        return Card(
+          elevation: 4,
+          margin: const EdgeInsets.all(6),
+          child: Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: buildQuickActionsPanel(),
+          ),
+        );
+
+      case 'sidebar':
+        return Card(
+          elevation: 4,
+          margin: const EdgeInsets.all(6),
+          child: Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: buildSidebarSection(screenWidth),
+          ),
+        );
+
+      case 'main_content':
+        return Card(
+          elevation: 4,
+          margin: const EdgeInsets.all(6),
+          child: Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: buildMainContent(isRecycleBin, screenWidth),
+          ),
+        );
+
+      case 'details':
+        return Card(
+          elevation: 4,
+          margin: const EdgeInsets.all(6),
+          child: Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: buildMoreDetailsPage(),
+          ),
+        );
+
+      case 'app_bar_actions':
+        return Card(
+          elevation: 4,
+          margin: const EdgeInsets.all(6),
+          child: Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: buildAppBarActions(),
+          ),
+        );
+
+      default:
+        return Card(
+          elevation: 4,
+          margin: const EdgeInsets.all(6),
+          child: Padding(
+            padding: const EdgeInsets.all(6.0),
+            child: Center(child: Text('Unknown panel: $itemId')),
+          ),
         );
     }
+  }
+
+  /// 构建快速操作面板
+  Widget buildQuickActionsPanel() {
+    return Column(
+      children: [
+        Tooltip(
+          message: '显示/隐藏侧边栏',
+          child: IconButton(
+            icon: Icon(Icons.menu),
+            onPressed: events.toggleSidebar,
+          ),
+        ),
+        Tooltip(
+          message: '文件夹列表',
+          child: IconButton(
+            icon: Icon(Icons.folder),
+            onPressed: () async {
+              final result = await plugin.libraryUIController
+                  .showFolderSelector(library, context);
+              if (result != null && result.isNotEmpty) {}
+            },
+          ),
+        ),
+        Tooltip(
+          message: '标签列表',
+          child: IconButton(
+            icon: Icon(Icons.label),
+            onPressed: () async {
+              final result = await plugin.libraryUIController.showTagSelector(
+                library,
+                context,
+              );
+              if (result != null && result.isNotEmpty) {}
+            },
+          ),
+        ),
+        Tooltip(
+          message: '收藏',
+          child: IconButton(icon: Icon(Icons.favorite), onPressed: () {}),
+        ),
+        Tooltip(
+          message: '回收站',
+          child: IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: () {
+              state.tabManager.addTab(
+                library,
+                isRecycleBin: true,
+                title: '回收站',
+              );
+            },
+          ),
+        ),
+      ],
+    );
   }
 
   /// 构建应用栏操作
@@ -204,65 +459,6 @@ class LibraryGalleryBuilders {
         state.viewTypeNotifier.value = viewType;
         state.tabManager.setStoreValue(tabId, 'viewType', viewType.index);
       },
-    );
-  }
-
-  /// 构建快捷操作栏
-  Widget buildQuickActions(BuildContext context) {
-    return SizedBox(
-      width: 60,
-      child: Column(
-        children: [
-          Tooltip(
-            message: '显示/隐藏侧边栏',
-            child: IconButton(
-              icon: Icon(Icons.menu),
-              onPressed: events.toggleSidebar,
-            ),
-          ),
-          Tooltip(
-            message: '文件夹列表',
-            child: IconButton(
-              icon: Icon(Icons.folder),
-              onPressed: () async {
-                final result = await plugin.libraryUIController
-                    .showFolderSelector(library, context);
-                if (result != null && result.isNotEmpty) {}
-              },
-            ),
-          ),
-          Tooltip(
-            message: '标签列表',
-            child: IconButton(
-              icon: Icon(Icons.label),
-              onPressed: () async {
-                final result = await plugin.libraryUIController.showTagSelector(
-                  library,
-                  context,
-                );
-                if (result != null && result.isNotEmpty) {}
-              },
-            ),
-          ),
-          Tooltip(
-            message: '收藏',
-            child: IconButton(icon: Icon(Icons.favorite), onPressed: () {}),
-          ),
-          Tooltip(
-            message: '回收站',
-            child: IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: () {
-                state.tabManager.addTab(
-                  library,
-                  isRecycleBin: true,
-                  title: '回收站',
-                );
-              },
-            ),
-          ),
-        ],
-      ),
     );
   }
 

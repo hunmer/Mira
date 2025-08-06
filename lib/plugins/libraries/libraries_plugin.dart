@@ -2,6 +2,8 @@ import 'package:flutter/foundation.dart';
 import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
+import 'package:mira/dock/homepage_dock_item.dart';
+import 'package:mira/plugins/docking/widgets/docking_dock_item.dart';
 import 'package:mira/plugins/libraries/controllers/folders_tags_cache.dart';
 import 'package:mira/plugins/libraries/controllers/libraray_local_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
@@ -47,6 +49,11 @@ class LibrariesPlugin extends PluginBase {
 
   @override
   Future<void> initialize() async {
+    // 注册LibraryDockItem的builder
+    LibraryDockItem.ensureRegistered();
+    HomePageDockItem.ensureRegistered();
+    DockingDockItem.ensureRegistered();
+
     libraryUIController = LibraryUIController(this);
     dataController = LibraryLocalDataController(this);
     await dataController.init();

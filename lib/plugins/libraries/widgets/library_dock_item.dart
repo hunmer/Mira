@@ -43,12 +43,12 @@ class LibraryDockItem extends DockItem {
            );
          },
        ) {
+    // 确保builder已注册
+    _ensureBuilderRegistered();
+
     // 初始化固定的GlobalKey
     _contentKey = GlobalKey(debugLabel: 'library_content_${tabData.id}');
     plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
-
-    // 确保builder已注册
-    _ensureBuilderRegistered();
 
     _setupValueListeners();
   }

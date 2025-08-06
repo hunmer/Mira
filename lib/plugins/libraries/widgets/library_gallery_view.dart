@@ -209,10 +209,16 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           bottomSheet: LibraryGalleryBottomSheet(
             uploadProgress: _state.uploadProgressNotifier.value,
           ),
-          body: _builders.buildResponsiveLayout(
-            context,
-            sizingInformation,
-            isRecycleBin,
+          body: Container(
+            // 添加一个容器来确保 Docking 布局有适当的边距和样式
+            decoration: BoxDecoration(
+              color: Theme.of(context).scaffoldBackgroundColor,
+            ),
+            child: _builders.buildResponsiveLayout(
+              context,
+              sizingInformation,
+              isRecycleBin,
+            ),
           ),
         );
       },
