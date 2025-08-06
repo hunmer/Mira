@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:mira/dock/dock_item.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_manager.dart';
@@ -28,7 +29,7 @@ class DockController extends ChangeNotifier {
   /// 布局控制器状态变化时的回调
   void _onLayoutControllerChanged() {
     print('LayoutController state changed');
-    // notifyListeners();
+    notifyListeners();
   }
 
   /// 初始化存储管理器
@@ -79,19 +80,33 @@ class DockController extends ChangeNotifier {
   /// 处理Dock事件
   void _handleDockEvent(DockEvent event) {
     print('Dock Event: ${event.type} for dockTabsId: ${event.dockTabsId}');
-    switch (event.type) {
-      case DockEventType.tabClosed:
-      case DockEventType.tabCreated:
-      case DockEventType.itemCreated:
-      case DockEventType.layoutChanged:
-        break;
-      case DockEventType.itemClosed:
-        print('Dock Item Closed');
-        break;
-      case DockEventType.itemSelected:
-        break;
-      case DockEventType.itemPositionChanged:
-        break;
+
+    if (event is DockTabEvent) {
+      final item = event.values['item'] as DockingItem?;
+      final tab = event.values['tabs'] as DockTabs;
+      switch (event.type) {
+        case DockEventType.tabClosed:
+        case DockEventType.tabCreated:
+          if (tab.isEmpty) {
+            print('is Empty');
+          }
+          _onLayoutControllerChanged();
+          break;
+        default:
+          break;
+      }
+    } else {
+      switch (event.type) {
+        case DockEventType.update:
+          _onLayoutControllerChanged();
+          break;
+        case DockEventType.layoutChanged:
+          break;
+        case DockEventType.tabPositionChanged:
+          break;
+        default:
+          break;
+      }
     }
     // 延迟保存布局
     Future.delayed(const Duration(milliseconds: 1000), () {

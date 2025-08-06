@@ -96,7 +96,6 @@ class _LibraryFileInformationViewState
       backgroundColor: Colors.transparent,
       appBar: AppBar(
         automaticallyImplyLeading: false, // 移除返回按钮
-        title: Text(path.basename(widget.file.name)),
         actions: [
           IconButton(
             icon: const Icon(Icons.create_new_folder),

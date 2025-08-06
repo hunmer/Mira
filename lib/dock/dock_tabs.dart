@@ -23,7 +23,6 @@ class DockTabs {
   late final LibrariesPlugin? _plugin;
   final Map<String, DockTab> _dockTabs = {};
   DockingLayout? _globalLayout;
-  final ValueNotifier<int> _layoutChangeNotifier = ValueNotifier<int>(0);
   String? _activeTabId;
   TabbedViewThemeData? _themeData;
   DefaultDockLayoutParser? mainParser;
@@ -33,16 +32,13 @@ class DockTabs {
   final PublishSubject<void> _rebuildSubject = PublishSubject<void>();
   late final StreamSubscription _rebuildSubscription;
   static const Duration _rebuildDelay = Duration(milliseconds: 1000);
-
-  // 临时调试：重建布局计数器
-  static int _rebuildCount = 0;
+  bool get isEmpty => _dockTabs.isEmpty;
 
   DockTabs({
     required this.id,
     Map<String, dynamic>? initData,
     TabbedViewThemeData? themeData,
     DockEventStreamController? eventStreamController,
-    bool deferInitialization = false, // 保留参数但简化逻辑
   }) {
     _themeData = themeData;
     _eventStreamController = eventStreamController;
@@ -56,14 +52,9 @@ class DockTabs {
     if (initData != null) {
       _initializeFromJson(initData);
     } else {
-      // 创建一个默认的空布局
-      _globalLayout = DockingLayout(
-        root: DockManager.createDefaultHomePageDockItem(),
-      );
+      _rebuildGlobalLayout(); // 直接重构添加默认布局
     }
   }
-
-  bool get isEmpty => _dockTabs.isEmpty;
 
   /// 安全获取全局布局，如果未初始化则创建默认布局
   DockingLayout get _safeGlobalLayout {
@@ -145,16 +136,14 @@ class DockTabs {
     // 在添加新tab之前，检查并清除所有默认空tab
     _clearDefaultEmptyTabs();
     _dockTabs[tabId] = dockTab;
-
     // 如果这是第一个tab或者没有激活的tab，将其设为激活状态
     _activeTabId ??= tabId;
-
     // 发送tab创建事件
     _eventStreamController?.emit(
       DockTabEvent(
         type: DockEventType.tabCreated,
         dockTabsId: id,
-        values: {'tabId': tabId, 'displayName': displayName},
+        values: {'tabs': this, 'item': null},
       ),
     );
 
@@ -176,9 +165,6 @@ class DockTabs {
           values: {'tabId': tabId, 'displayName': dockTab.displayName},
         ),
       );
-
-      dockTab.dispose();
-      _rebuildGlobalLayout();
       return true;
     }
     return false;
@@ -253,67 +239,50 @@ class DockTabs {
 
   /// 重建全局布局（使用 RxDart 防抖控制）
   void _rebuildGlobalLayout() {
-    // 触发防抖事件
     print('🔄 DockTabs._rebuildGlobalLayout called');
     _rebuildSubject.add(null);
   }
 
   /// 执行实际的布局重建
   void _performRebuild() {
-    _rebuildCount++;
-    print(
-      '🔄 DockTabs._performRebuild #$_rebuildCount called for DockTabs: $id',
+    // 多个tab时，创建tab布局，将所有tab作为DockingItem显示
+    final tabItems =
+        _dockTabs.entries.map((entry) {
+          final tab = entry.value;
+          final tabId = entry.key;
+          final config = tab.getDefaultDockingItemConfig();
+
+          return DockingItem(
+            name: tab.displayName,
+            id: tabId,
+            widget: _buildTabContentWithEvents(tab),
+            // 应用默认配置
+            closable: config['closable'] ?? true,
+            buttons:
+                (config['buttons'] is List
+                    ? (config['buttons'] as List)
+                        .whereType<TabButton>()
+                        .toList()
+                    : []),
+            maximizable: config['maximizable'] ?? false,
+            maximized: config['maximized'] ?? false,
+            leading: config['leading'],
+            size: config['size'],
+            weight: config['weight'],
+            minimalWeight: config['minimalWeight'],
+            minimalSize: config['minimalSize'],
+            keepAlive: config['keepAlive'] ?? true,
+          );
+        }).toList();
+
+    _globalLayout = DockingLayout(
+      root:
+          tabItems.isNotEmpty
+              ? DockingTabs(tabItems)
+              : DockManager.createDefaultHomePageDockItem(),
     );
-
-    if (_dockTabs.isEmpty) {
-      _globalLayout = DockingLayout(
-        root: DockManager.createDefaultHomePageDockItem(),
-      );
-    } else if (_dockTabs.length == 1) {
-      // 如果只有一个tab，直接使用其layout
-      _globalLayout = _dockTabs.values.first.layout;
-    } else {
-      // 多个tab时，创建tab布局，将所有tab作为DockingItem显示
-      final tabItems =
-          _dockTabs.entries.map((entry) {
-            final tab = entry.value;
-            final tabId = entry.key;
-            final config = tab.getDefaultDockingItemConfig();
-
-            return DockingItem(
-              name: tab.displayName,
-              id: tabId,
-              widget: _buildTabContentWithEvents(tab),
-              // 应用默认配置
-              closable: config['closable'] ?? true,
-              buttons:
-                  (config['buttons'] is List
-                      ? (config['buttons'] as List)
-                          .whereType<TabButton>()
-                          .toList()
-                      : []),
-              maximizable: config['maximizable'] ?? false,
-              maximized: config['maximized'] ?? false,
-              leading: config['leading'],
-              size: config['size'],
-              weight: config['weight'],
-              minimalWeight: config['minimalWeight'],
-              minimalSize: config['minimalSize'],
-              keepAlive: config['keepAlive'] ?? true,
-            );
-          }).toList();
-
-      if (tabItems.isNotEmpty) {
-        _globalLayout = DockingLayout(root: DockingTabs(tabItems));
-      } else {
-        _globalLayout = DockingLayout(
-          root: DockManager.createDefaultHomePageDockItem(),
-        );
-      }
-    }
-
     // 触发布局变化通知
-    _layoutChangeNotifier.value++;
+    _eventStreamController?.emit(DockLayoutEvent(dockTabsId: id));
   }
 
   /// 构建带事件监听的Tab内容
@@ -463,27 +432,22 @@ class DockTabs {
       data: _themeData ?? DockTheme.createCustomThemeData(context),
       child: Container(
         padding: const EdgeInsets.all(16),
-        child: ValueListenableBuilder<int>(
-          valueListenable: _layoutChangeNotifier,
-          builder: (context, value, child) {
-            return _buildContextMenuWrapper(
-              Docking(
-                layout: _safeGlobalLayout,
-                dockingButtonsBuilder: (
-                  BuildContext context,
-                  DockingTabs? dockingTabs,
-                  DockingItem? dockingItem,
-                ) {
-                  return _buildTabsAreaButtons(context, dockingTabs);
-                },
-                onItemClose: _handleItemClose,
-                onItemSelection: _handleItemSelection,
-                onTabMove: _handleItemMove,
-                onTabLayoutChanged: _handleItemLayoutChanged,
-                onItemPositionChanged: _handleItemPositionChanged,
-              ),
-            );
-          },
+        child: _buildContextMenuWrapper(
+          Docking(
+            layout: _safeGlobalLayout,
+            dockingButtonsBuilder: (
+              BuildContext context,
+              DockingTabs? dockingTabs,
+              DockingItem? dockingItem,
+            ) {
+              return _buildTabsAreaButtons(context, dockingTabs);
+            },
+            onItemClose: _handleItemClose,
+            onItemSelection: _handleItemSelection,
+            onTabMove: _handleItemMove,
+            onTabLayoutChanged: _handleItemLayoutChanged,
+            onItemPositionChanged: _handleItemPositionChanged,
+          ),
         ),
       ),
     );
@@ -507,35 +471,30 @@ class DockTabs {
 
   /// 处理DockItem关闭事件
   void _handleItemClose(DockingItem dockingItem) {
-    // 从所有DockTab中查找并移除对应的DockItem
-    // 优先使用ID查找，如果没有ID则使用name
     final exists = _dockTabs.containsKey(dockingItem.id);
     if (exists) {
       _dockTabs.remove(dockingItem.id);
-      _eventStreamController?.emit(
-        DockTabEvent(
-          type: DockEventType.itemClosed,
-          dockTabsId: id,
-          values: {'item': dockingItem},
-        ),
-      );
     }
+    // 总是触发关闭事件
+    _eventStreamController?.emit(
+      DockTabEvent(
+        type: DockEventType.tabClosed,
+        dockTabsId: id,
+        values: {'item': dockingItem, 'tabs': this},
+      ),
+    );
   }
 
   /// 处理DockItem选择事件
   void _handleItemSelection(DockingItem dockingItem) {
     // 这里可以添加选择事件的处理逻辑
-    print('Item selected: ${dockingItem.name}');
     _activeTabId = dockingItem.id;
-    // 发送item选择事件
+    // item选择事件
     _eventStreamController?.emit(
       DockTabEvent(
-        type: DockEventType.itemSelected,
+        type: DockEventType.tabSelected,
         dockTabsId: id,
-        values: {
-          'itemId': dockingItem.id,
-          'itemType': dockingItem.widget.runtimeType.toString(),
-        },
+        values: {'item': dockingItem, 'tabs': this},
       ),
     );
   }
@@ -557,13 +516,7 @@ class DockTabs {
       DockTabEvent(
         type: DockEventType.layoutChanged,
         dockTabsId: id,
-        values: {
-          'action': 'itemMove',
-          'draggedItem': draggedItem.name,
-          'targetArea': targetArea.toString(),
-          'dropPosition': dropPosition.toString(),
-          'dropIndex': dropIndex,
-        },
+        values: {'action': 'itemMove'},
       ),
     );
   }
@@ -585,16 +538,9 @@ class DockTabs {
     // 发送tab布局变化事件
     _eventStreamController?.emit(
       DockTabEvent(
-        type: DockEventType.layoutChanged,
+        type: DockEventType.tabPositionChanged,
         dockTabsId: id,
-        values: {
-          'action': 'tabLayoutChanged',
-          'oldItem': oldItem.name,
-          'newItem': newItem.name,
-          'targetArea': targetArea.toString(),
-          'newIndex': newIndex.toString(),
-          'dropIndex': dropIndex,
-        },
+        values: {'action': 'tabLayoutChanged'},
       ),
     );
   }
@@ -613,7 +559,7 @@ class DockTabs {
     // 发送item位置变化事件
     _eventStreamController?.emit(
       DockTabEvent(
-        type: DockEventType.itemPositionChanged,
+        type: DockEventType.tabPositionChanged,
         dockTabsId: id,
         values: {
           'action': 'itemPositionChanged',
@@ -626,35 +572,21 @@ class DockTabs {
   }
 
   /// 添加DockItem到指定的DockTab
-  bool addDockItemToTab(
-    String tabId,
-    DockItem dockItem, {
-    bool rebuildLayout = true,
-  }) {
+  bool addDockItemToTab(String tabId, DockItem dockItem) {
     final dockTab = getDockTab(tabId);
     if (dockTab != null) {
       // 在添加DockItem之前，清除其他的默认空tab
       _clearDefaultEmptyTabs();
-
       // 传递rebuildLayout参数，避免DockTab内部立即刷新布局
       dockTab.addDockItem(dockItem, rebuildLayout: false);
-
       // 发送item创建事件
       _eventStreamController?.emit(
         DockTabEvent(
-          type: DockEventType.itemCreated,
+          type: DockEventType.tabCreated,
           dockTabsId: id,
-          values: {
-            'tabId': tabId,
-            'itemId': dockItem.id,
-            'itemType': dockItem.type,
-          },
+          values: {'item': dockItem, 'tabs': this},
         ),
       );
-
-      if (rebuildLayout) {
-        _refreshGlobalLayout();
-      }
       return true;
     }
     return false;
@@ -709,7 +641,6 @@ class DockTabs {
     _rebuildSubscription.cancel();
     _rebuildSubject.close();
     clear();
-    _layoutChangeNotifier.dispose();
   }
 
   /// 转换为JSON
@@ -805,7 +736,9 @@ class DockTabs {
         // 将加载的布局设置为全局布局
         _globalLayout = tempLayout;
         // 强制重新构建UI
-        _layoutChangeNotifier.value++;
+        _eventStreamController?.emit(
+          DockLayoutEvent(dockTabsId: id, layoutData: layoutString),
+        );
         return true;
       } else {
         print('Failed to load layout - loadLayout returned false');

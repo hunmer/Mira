@@ -7,11 +7,13 @@ import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_debounce.dart';
 import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/plugin_manager.dart';
+import 'package:mira/core/utils/utils.dart';
 import 'package:mira/dock/dock_controller.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
 import 'package:mira/core/widgets/hotkey_settings_view.dart';
 import 'package:mira/core/widgets/window_controls.dart';
+import 'package:rxdart/rxdart.dart';
 
 class LibraryTabsView extends StatefulWidget {
   const LibraryTabsView({super.key});
@@ -26,12 +28,23 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   late DockController _dockController;
   final List<StreamSubscription> _subscriptions = [];
   final ValueNotifier<bool> _showSidebar = ValueNotifier(false);
+  final ValueNotifier<int> _dockUpdateNotifier = ValueNotifier<int>(0);
+  late BehaviorSubject<void> _dockChangeSubject;
 
   @override
   void initState() {
     super.initState();
-    print('LibraryTabsView initState');
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
+
+    // 初始化防抖 Subject
+    _dockChangeSubject = BehaviorSubject<void>();
+
+    // 设置防抖监听
+    _subscriptions.add(
+      _dockChangeSubject.debounceTime(Duration(milliseconds: 1000)).listen((_) {
+        _dockUpdateNotifier.value = _dockUpdateNotifier.value + 1;
+      }),
+    );
 
     // 初始化dock controller
     _dockController = DockController(dockTabsId: 'main');
@@ -47,7 +60,10 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     await _dockController.initializeDockSystem();
   }
 
-  void _onDockControllerChanged() {}
+  void _onDockControllerChanged() {
+    print('tabs_view changed');
+    _dockChangeSubject.add(null);
+  }
 
   Future<void> init() async {
     final changedStream = EventDebouncer(
@@ -87,13 +103,10 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     }
     _dockController.removeListener(_onDockControllerChanged);
     _dockController.dispose();
+    _dockChangeSubject.close();
+    _showSidebar.dispose();
+    _dockUpdateNotifier.dispose();
     _plugin.server?.stop();
-  }
-
-  // 检查是否为桌面端
-  bool get _isDesktop {
-    if (kIsWeb) return false;
-    return Platform.isWindows || Platform.isMacOS || Platform.isLinux;
   }
 
   @override
@@ -102,7 +115,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     return Scaffold(
       appBar: AppBar(
         leading:
-            Platform.isMacOS && _isDesktop
+            Platform.isMacOS && isDesktop()
                 ? Row(
                   children: [
                     const WindowControls(),
@@ -117,9 +130,9 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                   icon: const Icon(Icons.menu),
                   onPressed: () => _showSidebar.value = !_showSidebar.value,
                 ),
-        leadingWidth: Platform.isMacOS && _isDesktop ? 140 : null,
+        leadingWidth: Platform.isMacOS && isDesktop() ? 140 : null,
         title:
-            _isDesktop
+            isDesktop()
                 ? DragToMoveArea(
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
@@ -151,7 +164,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             },
           ),
           // Windows/Linux 的窗口控制按钮在右侧
-          if ((Platform.isWindows || Platform.isLinux) && _isDesktop)
+          if (isDesktop() && (Platform.isWindows || Platform.isLinux))
             const WindowControls(),
         ],
         backgroundColor: Theme.of(context).colorScheme.surface,
@@ -172,9 +185,13 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             },
           ),
           Expanded(
-            child:
-                _dockController.dockTabs?.buildDockingWidget(context) ??
-                const Center(child: CircularProgressIndicator()),
+            child: ValueListenableBuilder<int>(
+              valueListenable: _dockUpdateNotifier,
+              builder: (context, value, child) {
+                return _dockController.dockTabs?.buildDockingWidget(context) ??
+                    const Center(child: CircularProgressIndicator());
+              },
+            ),
           ),
         ],
       ),

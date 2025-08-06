@@ -32,7 +32,6 @@ class DockManager {
     Map<String, dynamic>? initData,
     TabbedViewThemeData? themeData,
     DockEventStreamController? eventStreamController,
-    bool deferInitialization = false, // 保留参数以兼容，但不再使用
   }) {
     final dockTabs = DockTabs(
       id: id,
@@ -143,56 +142,6 @@ class DockManager {
 
     // 尝试添加到现有tab
     return dockTabs.addDockItemToTab(tabId, dockItem);
-  }
-
-  /// 批量添加DockItem，避免多次布局刷新
-  static bool addDockItems(
-    String dockTabsId,
-    List<DockItem> dockItems, {
-    String? tabId,
-  }) {
-    final dockTabs = getDockTabs(dockTabsId);
-    if (dockTabs == null) return false;
-
-    if (dockItems.isEmpty) return true;
-
-    bool success = true;
-
-    if (tabId == null || tabId.isEmpty) {
-      // 为第一个item创建新tab
-      final firstItem = dockItems.first;
-      final newTabId =
-          '${firstItem.type}_${DateTime.now().millisecondsSinceEpoch}';
-      final newTab = dockTabs.createDockTab(
-        newTabId,
-        displayName: firstItem.title,
-        closable: true,
-        rebuildLayout: false, // 创建tab时不刷新布局
-      );
-
-      if (newTab != null) {
-        // 批量添加所有items，只在最后一个item时刷新布局
-        for (int i = 0; i < dockItems.length; i++) {
-          final isLast = i == dockItems.length - 1;
-          newTab.addDockItem(dockItems[i], rebuildLayout: isLast);
-        }
-      } else {
-        success = false;
-      }
-    } else {
-      // 添加到现有tab，只在最后一个item时刷新布局
-      for (int i = 0; i < dockItems.length; i++) {
-        final isLast = i == dockItems.length - 1;
-        final itemSuccess = dockTabs.addDockItemToTab(
-          tabId,
-          dockItems[i],
-          rebuildLayout: isLast,
-        );
-        if (!itemSuccess) success = false;
-      }
-    }
-
-    return success;
   }
 
   /// 移除DockItem (基于ID)

@@ -13,7 +13,6 @@ class DockTab {
   String _displayName;
   final List<DockItem> _dockItems = [];
   late DockingLayout _layout;
-  final ValueNotifier<int> _layoutChangeNotifier = ValueNotifier<int>(0);
   final VoidCallback? _onLayoutChanged;
   final Map<String, dynamic> _defaultDockingItemConfig;
   final DockEventStreamController? _eventStreamController;
@@ -115,40 +114,18 @@ class DockTab {
       dockItem = dockItem.copyWith(title: _displayName);
     }
     _dockItems.add(dockItem);
-
-    if (rebuildLayout) {
-      _rebuildLayout();
-    }
-
-    // 发送item创建事件
-    _eventStreamController?.emit(
-      DockTabEvent(
-        type: DockEventType.itemCreated,
-        dockTabsId: parentDockTabId ?? 'unknown',
-        values: {
-          'tabId': id,
-          'itemTitle': dockItem.title,
-          'itemType': dockItem.type,
-        },
-      ),
-    );
+    // if (rebuildLayout) {
+    _rebuildLayout();
+    // }
   }
 
-  bool removeDockItem(DockItem dockItem, {bool rebuildLayout = true}) {
+  bool removeDockItem(DockItem dockItem) {
     final index = _dockItems.indexOf(dockItem);
     if (index != -1) {
-      // 先移除项目
       _dockItems.removeAt(index);
-
-      // 重建布局
-      if (rebuildLayout) {
-        _rebuildLayout();
-      }
-
-      // 然后发送item关闭事件
       _eventStreamController?.emit(
         DockTabEvent(
-          type: DockEventType.itemClosed,
+          type: DockEventType.tabClosed,
           dockTabsId: parentDockTabId ?? 'unknown',
           values: {
             'tabId': id,
@@ -157,7 +134,6 @@ class DockTab {
           },
         ),
       );
-
       return true;
     }
     return false;
@@ -172,17 +148,14 @@ class DockTab {
       // 先释放资源并移除项目
       dockItem.dispose();
       _dockItems.removeAt(index);
-      _rebuildLayout();
-
       // 然后发送item关闭事件
       _eventStreamController?.emit(
         DockTabEvent(
-          type: DockEventType.itemClosed,
+          type: DockEventType.tabClosed,
           dockTabsId: parentDockTabId ?? 'unknown',
           values: {'dockItem': dockItem},
         ),
       );
-
       return true;
     }
     return false;
@@ -190,16 +163,9 @@ class DockTab {
 
   /// 获取DockItem (基于ID)
   DockItem? getDockItemById(String id) {
-    print('Searching for DockItem with ID: "$id" in tab: ${this.id}');
-    print(
-      'Available items in this tab: ${_dockItems.map((item) => '${item.id}:${item.title}').toList()}',
-    );
-
     if (_dockItems.isEmpty) {
-      print('No items in this tab');
       return null;
     }
-
     try {
       for (var item in _dockItems) {
         if (item.id == id) {
@@ -256,62 +222,22 @@ class DockTab {
   /// 执行实际的布局重建
   void _performRebuild() {
     try {
-      // 检查是否真的需要重建布局
-      if (_layout.root != null && _dockItems.isNotEmpty) {
-        // 如果当前布局结构与期望结构一致，避免重建
-        if (_shouldSkipRebuild()) {
-          print(
-            'DockTab: Skipping layout rebuild - layout is already up to date',
-          );
-          return;
-        }
-      }
+      // 多个item时，使用Tabs布局
+      final dockingItems =
+          _dockItems
+              .map(
+                (item) => item.buildDockingItem(
+                  defaultConfig: _defaultDockingItemConfig,
+                ),
+              )
+              .toList();
 
-      print('DockTab: Rebuilding layout for ${_dockItems.length} items');
-
-      if (_dockItems.isEmpty) {
-        // 当没有items时，使用DockManager创建默认HomePageDockItem
-        _layout = DockingLayout(
-          root: DockManager.createDefaultHomePageDockItem(),
-        );
-      } else if (_dockItems.length == 1) {
-        // 如果只有一个item，直接使用它
-        final dockingItem = _dockItems.first.buildDockingItem(
-          defaultConfig: _defaultDockingItemConfig,
-        );
-        _layout = DockingLayout(root: dockingItem);
-      } else {
-        // 多个item时，使用Tabs布局
-        final dockingItems =
-            _dockItems
-                .map(
-                  (item) => item.buildDockingItem(
-                    defaultConfig: _defaultDockingItemConfig,
-                  ),
-                )
-                .where((item) => item != null) // 过滤掉null项
-                .toList();
-
-        // 确保dockingItems不为空，如果为空则使用默认布局
-        if (dockingItems.isEmpty) {
-          print(
-            'DockTab: All docking items failed to build, using default layout',
-          );
-          _layout = DockingLayout(
-            root: DockManager.createDefaultHomePageDockItem(),
-          );
-        } else if (dockingItems.length == 1) {
-          // 如果只剩一个有效item，直接使用它
-          _layout = DockingLayout(root: dockingItems.first);
-        } else {
-          // 使用DockingTabs包装多个items
-          _layout = DockingLayout(root: DockingTabs(dockingItems));
-        }
-      }
-
-      // 触发布局变化通知
-      _layoutChangeNotifier.value++;
-
+      _layout = DockingLayout(
+        root:
+            dockingItems.isEmpty
+                ? DockManager.createDefaultHomePageDockItem()
+                : DockingTabs(dockingItems),
+      );
       // 通知父级DockTabs布局变化
       _onLayoutChanged?.call();
     } catch (e) {
@@ -320,59 +246,7 @@ class DockTab {
       _layout = DockingLayout(
         root: DockManager.createDefaultHomePageDockItem(),
       );
-      _layoutChangeNotifier.value++;
       _onLayoutChanged?.call();
-    }
-  }
-
-  /// 检查是否应该跳过重建
-  bool _shouldSkipRebuild() {
-    try {
-      final root = _layout.root;
-      if (root == null) {
-        return false;
-      }
-
-      print(
-        'DockTab: Checking if should skip rebuild - items: ${_dockItems.length}, root type: ${root.runtimeType}',
-      );
-
-      if (_dockItems.length == 1) {
-        // 单个item的情况：检查root是否是同一个DockingItem
-        if (root is DockingItem) {
-          final currentItem = _dockItems.first;
-          final shouldSkip =
-              root.id == currentItem.id && currentItem.hasCachedDockingItem;
-          print(
-            'DockTab: Single item check - root.id: ${root.id}, current.id: ${currentItem.id}, hasCached: ${currentItem.hasCachedDockingItem}, shouldSkip: $shouldSkip',
-          );
-          return shouldSkip;
-        }
-      } else if (_dockItems.length > 1) {
-        // 多个item的情况：检查root是否是DockingTabs且包含相同的items
-        if (root is DockingTabs && root.childrenCount == _dockItems.length) {
-          bool allMatched = true;
-          for (int i = 0; i < _dockItems.length; i++) {
-            final currentItem = _dockItems[i];
-            final rootChild = root.childAt(i);
-            if (rootChild.id != currentItem.id ||
-                !currentItem.hasCachedDockingItem) {
-              allMatched = false;
-              print(
-                'DockTab: Multi item mismatch at index $i - rootChild.id: ${rootChild.id}, current.id: ${currentItem.id}, hasCached: ${currentItem.hasCachedDockingItem}',
-              );
-              break;
-            }
-          }
-          print('DockTab: Multi item check - allMatched: $allMatched');
-          return allMatched;
-        }
-      }
-
-      return false;
-    } catch (e) {
-      print('DockTab: Error in _shouldSkipRebuild: $e');
-      return false; // 出错时总是重建
     }
   }
 
@@ -410,7 +284,6 @@ class DockTab {
     _rebuildSubscription.cancel();
     _rebuildSubject.close();
     clear(rebuildLayout: rebuildLayout);
-    _layoutChangeNotifier.dispose();
   }
 
   /// 转换为JSON

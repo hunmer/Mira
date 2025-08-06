@@ -2,13 +2,12 @@ import 'dart:async';
 
 /// Dock事件类型枚举
 enum DockEventType {
+  update,
   tabClosed,
   tabCreated,
-  itemClosed,
-  itemSelected,
-  itemCreated,
+  tabSelected,
   layoutChanged,
-  itemPositionChanged,
+  tabPositionChanged,
 }
 
 /// 基础Dock事件类
@@ -42,13 +41,10 @@ class DockTabEvent extends DockEvent {
 /// 布局变更事件
 class DockLayoutEvent extends DockEvent {
   final String? tabId;
-  final String layoutData;
+  final String? layoutData;
 
-  DockLayoutEvent({
-    required super.dockTabsId,
-    this.tabId,
-    required this.layoutData,
-  }) : super(type: DockEventType.layoutChanged);
+  DockLayoutEvent({required super.dockTabsId, this.tabId, this.layoutData})
+    : super(type: DockEventType.layoutChanged);
 }
 
 /// Dock事件流管理器

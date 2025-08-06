@@ -122,7 +122,7 @@ class LibraryGalleryBuilders {
               'maximizable': false,
               'keepAlive': true,
               'weight': 0.15,
-              'minimalSize': 250.0,
+              'minimalSize': 150.0,
             },
             {
               'id': 'main_content',
@@ -141,7 +141,6 @@ class LibraryGalleryBuilders {
               'maximizable': false,
               'keepAlive': true,
               'weight': 0.2,
-              'minimalSize': 300.0,
             },
             {
               'id': 'app_bar_actions',
