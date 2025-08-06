@@ -96,19 +96,25 @@ class DockController extends ChangeNotifier {
     switch (event.type) {
       case DockEventType.tabClosed:
       case DockEventType.tabCreated:
-      case DockEventType.itemClosed:
       case DockEventType.itemCreated:
       case DockEventType.layoutChanged:
+        break;
+      case DockEventType.itemClosed:
         break;
       case DockEventType.itemSelected:
         break;
       case DockEventType.itemPositionChanged:
         break;
     }
-    _saveLayoutForEvent(event.dockTabsId);
+
     if (event is DockTabEvent && event.values.containsKey('rebuild')) {
       notifyListeners();
     }
+
+    // 延迟保存布局，确保项目已从数据结构中完全移除
+    Future.delayed(const Duration(milliseconds: 1000), () {
+      _saveLayoutForEvent(event.dockTabsId);
+    });
   }
 
   /// 根据事件的dockTabsId保存布局

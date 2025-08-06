@@ -593,8 +593,6 @@ class DockLayoutController extends ChangeNotifier {
 
   /// 保存布局到持久化存储
   void _saveLayoutsToStorage() async {
-    if (_storageManager == null) return;
-
     try {
       await _storageManager!.writeJson(_layoutStorageKey, _layoutStorage);
     } catch (e) {

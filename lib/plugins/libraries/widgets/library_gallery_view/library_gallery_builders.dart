@@ -553,7 +553,9 @@ class LibraryGalleryBuilders {
             imagesPerRow: values[4] as int,
             scrollController: state.scrollController,
             onSelectionChanged: (selectedIds) {
-              state.selectedFileIds.value = selectedIds;
+              WidgetsBinding.instance.addPostFrameCallback((_) {
+                state.selectedFileIds.value = selectedIds;
+              });
             },
           ),
         );

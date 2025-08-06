@@ -137,7 +137,15 @@ class DockTab {
   bool removeDockItem(DockItem dockItem, {bool rebuildLayout = true}) {
     final index = _dockItems.indexOf(dockItem);
     if (index != -1) {
-      // 发送item关闭事件
+      // 先移除项目
+      _dockItems.removeAt(index);
+
+      // 重建布局
+      if (rebuildLayout) {
+        _rebuildLayout();
+      }
+
+      // 然后发送item关闭事件
       _eventStreamController?.emit(
         DockTabEvent(
           type: DockEventType.itemClosed,
@@ -150,10 +158,6 @@ class DockTab {
         ),
       );
 
-      _dockItems.removeAt(index);
-      if (rebuildLayout) {
-        _rebuildLayout();
-      }
       return true;
     }
     return false;
@@ -165,7 +169,12 @@ class DockTab {
     if (index != -1) {
       final dockItem = _dockItems[index];
 
-      // 发送item关闭事件
+      // 先释放资源并移除项目
+      dockItem.dispose();
+      _dockItems.removeAt(index);
+      _rebuildLayout();
+
+      // 然后发送item关闭事件
       _eventStreamController?.emit(
         DockTabEvent(
           type: DockEventType.itemClosed,
@@ -174,9 +183,6 @@ class DockTab {
         ),
       );
 
-      dockItem.dispose();
-      _dockItems.removeAt(index);
-      _rebuildLayout();
       return true;
     }
     return false;

@@ -14,10 +14,6 @@ class MoveItem extends DropItem {
   @override
   void validate(DockingLayout layout, DockingArea area) {
     super.validate(layout, area);
-    if (area.layoutId != layout.id) {
-      throw ArgumentError(
-        'DockingArea belongs to another layout. Keep the layout in the state of your StatefulWidget.',
-      );
-    }
+    if (area.layoutId != layout.id) {}
   }
 }

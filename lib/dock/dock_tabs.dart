@@ -552,17 +552,7 @@ class DockTabs {
       }
     }
 
-    // 发送关闭事件
-    _eventStreamController?.emit(
-      DockTabEvent(
-        type: DockEventType.itemClosed,
-        dockTabsId: id,
-        values: {
-          'itemId': dockingItem.id,
-          'itemType': dockingItem.widget.runtimeType.toString(),
-        },
-      ),
-    );
+    // 注意：不在这里发送事件，因为 dockTab.removeDockItemById 内部已经发送了事件
   }
 
   /// 处理DockItem选择事件
@@ -711,19 +701,7 @@ class DockTabs {
       final dockItem = dockTab.getDockItemById(itemId);
       final result = dockTab.removeDockItemById(itemId);
       if (result) {
-        // 发送item关闭事件
-        _eventStreamController?.emit(
-          DockTabEvent(
-            type: DockEventType.itemClosed,
-            dockTabsId: id,
-            values: {
-              'tabId': tabId,
-              'itemId': itemId,
-              'itemType': dockItem?.type,
-            },
-          ),
-        );
-
+        // 注意：不在这里发送事件，因为 dockTab.removeDockItemById 内部已经发送了事件
         _refreshGlobalLayout();
       }
       return result;
