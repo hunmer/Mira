@@ -57,6 +57,30 @@ class DockLayoutController extends ChangeNotifier {
   /// 获取待处理的布局数据
   String? get pendingLayoutData => _pendingLayoutData;
 
+  /// 获取当前布局数据
+  static Future<String?> getLayoutData(String dockTabsId) async {
+    try {
+      // 从DockManager获取当前DockTabs实例
+      final dockTabs = DockManager.getDockTabs(dockTabsId);
+      if (dockTabs == null) {
+        print('无法找到DockTabs实例: ${dockTabsId}');
+        return null;
+      }
+
+      // 获取当前实时的布局数据
+      final layoutString = dockTabs.saveLayout();
+      if (layoutString.isEmpty) {
+        print('当前布局数据为空');
+        return null;
+      }
+
+      return layoutString;
+    } catch (e) {
+      print('获取当前布局数据失败: $e');
+      return null;
+    }
+  }
+
   /// 初始化布局数据
   /// 返回包含布局数据的initData，如果有的话
   Future<Map<String, dynamic>?> initializeLayoutData({
@@ -195,8 +219,6 @@ class DockLayoutController extends ChangeNotifier {
 
   /// 强制执行待处理的防抖保存操作
   void flushPendingSave() {
-    // 在 RxDart 防抖模式下，直接执行保存
-    // 因为 RxDart 会自动处理防抖，我们只需要强制执行一次保存
     _performImmediateSave();
   }
 

@@ -5,7 +5,6 @@ import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
-import 'package:mira/dock/dock_manager.dart';
 import 'package:provider/provider.dart';
 import 'package:mira/core/theme_controller.dart';
 import 'package:mira/screens/settings_screen/controllers/permission_controller.dart';
@@ -24,9 +23,9 @@ import 'package:mira/l10n/app_localizations.dart';
 import 'core/plugin_manager.dart';
 import 'core/storage/storage_manager.dart';
 import 'core/config_manager.dart';
+import 'core/window_manager_service.dart';
 import 'screens/route.dart';
 import 'screens/settings_screen/controllers/auto_update_controller.dart'; // 自动更新控制器
-import 'package:window_manager/window_manager.dart';
 
 // 全局导航键
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -34,28 +33,12 @@ final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
 late final StorageManager globalStorage;
 late final ConfigManager globalConfigManager;
 late final PluginManager globalPluginManager;
+late final WindowManagerService globalWindowManager;
 late PermissionController _permissionController;
 
 void main() async {
   // 确保Flutter绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
-
-  await windowManager.ensureInitialized();
-
-  WindowOptions windowOptions = WindowOptions(
-    size: Size(800, 600),
-    center: true,
-    backgroundColor: Colors.transparent,
-    skipTaskbar: false,
-    titleBarStyle: TitleBarStyle.hidden,
-  );
-  windowManager.waitUntilReadyToShow(windowOptions, () async {
-    await windowManager.show();
-    await windowManager.focus();
-  });
-
-  // 初始化 MediaKit
-  // MediaKit.ensureInitialized();
 
   // 设置首选方向为竖屏
   await SystemChrome.setPreferredOrientations([
@@ -73,6 +56,10 @@ void main() async {
     // 初始化配置管理器
     globalConfigManager = ConfigManager(globalStorage);
     await globalConfigManager.initialize();
+
+    // 初始化窗口管理器
+    globalWindowManager = WindowManagerService(globalConfigManager);
+    await globalWindowManager.initialize();
 
     // 获取插件管理器单例实例并初始化
     globalPluginManager = PluginManager();
@@ -138,6 +125,13 @@ class _MyAppState extends State<MyApp> {
     WidgetsBinding.instance.addPostFrameCallback((_) async {
       _setupAutoUpdate();
     });
+  }
+
+  @override
+  void dispose() {
+    // 清理窗口管理器
+    globalWindowManager.dispose();
+    super.dispose();
   }
 
   void _setupAutoUpdate() {

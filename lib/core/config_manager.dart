@@ -38,7 +38,17 @@ class ConfigManager {
 
   /// 获取默认配置
   Map<String, dynamic> _getDefaultConfig() {
-    return {'themeMode': 'system', 'locale': 'zh_CN'};
+    return {
+      'themeMode': 'system',
+      'locale': 'zh_CN',
+      'window': {
+        'width': 800.0,
+        'height': 600.0,
+        'x': null,
+        'y': null,
+        'isMaximized': false,
+      },
+    };
   }
 
   /// 保存应用级配置
@@ -123,5 +133,41 @@ class ConfigManager {
   Future<void> deletePluginConfig(String pluginId) async {
     _configs.remove(pluginId);
     await _storage.deleteFile(getPluginConfigPath(pluginId));
+  }
+
+  /// 获取窗口配置
+  Map<String, dynamic> getWindowConfig() {
+    return Map<String, dynamic>.from(
+      _appConfig['window'] ?? _getDefaultConfig()['window'],
+    );
+  }
+
+  /// 保存窗口配置
+  Future<void> saveWindowConfig(Map<String, dynamic> windowConfig) async {
+    _appConfig['window'] = windowConfig;
+    await saveAppConfig();
+  }
+
+  /// 更新窗口大小
+  Future<void> updateWindowSize(double width, double height) async {
+    final windowConfig = getWindowConfig();
+    windowConfig['width'] = width;
+    windowConfig['height'] = height;
+    await saveWindowConfig(windowConfig);
+  }
+
+  /// 更新窗口位置
+  Future<void> updateWindowPosition(double x, double y) async {
+    final windowConfig = getWindowConfig();
+    windowConfig['x'] = x;
+    windowConfig['y'] = y;
+    await saveWindowConfig(windowConfig);
+  }
+
+  /// 更新窗口最大化状态
+  Future<void> updateWindowMaximized(bool isMaximized) async {
+    final windowConfig = getWindowConfig();
+    windowConfig['isMaximized'] = isMaximized;
+    await saveWindowConfig(windowConfig);
   }
 }

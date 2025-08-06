@@ -2,6 +2,7 @@ import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/storage/storage_manager.dart';
+import 'package:mira/dock/dock_layout_controller.dart';
 import 'dock_manager.dart';
 
 /// 布局预设对话框
@@ -63,7 +64,9 @@ class _DockLayoutPresetDialogState extends State<DockLayoutPresetDialog> {
 
     try {
       // 获取当前布局数据
-      final currentLayout = await _getCurrentLayoutData();
+      final currentLayout = await DockLayoutController.getLayoutData(
+        widget.dockTabsId,
+      );
       if (currentLayout == null) {
         _showMessage('无法获取当前布局数据');
         return;
@@ -83,30 +86,6 @@ class _DockLayoutPresetDialogState extends State<DockLayoutPresetDialog> {
       _showMessage('布局预设保存成功');
     } catch (e) {
       _showMessage('保存失败: $e');
-    }
-  }
-
-  /// 获取当前布局数据
-  Future<String?> _getCurrentLayoutData() async {
-    try {
-      // 从DockManager获取当前DockTabs实例
-      final dockTabs = DockManager.getDockTabs(widget.dockTabsId);
-      if (dockTabs == null) {
-        print('无法找到DockTabs实例: ${widget.dockTabsId}');
-        return null;
-      }
-
-      // 获取当前实时的布局数据
-      final layoutString = dockTabs.saveLayout();
-      if (layoutString.isEmpty) {
-        print('当前布局数据为空');
-        return null;
-      }
-
-      return layoutString;
-    } catch (e) {
-      print('获取当前布局数据失败: $e');
-      return null;
     }
   }
 
