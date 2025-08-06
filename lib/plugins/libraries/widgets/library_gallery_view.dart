@@ -199,28 +199,23 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     }
 
     return ResponsiveBuilder(
+      breakpoints: const ScreenBreakpoints(
+        desktop: 800,
+        tablet: 600,
+        watch: 200,
+      ),
       builder: (context, sizingInformation) {
         return Scaffold(
           bottomSheet: LibraryGalleryBottomSheet(
             uploadProgress: _state.uploadProgressNotifier.value,
           ),
-          body: _buildResponsiveBody(context, sizingInformation, isRecycleBin),
+          body: _builders.buildResponsiveLayout(
+            context,
+            sizingInformation,
+            isRecycleBin,
+          ),
         );
       },
-    );
-  }
-
-  /// 构建响应式主体内容
-  Widget _buildResponsiveBody(
-    BuildContext context,
-    SizingInformation sizingInformation,
-    bool isRecycleBin,
-  ) {
-    // 其他设备使用通用布局构建器
-    return _builders.buildResponsiveLayout(
-      context,
-      sizingInformation,
-      isRecycleBin,
     );
   }
 }

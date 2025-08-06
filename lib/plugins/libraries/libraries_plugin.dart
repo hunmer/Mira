@@ -47,9 +47,6 @@ class LibrariesPlugin extends PluginBase {
 
   @override
   Future<void> initialize() async {
-    // 注册LibraryDockItem的builder
-    LibraryDockItem.ensureRegistered();
-
     libraryUIController = LibraryUIController(this);
     dataController = LibraryLocalDataController(this);
     await dataController.init();
