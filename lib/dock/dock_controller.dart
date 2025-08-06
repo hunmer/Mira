@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_manager.dart';
 import 'dock_tabs.dart';
 import 'dock_events.dart';
@@ -30,6 +31,11 @@ class DockController extends ChangeNotifier {
     notifyListeners();
   }
 
+  /// 初始化存储管理器
+  Future<void> initializeStorage(StorageManager storageManager) async {
+    await _layoutController.initializeStorage(storageManager);
+  }
+
   /// 初始化Dock系统
   Future<void> initializeDockSystem({String? savedLayoutId}) async {
     if (_isInitialized) return;
@@ -42,7 +48,21 @@ class DockController extends ChangeNotifier {
 
     // 等待DockManager完成初始化后再尝试加载布局
     await _initializeWithLayout(savedLayoutId);
+
+    // 初始化布局信息
+    await _initializeLayoutInfo();
+
     _isInitialized = true;
+  }
+
+  /// 初始化布局信息
+  Future<void> _initializeLayoutInfo() async {
+    // 通过DockLayoutController初始化布局信息
+    // 这将确保布局控制器有正确的初始状态
+    if (_layoutController.isStorageInitialized) {
+      // 尝试加载已保存的布局以设置初始状态
+      _layoutController.loadLayout();
+    }
   }
 
   /// 异步初始化布局
@@ -65,9 +85,9 @@ class DockController extends ChangeNotifier {
 
     // 应用待处理的布局
     // 延迟执行应用待处理的布局
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      _layoutController.applyPendingLayout(_dockTabs);
-    });
+    // Future.delayed(const Duration(milliseconds: 1000), () {
+    //   _layoutController.applyPendingLayout(_dockTabs);
+    // });
   }
 
   /// 处理Dock事件

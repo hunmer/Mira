@@ -32,7 +32,7 @@ class DockTabs {
   // 防抖控制 - 使用 RxDart
   final PublishSubject<void> _rebuildSubject = PublishSubject<void>();
   late final StreamSubscription _rebuildSubscription;
-  static const Duration _rebuildDelay = Duration(milliseconds: 200);
+  static const Duration _rebuildDelay = Duration(milliseconds: 1000);
 
   // 临时调试：重建布局计数器
   static int _rebuildCount = 0;
@@ -95,17 +95,9 @@ class DockTabs {
     if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
       _activeTabId = activeTabId;
     }
-
-    _rebuildGlobalLayout();
   }
 
   void loadFromJson(Map<String, dynamic> json) {
-    // 清除现有数据
-    for (var dockTab in _dockTabs.values) {
-      dockTab.dispose();
-    }
-    _dockTabs.clear();
-
     // 重新初始化
     _initializeFromJson(json);
   }
@@ -262,6 +254,7 @@ class DockTabs {
   /// 重建全局布局（使用 RxDart 防抖控制）
   void _rebuildGlobalLayout() {
     // 触发防抖事件
+    print('🔄 DockTabs._rebuildGlobalLayout called');
     _rebuildSubject.add(null);
   }
 

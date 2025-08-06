@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:collection/collection.dart';
 import 'package:flutter/foundation.dart';
 import 'package:rxdart/rxdart.dart';
+import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_manager.dart';
 import 'dock_tabs.dart';
 import 'dock_layout_preset_dialog.dart';
@@ -14,6 +15,12 @@ class DockLayoutController extends ChangeNotifier {
   String _lastSavedLayout = '';
   String? _pendingLayoutData;
   bool _isLayoutLoading = false;
+
+  // 存储管理相关
+  final Map<String, String> _layoutStorage = {};
+  StorageManager? _storageManager;
+  bool _isStorageInitialized = false;
+  static const String _layoutStorageKey = 'dock_layouts';
 
   // 防抖相关 - 使用 RxDart
   final PublishSubject<void> _saveLayoutSubject = PublishSubject<void>();
@@ -69,7 +76,7 @@ class DockLayoutController extends ChangeNotifier {
         _pendingLayoutData = defaultPreset.layoutData;
         initData = {'layout': defaultPreset.layoutData};
       } else if (savedLayoutId != null) {
-        final savedData = DockManager.getStoredLayout(savedLayoutId);
+        final savedData = getStoredLayout(savedLayoutId);
         if (savedData != null) {
           try {
             // 尝试解析为完整的布局数据（新格式）
@@ -154,10 +161,10 @@ class DockLayoutController extends ChangeNotifier {
   /// 执行立即保存操作
   bool _performImmediateSave() {
     try {
-      final success = DockManager.saveLayoutForDockTabs(dockTabsId);
+      final success = saveLayoutForDockTabs();
       if (success) {
         // 从存储中获取实际的布局字符串用于设置_lastSavedLayout
-        final storedData = DockManager.getStoredLayout('${dockTabsId}_layout');
+        final storedData = getStoredLayout('${dockTabsId}_layout');
         if (storedData != null) {
           try {
             // 尝试解析为完整的布局数据
@@ -199,10 +206,10 @@ class DockLayoutController extends ChangeNotifier {
       _isLayoutLoading = true;
       notifyListeners();
 
-      final success = DockManager.loadLayoutForDockTabs(dockTabsId);
+      final success = loadLayoutForDockTabs();
       if (success) {
         // 从存储中获取实际的布局字符串用于设置_lastSavedLayout
-        final storedData = DockManager.getStoredLayout('${dockTabsId}_layout');
+        final storedData = getStoredLayout('${dockTabsId}_layout');
         if (storedData != null) {
           try {
             // 尝试解析为完整的布局数据
@@ -258,7 +265,7 @@ class DockLayoutController extends ChangeNotifier {
 
         // 触发自动保存，让正常的保存机制来处理数据的持久化
         // 这将确保以正确的JSON格式保存
-        DockManager.saveLayoutForDockTabs(dockTabsId);
+        saveLayoutForDockTabs();
       } else {
         print('DockLayoutController: Failed to load layout from string');
       }
@@ -280,7 +287,7 @@ class DockLayoutController extends ChangeNotifier {
       notifyListeners();
 
       // 清除保存的布局
-      DockManager.clearStoredLayout('${dockTabsId}_layout');
+      clearStoredLayout('${dockTabsId}_layout');
       _lastSavedLayout = '';
       _pendingLayoutData = null;
 
@@ -304,7 +311,7 @@ class DockLayoutController extends ChangeNotifier {
   }) async {
     try {
       // 获取当前布局
-      final currentLayout = DockManager.getStoredLayout('${dockTabsId}_layout');
+      final currentLayout = getStoredLayout('${dockTabsId}_layout');
       if (currentLayout == null || currentLayout.isEmpty) {
         print('DockLayoutController: No current layout to save as preset');
         return false;
@@ -396,13 +403,14 @@ class DockLayoutController extends ChangeNotifier {
 
   /// 执行实际的布局保存操作
   void _performLayoutSave(String eventDockTabsId) {
+    // 仅处理当前dockTabsId的布局变化
+    if (eventDockTabsId != dockTabsId) return;
+
     // 自动保存布局
-    final success = DockManager.saveLayoutForDockTabs(eventDockTabsId);
+    final success = saveLayoutForDockTabs();
     if (success) {
       // 从存储中获取实际的布局字符串用于设置_lastSavedLayout
-      final storedData = DockManager.getStoredLayout(
-        '${eventDockTabsId}_layout',
-      );
+      final storedData = getStoredLayout('${dockTabsId}_layout');
       if (storedData != null) {
         try {
           // 尝试解析为完整的布局数据
@@ -432,6 +440,166 @@ class DockLayoutController extends ChangeNotifier {
       'pendingLayoutLength': _pendingLayoutData?.length ?? 0,
       'isLayoutLoading': _isLayoutLoading,
     };
+  }
+
+  /// 统一保存布局方法 - 处理当前dockTabsId的布局
+  bool saveLayoutForDockTabs() {
+    try {
+      // 保存布局字符串
+      final layoutString = DockManager.saveDockTabsLayout(dockTabsId);
+
+      // 保存DockTabs数据
+      final dockTabs = DockManager.getDockTabs(dockTabsId);
+      final dockTabsData = dockTabs?.toJson();
+
+      if (layoutString != null && dockTabsData != null) {
+        // 创建完整的布局数据，包含布局字符串和数据
+        final completeLayoutData = {
+          'layoutString': layoutString,
+          'dockTabsData': dockTabsData,
+          'timestamp': DateTime.now().millisecondsSinceEpoch,
+          'version': '1.0',
+        };
+
+        // 使用统一的布局ID命名规则
+        final layoutId = '${dockTabsId}_layout';
+        final jsonString = json.encode(completeLayoutData);
+        storeLayout(layoutId, jsonString);
+        return true;
+      }
+      return false;
+    } catch (e) {
+      print('Error saving layout for dockTabsId $dockTabsId: $e');
+      return false;
+    }
+  }
+
+  /// 统一加载布局方法 - 处理当前dockTabsId的布局
+  bool loadLayoutForDockTabs() {
+    try {
+      final layoutId = '${dockTabsId}_layout';
+      final storedData = getStoredLayout(layoutId);
+
+      if (storedData != null) {
+        try {
+          // 尝试解析为完整的布局数据
+          final layoutData = json.decode(storedData) as Map<String, dynamic>;
+
+          // 检查是否是新格式（包含完整数据）
+          if (layoutData.containsKey('layoutString') &&
+              layoutData.containsKey('dockTabsData')) {
+            final layoutString = layoutData['layoutString'] as String;
+            final dockTabsData =
+                layoutData['dockTabsData'] as Map<String, dynamic>;
+
+            // 首先重建DockTabs及其数据
+            final existingDockTabs = DockManager.getDockTabs(dockTabsId);
+            if (existingDockTabs != null) {
+              // 从JSON数据恢复DockTabs的内容
+              existingDockTabs.loadFromJson(dockTabsData);
+              print('DockTabs data restored from saved layout');
+            }
+
+            // 然后应用布局
+            final success = DockManager.loadDockTabsLayout(
+              dockTabsId,
+              layoutString,
+            );
+            if (success) {
+              print('Complete layout loaded for dockTabsId: $dockTabsId');
+              print('Layout version: ${layoutData['version']}');
+              print('Saved timestamp: ${layoutData['timestamp']}');
+              return true;
+            }
+          }
+        } catch (jsonError) {
+          // 如果JSON解析失败，尝试作为纯布局字符串处理（兼容性）
+          print('JSON parse failed, trying as layout string: $jsonError');
+          final success = DockManager.loadDockTabsLayout(
+            dockTabsId,
+            storedData,
+          );
+          if (success) {
+            print('Layout string loaded for dockTabsId: $dockTabsId');
+            return true;
+          }
+        }
+      }
+      return false;
+    } catch (e) {
+      print('Error loading layout for dockTabsId $dockTabsId: $e');
+      return false;
+    }
+  }
+
+  // ===================== Storage Management =====================
+
+  /// 初始化存储管理器
+  Future<void> initializeStorage(StorageManager storageManager) async {
+    _storageManager = storageManager;
+    await _loadLayoutsFromStorage();
+    _isStorageInitialized = true;
+  }
+
+  /// 检查存储是否已初始化
+  bool get isStorageInitialized => _isStorageInitialized;
+
+  /// 存储布局到内存和持久化存储
+  void storeLayout(String id, String layoutData) {
+    _layoutStorage[id] = layoutData;
+    // 异步保存到持久化存储
+    _saveLayoutsToStorage();
+  }
+
+  /// 获取存储的布局
+  String? getStoredLayout(String id) {
+    return _layoutStorage[id];
+  }
+
+  /// 清除存储的布局
+  void clearStoredLayout(String id) {
+    _layoutStorage.remove(id);
+    // 异步保存到持久化存储
+    _saveLayoutsToStorage();
+  }
+
+  /// 清除所有存储的布局
+  void clearAllStoredLayouts() {
+    _layoutStorage.clear();
+    // 异步保存到持久化存储
+    _saveLayoutsToStorage();
+  }
+
+  /// 从持久化存储加载布局
+  Future<void> _loadLayoutsFromStorage() async {
+    if (_storageManager == null) return;
+
+    try {
+      final layouts = await _storageManager!.readJson(
+        _layoutStorageKey,
+        <String, String>{},
+      );
+      if (layouts != null && layouts is Map) {
+        _layoutStorage.clear();
+        _layoutStorage.addAll(Map<String, String>.from(layouts));
+        print(
+          'Loaded ${_layoutStorage.length} layouts from persistent storage',
+        );
+      }
+    } catch (e) {
+      print('Error loading layouts from storage: $e');
+    }
+  }
+
+  /// 保存布局到持久化存储
+  void _saveLayoutsToStorage() async {
+    if (_storageManager == null) return;
+
+    try {
+      await _storageManager!.writeJson(_layoutStorageKey, _layoutStorage);
+    } catch (e) {
+      print('Error saving layouts to storage: $e');
+    }
   }
 
   @override

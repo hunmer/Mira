@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:rxdart/rxdart.dart';
 import 'dock_item.dart';
 import 'dock_events.dart';
 import 'dock_manager.dart';
@@ -18,7 +19,8 @@ class DockTab {
   final DockEventStreamController? _eventStreamController;
 
   // 防抖控制
-  Timer? _rebuildTimer;
+  final BehaviorSubject<void> _rebuildSubject = BehaviorSubject<void>();
+  late StreamSubscription<void> _rebuildSubscription;
   static const Duration _rebuildDelay = Duration(milliseconds: 500);
 
   // 静态注册的builder映射
@@ -41,23 +43,20 @@ class DockTab {
     // 首先初始化默认布局，确保_layout字段不为null
     _layout = DockingLayout(root: DockManager.createDefaultHomePageDockItem());
 
+    // 初始化rxdart防抖流
+    _rebuildSubscription = _rebuildSubject
+        .debounceTime(_rebuildDelay)
+        .listen((_) => _performRebuild());
+
     // 然后如果有initData，尝试从JSON初始化
     if (initData != null) {
-      try {
-        _initializeFromJson(initData);
-      } catch (e) {
-        print(
-          'DockTab: Failed to initialize from JSON, using default layout. Error: $e',
-        );
-        // 如果初始化失败，保持默认布局
-      }
+      _initializeFromJson(initData);
     }
   }
 
   /// 从JSON数据初始化
   void _initializeFromJson(Map<String, dynamic> json) {
     final items = json['items'] as List<dynamic>? ?? [];
-
     for (var itemData in items) {
       final dockItem = DockItem.fromJson(
         itemData as Map<String, dynamic>,
@@ -65,8 +64,6 @@ class DockTab {
       );
       _dockItems.add(dockItem);
     }
-
-    _rebuildLayout();
   }
 
   /// 根据type获取对应的builder
@@ -243,15 +240,11 @@ class DockTab {
     return false;
   }
 
-  /// 重建布局（使用防抖控制）
+  /// 重建布局（使用rxdart防抖控制）
   void _rebuildLayout() {
-    // 取消之前的定时器
-    _rebuildTimer?.cancel();
-
-    // 使用防抖延迟重建
-    _rebuildTimer = Timer(_rebuildDelay, () {
-      _performRebuild();
-    });
+    print('🔄 DockTab._rebuildLayout called for tab: $id');
+    // 通过Subject触发防抖重建
+    _rebuildSubject.add(null);
   }
 
   /// 执行实际的布局重建
@@ -396,18 +389,20 @@ class DockTab {
 
   /// 清空所有DockItem
   void clear({bool rebuildLayout = true}) {
-    for (var item in _dockItems) {
-      item.dispose();
-    }
-    _dockItems.clear();
-    if (rebuildLayout) {
-      _rebuildLayout();
+    if (_dockItems.isNotEmpty) {
+      for (var item in _dockItems) {
+        item.dispose();
+      }
+      if (rebuildLayout) {
+        _rebuildLayout();
+      }
     }
   }
 
   /// 释放资源
   void dispose({bool rebuildLayout = true}) {
-    _rebuildTimer?.cancel();
+    _rebuildSubscription.cancel();
+    _rebuildSubject.close();
     clear(rebuildLayout: rebuildLayout);
     _layoutChangeNotifier.dispose();
   }

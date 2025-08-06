@@ -4,6 +4,5 @@
 export 'library_gallery_state.dart';
 export 'library_gallery_events.dart';
 export 'library_gallery_builders.dart';
-export 'library_gallery_mobile.dart';
 export 'drag_select_view.dart';
 export 'selectable_item.dart';

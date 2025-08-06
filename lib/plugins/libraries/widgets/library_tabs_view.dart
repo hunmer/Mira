@@ -43,6 +43,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   }
 
   Future<void> _initializeDock() async {
+    await _dockController.initializeStorage(_plugin.storage);
     await _dockController.initializeDockSystem(savedLayoutId: 'main_layout');
     // 初始化完成后刷新UI
     if (mounted) {

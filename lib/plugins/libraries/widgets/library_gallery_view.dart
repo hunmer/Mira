@@ -36,7 +36,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late LibraryGalleryState _state;
   late LibraryGalleryEvents _events;
   late LibraryGalleryBuilders _builders;
-  late LibraryGalleryMobile _mobile;
 
   @override
   void initState() {
@@ -78,15 +77,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       onFileOpen: _onFileOpen,
       onFileSelected: _onFileSelected,
       onToggleSelected: _onToggleSelected,
-    );
-
-    _mobile = LibraryGalleryMobile(
-      state: _state,
-      events: _events,
-      plugin: widget.plugin,
-      library: widget.library,
-      tabId: widget.tabId,
-      onShowDropDialog: _showDropDialog,
     );
   }
 
@@ -226,54 +216,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     SizingInformation sizingInformation,
     bool isRecycleBin,
   ) {
-    // 针对移动设备的特殊处理
-    if (sizingInformation.deviceScreenType == DeviceScreenType.mobile) {
-      return _buildMobileLayout(
-        isRecycleBin,
-        sizingInformation.screenSize.width,
-      );
-    }
-
     // 其他设备使用通用布局构建器
     return _builders.buildResponsiveLayout(
       context,
       sizingInformation,
       isRecycleBin,
-    );
-  }
-
-  /// 构建移动端布局
-  Widget _buildMobileLayout(bool isRecycleBin, double screenWidth) {
-    return ResponsiveBuilder(
-      builder: (context, sizingInformation) {
-        return Scaffold(
-          floatingActionButton: _mobile.buildMobileFloatingActions(),
-          body: Column(
-            children: [
-              _mobile.buildMobileTopBar(context),
-              Expanded(child: _buildMobileMainContent(isRecycleBin)),
-              _builders.buildPagination(),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  /// 构建移动端主内容
-  Widget _buildMobileMainContent(bool isRecycleBin) {
-    return Stack(
-      children: [
-        _builders.buildGalleryBodyWithDragSelect(),
-        ValueListenableBuilder(
-          valueListenable: _state.isItemsLoadingNotifier,
-          builder: (context, isLoading, _) {
-            return isLoading
-                ? Center(child: CircularProgressIndicator())
-                : SizedBox.shrink();
-          },
-        ),
-      ],
     );
   }
 }
