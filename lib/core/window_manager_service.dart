@@ -43,6 +43,7 @@ class WindowManagerService with WindowListener {
       center: windowConfig['x'] == null || windowConfig['y'] == null,
       backgroundColor: Colors.transparent,
       skipTaskbar: false,
+      minimumSize: const Size(400, 300),
       titleBarStyle: TitleBarStyle.hidden,
     );
 
@@ -56,6 +57,10 @@ class WindowManagerService with WindowListener {
           (windowConfig['x'] as num).toDouble(),
           (windowConfig['y'] as num).toDouble(),
         );
+        // 确保窗口位置不超出屏幕范围
+        final screenSize = await windowManager.getSize(); // 获取屏幕尺寸的替代方法
+        final windowSize = size;
+
         await windowManager.setPosition(position);
       }
 

@@ -195,18 +195,6 @@ class DockManager {
     return success;
   }
 
-  /// 批量创建DockTab，避免多次布局刷新
-  static bool createMultipleDockTabs(
-    String dockTabsId,
-    List<Map<String, dynamic>> tabConfigs,
-  ) {
-    final dockTabs = getDockTabs(dockTabsId);
-    if (dockTabs == null) return false;
-
-    dockTabs.createMultipleDockTabs(tabConfigs);
-    return true;
-  }
-
   /// 移除DockItem (基于ID)
   static bool removeDockItemById(
     String dockTabsId,
@@ -255,18 +243,6 @@ class DockManager {
       dockTabs.dispose();
     }
     _instance._dockTabsMap.clear();
-  }
-
-  /// 保存指定DockTabs的布局
-  static String? saveDockTabsLayout(String dockTabsId) {
-    final dockTabs = getDockTabs(dockTabsId);
-    return dockTabs?.saveLayout();
-  }
-
-  /// 加载指定DockTabs的布局
-  static bool loadDockTabsLayout(String dockTabsId, String layoutString) {
-    final dockTabs = getDockTabs(dockTabsId);
-    return dockTabs?.loadLayout(layoutString) ?? false;
   }
 
   // ===================== Library Tab Management =====================

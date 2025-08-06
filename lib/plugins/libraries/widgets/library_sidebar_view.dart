@@ -64,47 +64,44 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      child: Column(
-        children: [
-          Expanded(
-            child: FolderTreeWidget(
-              title: '文件夹',
-              selectionMode: TreeSelectionMode.single,
-              items:
-                  widget.folders
-                      .map((folder) => TreeItem.fromMap(folder.toMap()))
-                      .toList(),
-              selected: Set<String>.from(widget.folderSelected),
-              library: widget.library,
-              showSelectAll: false,
-              onSelectionChanged: (ids) {
-                _updateFilter({
-                  'folder': ids != null && ids.isNotEmpty ? ids.first : '',
-                });
-              },
-              type: 'folders',
-            ),
+    return Column(
+      children: [
+        Expanded(
+          child: FolderTreeWidget(
+            title: '文件夹',
+            selectionMode: TreeSelectionMode.single,
+            items:
+                widget.folders
+                    .map((folder) => TreeItem.fromMap(folder.toMap()))
+                    .toList(),
+            selected: Set<String>.from(widget.folderSelected),
+            library: widget.library,
+            showSelectAll: false,
+            onSelectionChanged: (ids) {
+              _updateFilter({
+                'folder': ids != null && ids.isNotEmpty ? ids.first : '',
+              });
+            },
+            type: 'folders',
           ),
-          const Divider(),
-          Expanded(
-            child: FolderTreeWidget(
-              title: '标签',
-              selectionMode: TreeSelectionMode.single,
-              items:
-                  widget.tags
-                      .map((tag) => TreeItem.fromMap(tag.toMap()))
-                      .toList(),
-              library: widget.library,
-              selected: Set<String>.from(widget.tagsSelected),
-              showSelectAll: false,
-              onSelectionChanged: (ids) => _updateFilter({'tags': ids}),
-              type: 'tags',
-            ),
+        ),
+        const Divider(),
+        Expanded(
+          child: FolderTreeWidget(
+            title: '标签',
+            selectionMode: TreeSelectionMode.single,
+            items:
+                widget.tags
+                    .map((tag) => TreeItem.fromMap(tag.toMap()))
+                    .toList(),
+            library: widget.library,
+            selected: Set<String>.from(widget.tagsSelected),
+            showSelectAll: false,
+            onSelectionChanged: (ids) => _updateFilter({'tags': ids}),
+            type: 'tags',
           ),
-        ],
-      ),
+        ),
+      ],
     );
   }
 }

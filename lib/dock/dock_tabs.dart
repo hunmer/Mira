@@ -91,10 +91,10 @@ class DockTabs {
     }
 
     // 恢复激活状态
-    final activeTabId = data['activeTabId'] as String?;
-    if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
-      _activeTabId = activeTabId;
-    }
+    // final activeTabId = data['activeTabId'] as String?;
+    // if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
+    //   _activeTabId = activeTabId;
+    // }
   }
 
   void loadFromJson(Map<String, dynamic> json) {
@@ -229,7 +229,7 @@ class DockTabs {
     // 保存当前布局字符串（如果有的话）
     String? currentLayoutString;
     try {
-      currentLayoutString = saveLayout();
+      currentLayoutString = getLayoutString();
     } catch (e) {
       print('无法保存当前布局: $e');
     }
@@ -505,33 +505,6 @@ class DockTabs {
     _rebuildGlobalLayout();
   }
 
-  /// 批量操作：创建多个DockTab，避免多次重建布局
-  void createMultipleDockTabs(List<Map<String, dynamic>> tabConfigs) {
-    // 注意：由于使用了 RxDart 防抖，无需手动取消，自动防抖处理
-
-    for (var config in tabConfigs) {
-      createDockTab(
-        config['tabId'] as String,
-        displayName: config['displayName'] as String?,
-        initData: config['initData'] as Map<String, dynamic>?,
-        closable: config['closable'] as bool? ?? true,
-        keepAlive: config['keepAlive'] as bool? ?? true,
-        buttons: config['buttons'] as List<TabButton>?,
-        maximizable: config['maximizable'] as bool? ?? false,
-        maximized: config['maximized'] as bool? ?? false,
-        leading: config['leading'] as TabLeadingBuilder?,
-        size: config['size'] as double?,
-        weight: config['weight'] as double?,
-        minimalWeight: config['minimalWeight'] as double?,
-        minimalSize: config['minimalSize'] as double?,
-        rebuildLayout: false, // 创建时不重建布局
-      );
-    }
-
-    // 批量创建完成后重建一次布局
-    _rebuildGlobalLayout();
-  }
-
   /// 处理DockItem关闭事件
   void _handleItemClose(DockingItem dockingItem) {
     // 从所有DockTab中查找并移除对应的DockItem
@@ -749,8 +722,8 @@ class DockTabs {
     return {'id': id, 'tabs': tabsMap, 'activeTabId': _activeTabId};
   }
 
-  /// 保存当前布局
-  String saveLayout() {
+  /// 获取当前布局
+  String getLayoutString() {
     // 保存当前的激活tab状态
     final layoutData = {
       'activeTabId': _activeTabId,

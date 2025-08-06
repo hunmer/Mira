@@ -30,6 +30,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   @override
   void initState() {
     super.initState();
+    print('LibraryTabsView initState');
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
 
     // 初始化dock controller
@@ -38,24 +39,15 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
     // 异步初始化dock系统
     _initializeDock();
-
     init();
   }
 
   Future<void> _initializeDock() async {
     await _dockController.initializeStorage(_plugin.storage);
-    await _dockController.initializeDockSystem(savedLayoutId: 'main_layout');
-    // 初始化完成后刷新UI
-    if (mounted) {
-      setState(() {});
-    }
+    await _dockController.initializeDockSystem();
   }
 
-  void _onDockControllerChanged() {
-    setState(() {
-      // dock控制器状态变化时更新UI
-    });
-  }
+  void _onDockControllerChanged() {}
 
   Future<void> init() async {
     final changedStream = EventDebouncer(
@@ -106,6 +98,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
   @override
   Widget build(BuildContext context) {
+    print('libray_tabs_view build');
     return Scaffold(
       appBar: AppBar(
         leading:

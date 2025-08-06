@@ -69,8 +69,8 @@ class LibraryGalleryBuilders {
         return {
           'type': 'item',
           'id': 'main_content',
-          'name': 'Library Content',
-          'closable': false,
+          'name': 'Gallery',
+          'closable': true,
           'maximizable': false,
           'keepAlive': true,
         };
@@ -83,7 +83,7 @@ class LibraryGalleryBuilders {
               'id': 'sidebar',
               'name': 'Sidebar',
               'type': 'item',
-              'closable': false,
+              'closable': true,
               'maximizable': false,
               'keepAlive': true,
               'weight': 0.15,
@@ -93,7 +93,7 @@ class LibraryGalleryBuilders {
               'id': 'main_content',
               'name': 'Library Content',
               'type': 'item',
-              'closable': false,
+              'closable': true,
               'maximizable': true,
               'keepAlive': true,
               'weight': 0.85,
@@ -109,7 +109,7 @@ class LibraryGalleryBuilders {
               'id': 'quick_actions',
               'name': 'Quick Actions',
               'type': 'item',
-              'closable': false,
+              'closable': true,
               'maximizable': false,
               'keepAlive': true,
               'size': 60.0,
@@ -118,7 +118,7 @@ class LibraryGalleryBuilders {
               'id': 'sidebar',
               'name': 'Sidebar',
               'type': 'item',
-              'closable': false,
+              'closable': true,
               'maximizable': false,
               'keepAlive': true,
               'weight': 0.15,
@@ -128,7 +128,7 @@ class LibraryGalleryBuilders {
               'id': 'main_content',
               'name': 'Library Content',
               'type': 'item',
-              'closable': false,
+              'closable': true,
               'maximizable': true,
               'keepAlive': true,
               'weight': 0.6,
@@ -147,7 +147,7 @@ class LibraryGalleryBuilders {
               'id': 'app_bar_actions',
               'name': 'Actions',
               'type': 'item',
-              'closable': false,
+              'closable': true,
               'maximizable': false,
               'keepAlive': true,
               'size': 60.0,
@@ -161,7 +161,7 @@ class LibraryGalleryBuilders {
           'type': 'item',
           'id': 'main_content',
           'name': 'Library Content',
-          'closable': false,
+          'closable': true,
           'maximizable': false,
           'keepAlive': true,
         };
@@ -188,16 +188,6 @@ class LibraryGalleryBuilders {
       onItemClose: (DockingItem item) {
         // 处理项目关闭
         print('Closed docking item: ${item.name}');
-      },
-      itemCloseInterceptor: (DockingItem item) {
-        // 某些面板不允许关闭
-        final nonClosableItems = [
-          'main_content',
-          'sidebar',
-          'quick_actions',
-          'app_bar_actions',
-        ];
-        return !nonClosableItems.contains(item.id);
       },
     );
   }
@@ -292,173 +282,137 @@ class LibraryGalleryBuilders {
   ) {
     switch (itemId) {
       case 'quick_actions':
-        return Card(
-          elevation: 4,
-          margin: const EdgeInsets.all(6),
-          child: Padding(
-            padding: const EdgeInsets.all(6.0),
-            child: buildQuickActionsPanel(),
-          ),
-        );
+        return buildQuickActionsPanel();
 
       case 'sidebar':
-        return Card(
-          elevation: 4,
-          margin: const EdgeInsets.all(6),
-          child: Padding(
-            padding: const EdgeInsets.all(6.0),
-            child: buildSidebarSection(screenWidth),
-          ),
-        );
+        return buildSidebarSection(screenWidth);
 
       case 'main_content':
-        return Card(
-          elevation: 4,
-          margin: const EdgeInsets.all(6),
-          child: Padding(
-            padding: const EdgeInsets.all(6.0),
-            child: buildMainContent(isRecycleBin, screenWidth),
-          ),
-        );
+        return buildMainContent(isRecycleBin, screenWidth);
 
       case 'details':
-        return Card(
-          elevation: 4,
-          margin: const EdgeInsets.all(6),
-          child: Padding(
-            padding: const EdgeInsets.all(6.0),
-            child: buildMoreDetailsPage(),
-          ),
-        );
+        return buildMoreDetailsPage();
 
       case 'app_bar_actions':
-        return Card(
-          elevation: 4,
-          margin: const EdgeInsets.all(6),
-          child: Padding(
-            padding: const EdgeInsets.all(6.0),
-            child: buildAppBarActions(),
-          ),
-        );
+        return buildAppBarActions();
 
       default:
-        return Card(
-          elevation: 4,
-          margin: const EdgeInsets.all(6),
-          child: Padding(
-            padding: const EdgeInsets.all(6.0),
-            child: Center(child: Text('Unknown panel: $itemId')),
-          ),
-        );
+        return Center(child: Text('Unknown panel: $itemId'));
     }
   }
 
   /// 构建快速操作面板
   Widget buildQuickActionsPanel() {
-    return Column(
-      children: [
-        Tooltip(
-          message: '显示/隐藏侧边栏',
-          child: IconButton(
-            icon: Icon(Icons.menu),
-            onPressed: events.toggleSidebar,
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
+      child: Column(
+        children: [
+          Tooltip(
+            message: '显示/隐藏侧边栏',
+            child: IconButton(
+              icon: Icon(Icons.menu),
+              onPressed: events.toggleSidebar,
+            ),
           ),
-        ),
-        Tooltip(
-          message: '文件夹列表',
-          child: IconButton(
-            icon: Icon(Icons.folder),
-            onPressed: () async {
-              final result = await plugin.libraryUIController
-                  .showFolderSelector(library, context);
-              if (result != null && result.isNotEmpty) {}
-            },
+          Tooltip(
+            message: '文件夹列表',
+            child: IconButton(
+              icon: Icon(Icons.folder),
+              onPressed: () async {
+                final result = await plugin.libraryUIController
+                    .showFolderSelector(library, context);
+                if (result != null && result.isNotEmpty) {}
+              },
+            ),
           ),
-        ),
-        Tooltip(
-          message: '标签列表',
-          child: IconButton(
-            icon: Icon(Icons.label),
-            onPressed: () async {
-              final result = await plugin.libraryUIController.showTagSelector(
-                library,
-                context,
-              );
-              if (result != null && result.isNotEmpty) {}
-            },
+          Tooltip(
+            message: '标签列表',
+            child: IconButton(
+              icon: Icon(Icons.label),
+              onPressed: () async {
+                final result = await plugin.libraryUIController.showTagSelector(
+                  library,
+                  context,
+                );
+                if (result != null && result.isNotEmpty) {}
+              },
+            ),
           ),
-        ),
-        Tooltip(
-          message: '收藏',
-          child: IconButton(icon: Icon(Icons.favorite), onPressed: () {}),
-        ),
-        Tooltip(
-          message: '回收站',
-          child: IconButton(
-            icon: Icon(Icons.delete),
-            onPressed: () {
-              state.tabManager.addTab(
-                library,
-                isRecycleBin: true,
-                title: '回收站',
-              );
-            },
+          Tooltip(
+            message: '收藏',
+            child: IconButton(icon: Icon(Icons.favorite), onPressed: () {}),
           ),
-        ),
-      ],
+          Tooltip(
+            message: '回收站',
+            child: IconButton(
+              icon: Icon(Icons.delete),
+              onPressed: () {
+                state.tabManager.addTab(
+                  library,
+                  isRecycleBin: true,
+                  title: '回收站',
+                );
+              },
+            ),
+          ),
+        ],
+      ),
     );
   }
 
   /// 构建应用栏操作
   Widget buildAppBarActions() {
-    return LibraryGalleryAppBar(
-      title: library.name,
-      getItems: () => state.items.value,
-      getSelected: () => state.selectedFileIds.value,
-      isSelectionMode: state.isSelectionModeNotifier.value,
-      onToggleSelection:
-          (bool enable) => state.isSelectionModeNotifier.value = enable,
-      isRecycleBin: state.tabData!.isRecycleBin,
-      onSelectionChanged: (Set<int> selected) {
-        state.selectedFileIds.value = selected;
-      },
-      filterOptions: Map<String, dynamic>.from(
-        state.filterOptionsNotifier.value,
+    return Container(
+      color: Theme.of(context).colorScheme.surface,
+      child: LibraryGalleryAppBar(
+        title: library.name,
+        getItems: () => state.items.value,
+        getSelected: () => state.selectedFileIds.value,
+        isSelectionMode: state.isSelectionModeNotifier.value,
+        onToggleSelection:
+            (bool enable) => state.isSelectionModeNotifier.value = enable,
+        isRecycleBin: state.tabData!.isRecycleBin,
+        onSelectionChanged: (Set<int> selected) {
+          state.selectedFileIds.value = selected;
+        },
+        filterOptions: Map<String, dynamic>.from(
+          state.filterOptionsNotifier.value,
+        ),
+        onFilterChanged: (Map<String, dynamic> filterOptions) {
+          if (filterOptions != null &&
+              state.filterOptionsNotifier.value != filterOptions) {
+            state.filterOptionsNotifier.value = filterOptions;
+            state.tabManager.updateFilter(tabId, filterOptions);
+          }
+        },
+        onUpload: onShowDropDialog ?? () {},
+        uploadProgress: state.uploadProgressNotifier.value,
+        displayFields: Set<String>.from(state.displayFieldsNotifier.value),
+        onDisplayFieldsChanged: (Set<String> fields) {
+          state.displayFieldsNotifier.value = fields;
+          state.tabManager.setStoreValue(tabId, 'displayFields', fields);
+        },
+        imagesPerRow: state.imagesPerRowNotifier.value,
+        onImagesPerRowChanged: (count) {
+          state.imagesPerRowNotifier.value = count;
+          state.tabManager.setStoreValue(tabId, 'imagesPerRow', count);
+        },
+        onRefresh: events.refresh,
+        sortOptions: state.sortOptionsNotifier.value,
+        onSortChanged: (sortOptions) {
+          if (sortOptions != null &&
+              state.sortOptionsNotifier.value != sortOptions) {
+            state.sortOptionsNotifier.value = sortOptions;
+            state.tabManager.setStoreValue(tabId, 'sortOptions', sortOptions);
+            events.loadFiles();
+          }
+        },
+        viewType: state.viewTypeNotifier.value,
+        onViewTypeChanged: (DragSelectViewType viewType) {
+          state.viewTypeNotifier.value = viewType;
+          state.tabManager.setStoreValue(tabId, 'viewType', viewType.index);
+        },
       ),
-      onFilterChanged: (Map<String, dynamic> filterOptions) {
-        if (filterOptions != null &&
-            state.filterOptionsNotifier.value != filterOptions) {
-          state.filterOptionsNotifier.value = filterOptions;
-          state.tabManager.updateFilter(tabId, filterOptions);
-        }
-      },
-      onUpload: onShowDropDialog ?? () {},
-      uploadProgress: state.uploadProgressNotifier.value,
-      displayFields: Set<String>.from(state.displayFieldsNotifier.value),
-      onDisplayFieldsChanged: (Set<String> fields) {
-        state.displayFieldsNotifier.value = fields;
-        state.tabManager.setStoreValue(tabId, 'displayFields', fields);
-      },
-      imagesPerRow: state.imagesPerRowNotifier.value,
-      onImagesPerRowChanged: (count) {
-        state.imagesPerRowNotifier.value = count;
-        state.tabManager.setStoreValue(tabId, 'imagesPerRow', count);
-      },
-      onRefresh: events.refresh,
-      sortOptions: state.sortOptionsNotifier.value,
-      onSortChanged: (sortOptions) {
-        if (sortOptions != null &&
-            state.sortOptionsNotifier.value != sortOptions) {
-          state.sortOptionsNotifier.value = sortOptions;
-          state.tabManager.setStoreValue(tabId, 'sortOptions', sortOptions);
-          events.loadFiles();
-        }
-      },
-      viewType: state.viewTypeNotifier.value,
-      onViewTypeChanged: (DragSelectViewType viewType) {
-        state.viewTypeNotifier.value = viewType;
-        state.tabManager.setStoreValue(tabId, 'viewType', viewType.index);
-      },
     );
   }
 
@@ -475,17 +429,20 @@ class LibraryGalleryBuilders {
         final folders = values[1] as List<LibraryFolder>;
         final filterOptions = values[2] as Map<String, dynamic>;
 
-        return LibrarySidebarView(
-          plugin: plugin,
-          library: library,
-          tabId: tabId,
-          tags: tags,
-          tagsSelected: List<String>.from(filterOptions['tags'] ?? []),
-          folders: folders,
-          folderSelected:
-              filterOptions['folder'] is String
-                  ? [filterOptions['folder']]
-                  : [],
+        return Container(
+          color: Theme.of(context).colorScheme.surface,
+          child: LibrarySidebarView(
+            plugin: plugin,
+            library: library,
+            tabId: tabId,
+            tags: tags,
+            tagsSelected: List<String>.from(filterOptions['tags'] ?? []),
+            folders: folders,
+            folderSelected:
+                filterOptions['folder'] is String
+                    ? [filterOptions['folder']]
+                    : [],
+          ),
         );
       },
     );
@@ -593,67 +550,70 @@ class LibraryGalleryBuilders {
   Widget buildMoreDetailsPage() {
     return DefaultTabController(
       length: 2,
-      child: Column(
-        children: [
-          TabBar(
-            tabs: [
-              Tooltip(
-                message: '文件信息',
-                child: Tab(icon: Icon(Icons.info_outline)),
-              ),
-              Tooltip(
-                message: '选中文件列表',
-                child: Tab(icon: Icon(Icons.list_alt)),
-              ),
-            ],
-          ),
-          Expanded(
-            child: TabBarView(
-              physics: const NeverScrollableScrollPhysics(),
-              children: [
-                ValueListenableBuilder<LibraryFile?>(
-                  valueListenable: state.selectedFileNotifier,
-                  builder: (context, selectedFile, _) {
-                    return selectedFile != null
-                        ? LibraryFileInformationView(
-                          plugin: plugin,
-                          library: library,
-                          file: selectedFile,
-                        )
-                        : const Center(child: Text('请选择一个文件查看详情'));
-                  },
+      child: Container(
+        color: Theme.of(context).colorScheme.surface,
+        child: Column(
+          children: [
+            TabBar(
+              tabs: [
+                Tooltip(
+                  message: '文件信息',
+                  child: Tab(icon: Icon(Icons.info_outline)),
                 ),
-                ValueListenableBuilder<Set<int>>(
-                  valueListenable: state.selectedFileIds,
-                  builder: (context, selectedIds, _) {
-                    final selectedFiles =
-                        state.items.value
-                            .where((file) => selectedIds.contains(file.id))
-                            .toList();
-                    if (selectedFiles.isEmpty) {
-                      return const Center(child: Text('未选中文件'));
-                    }
-                    return Column(
-                      children: [
-                        Expanded(
-                          child: SelectedFilesPage(
-                            plugin: plugin,
-                            library: library,
-                            selectedFiles: selectedFiles,
-                            galleryState: state,
-                            onSelectionChanged: (selectedIds) {
-                              state.selectedFileIds.value = selectedIds;
-                            },
-                          ),
-                        ),
-                      ],
-                    );
-                  },
+                Tooltip(
+                  message: '选中文件列表',
+                  child: Tab(icon: Icon(Icons.list_alt)),
                 ),
               ],
             ),
-          ),
-        ],
+            Expanded(
+              child: TabBarView(
+                physics: const NeverScrollableScrollPhysics(),
+                children: [
+                  ValueListenableBuilder<LibraryFile?>(
+                    valueListenable: state.selectedFileNotifier,
+                    builder: (context, selectedFile, _) {
+                      return selectedFile != null
+                          ? LibraryFileInformationView(
+                            plugin: plugin,
+                            library: library,
+                            file: selectedFile,
+                          )
+                          : const Center(child: Text('请选择一个文件查看详情'));
+                    },
+                  ),
+                  ValueListenableBuilder<Set<int>>(
+                    valueListenable: state.selectedFileIds,
+                    builder: (context, selectedIds, _) {
+                      final selectedFiles =
+                          state.items.value
+                              .where((file) => selectedIds.contains(file.id))
+                              .toList();
+                      if (selectedFiles.isEmpty) {
+                        return const Center(child: Text('未选中文件'));
+                      }
+                      return Column(
+                        children: [
+                          Expanded(
+                            child: SelectedFilesPage(
+                              plugin: plugin,
+                              library: library,
+                              selectedFiles: selectedFiles,
+                              galleryState: state,
+                              onSelectionChanged: (selectedIds) {
+                                state.selectedFileIds.value = selectedIds;
+                              },
+                            ),
+                          ),
+                        ],
+                      );
+                    },
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

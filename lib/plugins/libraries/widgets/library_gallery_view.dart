@@ -127,10 +127,10 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   /// 文件选中事件处理
   void _onFileSelected(LibraryFile file) {
     _state.selectedFileNotifier.value = file;
-    // 如果不是选择模式，默认选中当前文件
-    if (!_state.isSelectionModeNotifier.value) {
-      _state.selectedFileIds.value = {file.id};
-    }
+    // 如果不是选择模式，默认选中当前文件(bug:会触发选中模式)
+    // if (!_state.isSelectionModeNotifier.value) {
+    //   _state.selectedFileIds.value = {file.id};
+    // }
   }
 
   @override

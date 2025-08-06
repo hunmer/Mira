@@ -27,7 +27,8 @@ class DockController extends ChangeNotifier {
 
   /// 布局控制器状态变化时的回调
   void _onLayoutControllerChanged() {
-    notifyListeners();
+    print('LayoutController state changed');
+    // notifyListeners();
   }
 
   /// 初始化存储管理器
@@ -36,21 +37,16 @@ class DockController extends ChangeNotifier {
   }
 
   /// 初始化Dock系统
-  Future<void> initializeDockSystem({String? savedLayoutId}) async {
+  Future<void> initializeDockSystem() async {
     if (_isInitialized) return;
-
     // 创建事件流控制器
     _eventStreamController = DockEventStreamController(id: dockTabsId);
-
     // 监听事件并处理
     _eventSubscription = _eventStreamController.stream.listen(_handleDockEvent);
-
     // 等待DockManager完成初始化后再尝试加载布局
-    await _initializeWithLayout(savedLayoutId);
-
+    await _initializeWithLayout();
     // 初始化布局信息
     await _initializeLayoutInfo();
-
     _isInitialized = true;
   }
 
@@ -59,17 +55,17 @@ class DockController extends ChangeNotifier {
     // 通过DockLayoutController初始化布局信息
     // 这将确保布局控制器有正确的初始状态
     if (layoutController.isStorageInitialized) {
-      // 尝试加载已保存的布局以设置初始状态
-      layoutController.loadLayout();
+      // 尝试加载已保存的完整布局（包括DockingData和Layout字符串）
+      await layoutController.loadCompleteLayout();
     }
   }
 
   /// 异步初始化布局
-  Future<void> _initializeWithLayout(String? savedLayoutId) async {
+  Future<void> _initializeWithLayout() async {
     print('Initializing DockController for $dockTabsId');
     // 使用布局控制器初始化布局数据
     final initData = await layoutController.initializeLayoutData(
-      savedLayoutId: savedLayoutId,
+      savedLayoutId: dockTabsId,
     );
 
     // 创建主要的DockTabs
@@ -78,9 +74,6 @@ class DockController extends ChangeNotifier {
       initData: initData,
       eventStreamController: _eventStreamController,
     );
-
-    // 通知UI更新
-    notifyListeners();
   }
 
   /// 处理Dock事件
@@ -100,57 +93,23 @@ class DockController extends ChangeNotifier {
       case DockEventType.itemPositionChanged:
         break;
     }
-
-    if (event is DockTabEvent && event.values.containsKey('rebuild')) {
-      notifyListeners();
-    }
-
     // 延迟保存布局
     Future.delayed(const Duration(milliseconds: 1000), () {
-      _saveLayoutForEvent(event.dockTabsId);
+      saveLayout();
     });
   }
 
-  /// 根据事件的dockTabsId保存布局
-  void _saveLayoutForEvent(String eventDockTabsId) {
-    if (eventDockTabsId == dockTabsId) {
-      // 委托给布局控制器处理
-      layoutController.handleLayoutChanged(eventDockTabsId);
-    }
-  }
-
-  /// 创建新tab
-  void createNewTab() {
-    // 这个方法将在UI层处理用户交互
-    notifyListeners();
-  }
-
   /// 保存布局
-  bool saveLayout({bool useDebounce = false}) {
-    return layoutController.saveLayout(useDebounce: useDebounce);
-  }
-
-  /// 强制执行待处理的防抖保存操作
-  void flushPendingSave() {
-    layoutController.flushPendingSave();
-  }
-
-  /// 加载布局
-  bool loadLayout() {
-    return layoutController.loadLayout();
-  }
-
-  /// 处理DockItem关闭事件
-  void handleItemClose(DockingItem item) {
-    // 这里可以添加关闭后的清理逻辑
-    notifyListeners();
+  Future<bool> saveLayout() async {
+    final layoutData = await DockLayoutController.getLayoutData(dockTabsId);
+    if (layoutData != null) {
+      return await layoutController.saveLayout(layoutData);
+    }
+    return false;
   }
 
   @override
   void dispose() {
-    // 在销毁前强制刷新任何待处理的布局保存操作
-    layoutController.flushPendingSave();
-
     _eventSubscription.cancel();
     _eventStreamController.dispose();
     layoutController.removeListener(_onLayoutControllerChanged);
