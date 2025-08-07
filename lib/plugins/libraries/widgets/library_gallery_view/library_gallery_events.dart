@@ -5,9 +5,12 @@ import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
+import 'package:mira/plugins/libraries/services/library_event_manager.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_data.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
+import 'package:rxdart/rxdart.dart';
+import 'dart:async';
 import 'library_gallery_state.dart';
 
 /// 图库视图的事件处理类
@@ -19,6 +22,15 @@ class LibraryGalleryEvents {
   late final String itemId;
   final LibraryTabData tabData;
 
+  // 防抖相关
+  late final BehaviorSubject<void> _loadFilesSubject;
+  late final StreamSubscription _loadFilesSubscription;
+  late final BehaviorSubject<void> _loadFoldersTagsSubject;
+  late final StreamSubscription _loadFoldersTagsSubscription;
+  late final StreamSubscription eventSubscription;
+  late final StreamSubscription? tagsUpdateSubscription;
+  late final StreamSubscription? folderUpdateSubscription;
+
   LibraryGalleryEvents({
     required this.state,
     required this.tabData,
@@ -27,10 +39,63 @@ class LibraryGalleryEvents {
   }) {
     tabId = tabData.tabId;
     itemId = tabData.itemId;
+
+    // 初始化防抖 Subject
+    _loadFilesSubject = BehaviorSubject<void>();
+    _loadFoldersTagsSubject = BehaviorSubject<void>();
+
+    // 文件加载防抖，200ms延迟（更短，因为用户操作频繁）
+    _loadFilesSubscription = _loadFilesSubject
+        .debounceTime(Duration(milliseconds: 200))
+        .listen((_) => _doLoadFiles());
+
+    // 文件夹和标签加载防抖，300ms延迟
+    _loadFoldersTagsSubscription = _loadFoldersTagsSubject
+        .debounceTime(Duration(milliseconds: 300))
+        .listen((_) => _doLoadFoldersTags());
   }
 
   /// 初始化事件监听
   void initEvents() {
+    // 监听库更新事件（包含 file::changed 和 tab::doUpdate）
+    eventSubscription = LibraryEventManager.instance.addListenerByType(
+      'library_update',
+      (EventArgs args) {
+        if (args is MapEventArgs) {
+          final libraryId = args.item['libraryId'];
+          if (libraryId == library.id) {
+            refresh();
+          }
+        }
+      },
+    );
+
+    // 可选：监听标签更新事件
+    tagsUpdateSubscription = LibraryEventManager.instance.addListenerByType(
+      'tags_update',
+      (EventArgs args) {
+        if (args is MapEventArgs) {
+          final libraryId = args.item['libraryId'];
+          if (libraryId == library.id) {
+            loadFoldersTags(); // 重新加载标签
+          }
+        }
+      },
+    );
+
+    // 可选：监听文件夹更新事件
+    folderUpdateSubscription = LibraryEventManager.instance.addListenerByType(
+      'folder_update',
+      (EventArgs args) {
+        if (args is MapEventArgs) {
+          final libraryId = args.item['libraryId'];
+          if (libraryId == library.id) {
+            loadFoldersTags(); // 重新加载文件夹
+          }
+        }
+      },
+    );
+
     state.eventSubscribes.addAll([
       EventManager.instance.subscribe(
         'thumbnail::generated',
@@ -40,7 +105,6 @@ class LibraryGalleryEvents {
         if (args is MapEventArgs) {
           if (args.item['tabId'] == tabId && args.item['itemId'] == itemId) {
             refresh();
-            print('updated Tab $tabId');
           }
         }
       }),
@@ -99,7 +163,8 @@ class LibraryGalleryEvents {
           (args.item['folders'] as List)
               .map((item) => LibraryFolder.fromMap(item))
               .toList();
-      await loadFiles();
+      // 首次加载使用立即执行，不需要防抖
+      await loadFilesImmediate();
     }
   }
 
@@ -117,14 +182,30 @@ class LibraryGalleryEvents {
     state.selectedFileIds.value = currentSelection;
   }
 
-  /// 刷新数据
+  /// 刷新数据（不使用防抖，直接调用防抖版本的加载方法）
   Future<void> refresh() async {
-    await loadFiles();
-    await loadFoldersTags();
+    loadFiles();
+    loadFoldersTags();
   }
 
-  /// 加载文件夹和标签
+  /// 立即刷新（不使用防抖）
+  Future<void> refreshImmediate() async {
+    await _doLoadFiles();
+    await _doLoadFoldersTags();
+  }
+
+  /// 立即加载文件（不使用防抖）
+  Future<void> loadFilesImmediate() async {
+    await _doLoadFiles();
+  }
+
+  /// 加载文件夹和标签（带防抖）
   Future<void> loadFoldersTags() async {
+    _loadFoldersTagsSubject.add(null);
+  }
+
+  /// 实际执行文件夹和标签加载的方法
+  Future<void> _doLoadFoldersTags() async {
     final inst = plugin.libraryController.getLibraryInst(library.id);
     if (inst != null) {
       state.tags.value =
@@ -138,8 +219,18 @@ class LibraryGalleryEvents {
     }
   }
 
-  /// 加载文件列表
+  /// 立即加载文件夹和标签（不使用防抖）
+  Future<void> loadFoldersTagsImmediate() async {
+    await _doLoadFoldersTags();
+  }
+
+  /// 加载文件列表（带防抖）
   Future<void> loadFiles() async {
+    _loadFilesSubject.add(null);
+  }
+
+  /// 实际执行文件加载的方法
+  Future<void> _doLoadFiles() async {
     state.isItemsLoadingNotifier.value = true;
 
     final filterOptions = state.filterOptionsNotifier.value;
@@ -184,7 +275,8 @@ class LibraryGalleryEvents {
       ...state.paginationOptionsNotifier.value,
       'page': page,
     };
-    loadFiles().then((_) {
+    // 分页操作使用立即加载，然后滚动到顶部
+    loadFilesImmediate().then((_) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (state.scrollController.hasClients) {
           state.scrollController.jumpTo(0);
@@ -201,83 +293,215 @@ class LibraryGalleryEvents {
     loadFiles();
   }
 
-  /// 开始范围选择
-  void startAreaSelection(Offset startPoint) {
-    state.areaSelectionStartPoint = startPoint;
-    state.isAreaSelectionActive.value = true;
-    state.isSelectionModeNotifier.value = true;
-    state.selectionArea.value = Rect.fromPoints(startPoint, startPoint);
-  }
-
-  /// 更新范围选择区域
-  void updateAreaSelection(Offset currentPoint) {
-    if (state.areaSelectionStartPoint != null &&
-        state.isAreaSelectionActive.value) {
-      // 计算选择矩形，确保正确的左上角和右下角
-      final startPoint = state.areaSelectionStartPoint!;
-      final left =
-          startPoint.dx < currentPoint.dx ? startPoint.dx : currentPoint.dx;
-      final top =
-          startPoint.dy < currentPoint.dy ? startPoint.dy : currentPoint.dy;
-      final right =
-          startPoint.dx > currentPoint.dx ? startPoint.dx : currentPoint.dx;
-      final bottom =
-          startPoint.dy > currentPoint.dy ? startPoint.dy : currentPoint.dy;
-
-      final rect = Rect.fromLTRB(left, top, right, bottom);
-      state.selectionArea.value = rect;
-
-      // 实时更新选中的文件
-      _updateSelectedFilesInArea(rect);
-    }
-  }
-
-  /// 结束范围选择
-  void endAreaSelection() {
-    state.isAreaSelectionActive.value = false;
-    state.selectionArea.value = null;
-    state.areaSelectionStartPoint = null;
-  }
-
-  /// 取消范围选择
-  void cancelAreaSelection() {
-    state.isAreaSelectionActive.value = false;
-    state.selectionArea.value = null;
-    state.areaSelectionStartPoint = null;
-    // 可选：清除已选中的文件
-    // state.selectedFileIds.value = {};
-  }
-
-  /// 更新范围内选中的文件
-  void _updateSelectedFilesInArea(Rect selectionRect) {
-    // 这个方法需要在UI层调用，因为需要知道每个文件项的实际位置
-    // 暂时留空，具体实现会在UI层处理
-  }
-
-  /// 处理范围选择中的文件项
-  void handleFileInAreaSelection(
-    LibraryFile file,
-    Rect fileRect,
-    Rect selectionRect,
-  ) {
-    final currentSelection = Set<int>.from(state.selectedFileIds.value);
-
-    // 检查文件项的矩形区域是否与选择区域相交
-    if (selectionRect.overlaps(fileRect)) {
-      currentSelection.add(file.id);
-    } else {
-      // 如果不在选择区域内，但之前被选中，则移除
-      // 注意：这里可能需要根据具体需求调整逻辑
-      // currentSelection.remove(file.id);
-    }
-
-    state.selectedFileIds.value = currentSelection;
-  }
-
   /// 清理事件监听
   void dispose() {
     for (final key in state.eventSubscribes) {
       EventManager.instance.unsubscribe(key);
+    }
+
+    // 清理 LibraryEventManager 的订阅
+    eventSubscription.cancel();
+    tagsUpdateSubscription?.cancel();
+    folderUpdateSubscription?.cancel();
+
+    // 清理防抖相关资源
+    _loadFilesSubscription.cancel();
+    _loadFilesSubject.close();
+    _loadFoldersTagsSubscription.cancel();
+    _loadFoldersTagsSubject.close();
+  }
+
+  // ===== Values 更新逻辑 =====
+
+  /// 设置值变化监听器
+  void setupValueListeners(Map<String, ValueNotifier<dynamic>> values) {
+    // 首先同步初始值
+    _syncValuesToState(values);
+
+    // 监听分页选项变化
+    values['paginationOptions']?.addListener(() {
+      state.paginationOptionsNotifier.value = Map<String, dynamic>.from(
+        values['paginationOptions']!.value,
+      );
+      _updateStoredValue(
+        'paginationOptions',
+        values['paginationOptions']!.value,
+      );
+    });
+
+    // 监听排序选项变化
+    values['sortOptions']?.addListener(() {
+      state.sortOptionsNotifier.value = Map<String, dynamic>.from(
+        values['sortOptions']!.value,
+      );
+      _updateStoredValue('sortOptions', values['sortOptions']!.value);
+    });
+
+    // 监听每行图片数变化
+    values['imagesPerRow']?.addListener(() {
+      _updateStoredValue('imagesPerRow', values['imagesPerRow']!.value);
+    });
+
+    // 监听过滤器变化
+    values['filter']?.addListener(() {
+      state.filterOptionsNotifier.value = Map<String, dynamic>.from(
+        values['filter']!.value,
+      );
+      _updateStoredValue('filter', values['filter']!.value);
+    });
+
+    // 监听显示字段变化
+    values['displayFields']?.addListener(() {
+      state.displayFieldsNotifier.value = Set<String>.from(
+        values['displayFields']!.value,
+      );
+      _updateStoredValue('displayFields', values['displayFields']!.value);
+    });
+
+    // 监听需要更新状态变化
+    values['needUpdate']?.addListener(() {
+      tabData.needUpdate = values['needUpdate']!.value;
+      values['_tabDataJson']?.value = tabData.toJson();
+    });
+  }
+
+  /// 同步 dock values 到 state
+  void _syncValuesToState(Map<String, ValueNotifier<dynamic>> values) {
+    // 同步分页选项
+    if (values['paginationOptions'] != null) {
+      state.paginationOptionsNotifier.value = Map<String, dynamic>.from(
+        values['paginationOptions']!.value,
+      );
+    }
+
+    // 同步排序选项
+    if (values['sortOptions'] != null) {
+      state.sortOptionsNotifier.value = Map<String, dynamic>.from(
+        values['sortOptions']!.value,
+      );
+    }
+
+    // 同步过滤器选项
+    if (values['filter'] != null) {
+      state.filterOptionsNotifier.value = Map<String, dynamic>.from(
+        values['filter']!.value,
+      );
+    }
+
+    // 同步显示字段
+    if (values['displayFields'] != null) {
+      state.displayFieldsNotifier.value = Set<String>.from(
+        values['displayFields']!.value,
+      );
+    }
+  }
+
+  /// 更新stored值并保存
+  void _updateStoredValue(
+    String key,
+    dynamic value, {
+    bool skipBroadcast = false,
+  }) {
+    tabData.stored[key] = value;
+
+    // 只有在不跳过广播时才发送事件
+    // 这避免了在响应外部更新时造成的循环调用
+    if (!skipBroadcast) {
+      // 这里会通过DockManager来保存数据
+      // TODO: 数据保存到本地
+      LibraryEventManager.instance.broadcast(
+        'tab::doUpdate',
+        MapEventArgs({'tabId': tabData.tabId, 'itemId': tabData.itemId}),
+      );
+    }
+  }
+
+  /// 初始化values
+  static Map<String, ValueNotifier<dynamic>> initializeValues(
+    LibraryTabData tabData,
+    Map<String, ValueNotifier<dynamic>>? initialValues,
+  ) {
+    final values = initialValues ?? <String, ValueNotifier<dynamic>>{};
+
+    // 从stored数据中初始化动态值
+    final stored = tabData.stored;
+
+    values['paginationOptions'] = ValueNotifier(
+      stored['paginationOptions'] ?? {'page': 1, 'perPage': 1000},
+    );
+    values['sortOptions'] = ValueNotifier(
+      stored['sortOptions'] ?? {'field': 'id', 'order': 'desc'},
+    );
+    values['imagesPerRow'] = ValueNotifier(stored['imagesPerRow'] ?? 0);
+    values['filter'] = ValueNotifier(stored['filter'] ?? {});
+    values['displayFields'] = ValueNotifier(
+      stored['displayFields'] ??
+          [
+            'title',
+            'rating',
+            'notes',
+            'createdAt',
+            'tags',
+            'folder',
+            'size',
+            'ext',
+          ],
+    );
+    values['needUpdate'] = ValueNotifier(tabData.needUpdate);
+
+    // 存储LibraryTabData的完整信息以便恢复
+    values['_tabDataJson'] = ValueNotifier(tabData.toJson());
+
+    return values;
+  }
+
+  /// 获取stored值
+  T? getStoredValue<T>(String key, [T? defaultValue]) {
+    final stored = tabData.stored;
+    return stored[key] as T? ?? defaultValue;
+  }
+
+  /// 设置stored值
+  void setStoredValue(
+    String key,
+    dynamic value,
+    Map<String, ValueNotifier<dynamic>> values,
+  ) {
+    tabData.stored[key] = value;
+    values['_tabDataJson']?.value = tabData.toJson();
+  }
+
+  /// 处理外部值更新（比如从UI组件直接更新dock values）
+  /// 这个方法会同步值到state但不触发refresh，避免循环
+  void handleExternalValueUpdate(
+    String key,
+    dynamic value,
+    Map<String, ValueNotifier<dynamic>> values,
+  ) {
+    // 更新stored值
+    _updateStoredValue(key, value, skipBroadcast: true);
+
+    // 同步到state
+    switch (key) {
+      case 'paginationOptions':
+        state.paginationOptionsNotifier.value = Map<String, dynamic>.from(
+          value,
+        );
+        break;
+      case 'sortOptions':
+        state.sortOptionsNotifier.value = Map<String, dynamic>.from(value);
+        break;
+      case 'filter':
+        state.filterOptionsNotifier.value = Map<String, dynamic>.from(value);
+        break;
+      case 'displayFields':
+        state.displayFieldsNotifier.value = Set<String>.from(value);
+        break;
+    }
+
+    // 立即触发数据加载，但不广播事件避免循环
+    if (key == 'filter' || key == 'sortOptions' || key == 'paginationOptions') {
+      loadFilesImmediate();
     }
   }
 }

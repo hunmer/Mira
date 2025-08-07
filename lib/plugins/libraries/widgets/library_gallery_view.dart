@@ -16,10 +16,12 @@ import 'library_gallery_view/index.dart';
 /// 图库视图主组件
 class LibraryGalleryView extends StatefulWidget {
   final LibraryTabData? tabData; // 添加tabData参数
+  final Map<String, ValueNotifier<dynamic>>? dockValues; // 添加dock values参数
 
   const LibraryGalleryView({
     super.key,
     required this.tabData, // 可选参数
+    this.dockValues, // dock values参数
   });
 
   @override
@@ -59,6 +61,11 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       library: library,
     );
     _events.initEvents();
+
+    // 如果提供了dock values，设置值变化监听器
+    if (widget.dockValues != null) {
+      _events.setupValueListeners(widget.dockValues!);
+    }
 
     _builders = LibraryGalleryBuilders(
       state: _state,

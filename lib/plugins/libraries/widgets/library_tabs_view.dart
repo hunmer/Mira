@@ -7,7 +7,6 @@ import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/dock/dock_controller.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
-import 'package:mira/plugins/libraries/services/library_event_manager.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
 import 'package:mira/core/widgets/hotkey_settings_view.dart';
 import 'package:mira/core/widgets/window_controls.dart';
@@ -50,7 +49,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
     // 异步初始化dock系统
     _initializeDock();
-    init();
   }
 
   Future<void> _initializeDock() async {
@@ -63,27 +61,9 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     _dockChangeSubject.add(null);
   }
 
-  Future<void> init() async {
-    // 使用 LibraryEventManager 监听库更新事件
-    final eventSubscription = LibraryEventManager.instance.addListener((
-      EventArgs args,
-    ) {
-      if (args is MapEventArgs) {
-        final libraryId = args.item['libraryId'];
-        // TODO: 更新对应的dock item
-        print('Library updated: $libraryId');
-      }
-    });
-
-    _subscriptions.add(eventSubscription);
-  }
-
   @override
   void dispose() {
     super.dispose();
-    for (final subscription in _subscriptions) {
-      subscription.cancel();
-    }
     _dockController.removeListener(_onDockControllerChanged);
     _dockController.dispose();
     _dockChangeSubject.close();

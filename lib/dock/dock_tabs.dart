@@ -143,7 +143,7 @@ class DockTabs {
     }
 
     // 发送tab创建事件
-    _eventStreamController?.emit(
+    emitEvent(
       DockTabEvent(
         type: DockEventType.tabCreated,
         dockTabsId: id,
@@ -153,12 +153,16 @@ class DockTabs {
     return dockTab;
   }
 
+  void emitEvent(DockEvent event) {
+    _eventStreamController?.emit(event);
+  }
+
   /// 移除DockTab
   bool removeDockTab(String tabId) {
     final dockTab = _dockTabs.remove(tabId);
     if (dockTab != null) {
       // 发送tab关闭事件
-      _eventStreamController?.emit(
+      emitEvent(
         DockTabEvent(
           type: DockEventType.tabClosed,
           dockTabsId: id,
@@ -255,7 +259,7 @@ class DockTabs {
               : DockManager.createDefaultHomePageDockItem(),
     );
     // 触发布局变化通知
-    _eventStreamController?.emit(DockLayoutEvent(dockTabsId: id));
+    emitEvent(DockLayoutEvent(dockTabsId: id));
   }
 
   /// 构建带事件监听的Tab内容
@@ -435,11 +439,6 @@ class DockTabs {
     );
   }
 
-  /// 刷新界面
-  void refresh() {
-    _rebuildGlobalLayout();
-  }
-
   /// 处理DockItem关闭事件
   void _handleItemClose(DockingItem dockingItem) {
     final exists = _dockTabs.containsKey(dockingItem.id);
@@ -447,7 +446,7 @@ class DockTabs {
       _dockTabs.remove(dockingItem.id);
     }
     // 总是触发关闭事件
-    _eventStreamController?.emit(
+    emitEvent(
       DockTabEvent(
         type: DockEventType.tabClosed,
         dockTabsId: id,
@@ -461,7 +460,7 @@ class DockTabs {
     // 这里可以添加选择事件的处理逻辑
     _activeTabId = dockingItem.id;
     // item选择事件
-    _eventStreamController?.emit(
+    emitEvent(
       DockTabEvent(
         type: DockEventType.tabSelected,
         dockTabsId: id,
@@ -483,7 +482,7 @@ class DockTabs {
     );
 
     // 发送item移动事件
-    _eventStreamController?.emit(
+    emitEvent(
       DockTabEvent(
         type: DockEventType.layoutChanged,
         dockTabsId: id,
@@ -507,7 +506,7 @@ class DockTabs {
     );
 
     // 发送tab布局变化事件
-    _eventStreamController?.emit(
+    emitEvent(
       DockTabEvent(
         type: DockEventType.tabPositionChanged,
         dockTabsId: id,
@@ -528,7 +527,7 @@ class DockTabs {
     );
 
     // 发送item位置变化事件
-    _eventStreamController?.emit(
+    emitEvent(
       DockTabEvent(
         type: DockEventType.tabPositionChanged,
         dockTabsId: id,
@@ -551,7 +550,7 @@ class DockTabs {
       // 传递rebuildLayout参数，避免DockTab内部立即刷新布局
       dockTab.addDockItem(dockItem, rebuildLayout: false);
       // 发送item创建事件
-      _eventStreamController?.emit(
+      emitEvent(
         DockTabEvent(
           type: DockEventType.tabCreated,
           dockTabsId: id,
@@ -691,9 +690,7 @@ class DockTabs {
         // 将加载的布局设置为全局布局
         _globalLayout = tempLayout;
         // 强制重新构建UI
-        _eventStreamController?.emit(
-          DockLayoutEvent(dockTabsId: id, layoutData: layoutString),
-        );
+        emitEvent(DockLayoutEvent(dockTabsId: id, layoutData: layoutString));
         return true;
       } else {
         print('Failed to load layout - loadLayout returned false');
