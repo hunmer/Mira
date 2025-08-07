@@ -8,7 +8,7 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:uuid/uuid.dart';
 import '../models/library.dart';
 import 'library_content_view.dart';
-import 'library_tab_manager.dart';
+import 'library_tab_data.dart';
 
 /// LibraryDockItem - 继承自DockItem的库标签页项目
 class LibraryDockItem extends DockItem {

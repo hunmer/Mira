@@ -1,6 +1,5 @@
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
-import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_tabs.dart';
 import 'dock_tab.dart';
 import 'dock_item.dart';
@@ -144,16 +143,6 @@ class DockManager {
     return dockTabs.addDockItemToTab(tabId, dockItem);
   }
 
-  /// 移除DockItem (基于ID)
-  static bool removeDockItemById(
-    String dockTabsId,
-    String tabId,
-    String itemId,
-  ) {
-    final dockTabs = getDockTabs(dockTabsId);
-    return dockTabs?.removeDockItemFromTabById(tabId, itemId) ?? false;
-  }
-
   /// 获取DockItem (基于ID)
   static DockItem? getDockItemById(
     String dockTabsId,
@@ -229,31 +218,5 @@ class DockManager {
       return stored?[key] as T? ?? defaultValue;
     }
     return defaultValue;
-  }
-
-  /// 关闭所有库标签页
-  static void closeAllLibraryTabs({
-    String dockTabsId = 'main',
-    String dockTabId = 'home',
-  }) {
-    final dockTabs = getDockTabs(dockTabsId);
-    final dockTab = dockTabs?.getDockTab(dockTabId);
-    if (dockTab != null) {
-      // 获取所有library类型的dock items并移除
-      final itemsToRemove = <String>[];
-      for (final item in dockTab.getAllDockItems()) {
-        itemsToRemove.add(item.id);
-      }
-      for (final itemId in itemsToRemove) {
-        removeDockItemById(dockTabsId, dockTabId, itemId); // 使用ID删除
-      }
-    }
-  }
-
-  /// 设置StorageManager实例（已废弃，布局存储现在由DockLayoutController管理）
-  @Deprecated('Use DockLayoutController.initializeStorage instead')
-  static Future<void> setStorageManager(StorageManager storageManager) async {
-    // 空实现，保持向后兼容
-    _instance._isInitialized = true;
   }
 }

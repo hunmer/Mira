@@ -9,7 +9,7 @@ import 'package:mira/plugins/libraries/controllers/libraray_local_controller.dar
 import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock_adapter.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
 import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'services/websocket_server.dart';

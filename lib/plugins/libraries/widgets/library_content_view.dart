@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_data.dart';
 
 class LibraryContentView extends StatefulWidget {
   final LibrariesPlugin plugin;

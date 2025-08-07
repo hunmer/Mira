@@ -1,14 +1,13 @@
 import 'package:mira/dock/dock_manager.dart';
-import 'library_tab_manager.dart';
-import 'i_library_tab_manager.dart';
+import 'library_tab_data.dart';
 import '../models/library.dart';
 import 'library_dock_item.dart';
 
 /// LibraryTabManager的dock适配器
 /// 提供与原LibraryTabManager兼容的接口，但使用dock系统作为后端
-class LibraryTabManagerDockAdapter implements ILibraryTabManager {
+class LibraryTabManagerDockAdapter {
   /// 获取存储值
-  @override
+
   dynamic getStoredValue(String tabId, String key, dynamic defaultValue) {
     return DockManager.getLibraryTabStoredValue(
       tabId,
@@ -18,7 +17,7 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   }
 
   /// 更新过滤器
-  @override
+
   void updateFilter(String tabId, Map<String, dynamic> filter) {
     DockManager.updateLibraryTabStoredValue(tabId, 'filter', {
       ..._getCurrentFilter(tabId),
@@ -43,7 +42,7 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   }
 
   /// 获取tab数据 - 从dock系统中获取
-  @override
+
   LibraryTabData? getTabData(String tabId) {
     // 首先尝试从dock系统获取DockItem
     final dockItem = DockManager.getDockItemById(
@@ -62,13 +61,13 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   }
 
   /// 设置存储值
-  @override
+
   void setStoreValue(String tabId, String key, dynamic value) {
     DockManager.updateLibraryTabStoredValue(tabId, key, value);
   }
 
   /// 设置值
-  @override
+
   void setValue(String tabId, String key, dynamic value) {
     // 根据key的不同，映射到dock系统的不同存储位置
     switch (key) {
@@ -92,7 +91,7 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   }
 
   /// 尝试更新
-  @override
+
   void tryUpdate(String tabId) {
     final needUpdate = getStoredValue(tabId, 'needUpdate', false);
     if (needUpdate == true) {
@@ -103,18 +102,16 @@ class LibraryTabManagerDockAdapter implements ILibraryTabManager {
   }
 
   /// 设置排序选项
-  @override
+
   void setSortOptions(String tabId, Map<String, dynamic> sortOptions) {
     DockManager.updateLibraryTabStoredValue(tabId, 'sortOptions', sortOptions);
   }
 
-  @override
   String? getCurrentTabId() {
     // TODO: 需要在DockManager中实现获取当前活动tab的逻辑
     return null;
   }
 
-  @override
   void addTab(
     Library library, {
     String title = '',

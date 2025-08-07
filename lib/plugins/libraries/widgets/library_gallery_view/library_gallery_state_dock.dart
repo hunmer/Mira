@@ -7,7 +7,7 @@ import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/event/event_args.dart';
-import 'package:mira/plugins/libraries/widgets/library_tab_manager.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_data.dart';
 import 'drag_select_view.dart';
 
 /// Gallery状态管理 - 适配dock系统版本

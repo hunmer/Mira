@@ -89,7 +89,6 @@ class DockTabs {
   }
 
   void loadFromJson(Map<String, dynamic> json) {
-    // 重新初始化
     _initializeFromJson(json);
   }
 
@@ -111,6 +110,9 @@ class DockTabs {
     double? minimalSize,
     bool rebuildLayout = true, // 新增参数，控制是否立即重建布局
   }) {
+    // 在添加新tab之前，检查并清除所有默认空tab
+    _clearDefaultEmptyTabs();
+
     final dockTab = DockTab(
       id: tabId,
       displayName: displayName,
@@ -133,11 +135,13 @@ class DockTabs {
       },
     );
 
-    // 在添加新tab之前，检查并清除所有默认空tab
-    _clearDefaultEmptyTabs();
     _dockTabs[tabId] = dockTab;
-    // 如果这是第一个tab或者没有激活的tab，将其设为激活状态
     _activeTabId ??= tabId;
+
+    if (rebuildLayout) {
+      _rebuildGlobalLayout();
+    }
+
     // 发送tab创建事件
     _eventStreamController?.emit(
       DockTabEvent(
@@ -146,10 +150,6 @@ class DockTabs {
         values: {'tabs': this, 'item': null},
       ),
     );
-
-    if (rebuildLayout) {
-      _rebuildGlobalLayout();
-    }
     return dockTab;
   }
 
@@ -208,33 +208,6 @@ class DockTabs {
       return true;
     }
     return false;
-  }
-
-  /// 刷新全局布局（保持现有布局结构）
-  void _refreshGlobalLayout() {
-    // 保存当前布局字符串（如果有的话）
-    String? currentLayoutString;
-    try {
-      currentLayoutString = getLayoutString();
-    } catch (e) {
-      print('无法保存当前布局: $e');
-    }
-
-    // 先重建布局
-    _rebuildGlobalLayout();
-
-    // 如果有保存的布局且成功保存，尝试恢复布局结构
-    if (currentLayoutString != null && currentLayoutString.isNotEmpty) {
-      try {
-        // 延迟恢复布局，确保新的item已经正确添加
-        Future.delayed(const Duration(milliseconds: 50), () {
-          loadLayout(currentLayoutString!);
-        });
-      } catch (e) {
-        print('无法恢复布局: $e');
-        // 如果恢复失败，保持重建后的布局
-      }
-    }
   }
 
   /// 重建全局布局（使用 RxDart 防抖控制）
@@ -358,7 +331,6 @@ class DockTabs {
     DockingTabs? dockingTabs,
   ) {
     List<TabButton> buttons = [];
-
     // 添加新tab按钮
     buttons.add(
       TabButton(
@@ -368,7 +340,6 @@ class DockTabs {
         },
       ),
     );
-
     // 如果有tab，添加删除所有tab按钮
     if (dockingTabs != null) {
       buttons.add(
@@ -588,22 +559,6 @@ class DockTabs {
         ),
       );
       return true;
-    }
-    return false;
-  }
-
-  /// 从指定的DockTab移除DockItem (基于ID)
-  bool removeDockItemFromTabById(String tabId, String itemId) {
-    final dockTab = getDockTab(tabId);
-    if (dockTab != null) {
-      // 获取item信息用于事件发射
-      final dockItem = dockTab.getDockItemById(itemId);
-      final result = dockTab.removeDockItemById(itemId);
-      if (result) {
-        // 注意：不在这里发送事件，因为 dockTab.removeDockItemById 内部已经发送了事件
-        _refreshGlobalLayout();
-      }
-      return result;
     }
     return false;
   }

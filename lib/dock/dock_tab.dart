@@ -191,25 +191,18 @@ class DockTab {
   bool updateDockItemById(String id, Map<String, dynamic> updates) {
     final dockItem = getDockItemById(id);
     if (dockItem != null) {
-      for (var entry in updates.entries) {
-        dockItem.update(entry.key, entry.value);
-      }
-      return true;
+      return updateDockItem(dockItem, updates);
     }
     return false;
   }
 
-  /// 更新DockItem (基于title，保持向后兼容)
-  bool updateDockItem(String title, Map<String, dynamic> updates) {
+  /// 更新DockItem
+  bool updateDockItem(DockItem dockItem, Map<String, dynamic> updates) {
     // 优先尝试作为ID查找
-    var dockItem = getDockItemById(title);
-    if (dockItem != null) {
-      for (var entry in updates.entries) {
-        dockItem.update(entry.key, entry.value);
-      }
-      return true;
+    for (var entry in updates.entries) {
+      dockItem.update(entry.key, entry.value);
     }
-    return false;
+    return true;
   }
 
   /// 重建布局（使用rxdart防抖控制）
