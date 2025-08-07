@@ -58,7 +58,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
             onSelectionChanged: (ids) {
               LibraryTabManager.updateFilter(widget.tabId, widget.itemId, {
                 'folder': ids != null && ids.isNotEmpty ? ids.first : '',
-              });
+              }, overwrite: false);
             },
             type: 'folders',
           ),
@@ -80,6 +80,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
                   widget.tabId,
                   widget.itemId,
                   {'tags': ids},
+                  overwrite: false,
                 ),
             type: 'tags',
           ),

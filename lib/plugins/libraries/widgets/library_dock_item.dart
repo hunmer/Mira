@@ -2,17 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:mira/dock/dock_item.dart';
 import 'package:mira/dock/dock_manager.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
-import 'package:mira/core/plugin_manager.dart';
-import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
 import 'package:uuid/uuid.dart';
 import '../models/library.dart';
-import 'library_content_view.dart';
 import 'library_tab_data.dart';
 
 /// LibraryDockItem - 继承自DockItem的库标签页项目
 class LibraryDockItem extends DockItem {
   final LibraryTabData tabData;
-  late final LibrariesPlugin plugin;
   static bool _isBuilderRegistered = false;
 
   // 为每个实例创建固定的GlobalKey
@@ -33,7 +30,7 @@ class LibraryDockItem extends DockItem {
              name: item.title,
              closable: true,
              keepAlive: true, // 启用keepAlive
-             widget: LibraryContentView(
+             widget: LibraryGalleryView(
                key: libraryItem._contentKey, // 使用固定的GlobalKey
                tabData: tabData,
              ),
@@ -45,8 +42,6 @@ class LibraryDockItem extends DockItem {
 
     // 初始化固定的GlobalKey
     _contentKey = GlobalKey();
-    plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
-
     _setupValueListeners();
   }
 
@@ -193,6 +188,7 @@ class LibraryDockItem extends DockItem {
     values['_tabDataJson']?.value = tabData.toJson();
     // 这里会通过DockManager来保存数据
     // TODO: 数据保存到本地
+    // TODO: 通知刷新
   }
 
   /// 静态方法：添加库标签页

@@ -205,9 +205,16 @@ class DockManager {
     String key,
     dynamic value, {
     String dockTabsId = 'main',
+    bool overwrite = false,
   }) {
     final dockItem = getDockItemById(dockTabsId, tabId, itemId);
     if (dockItem != null) {
+      if (!overwrite && dockItem.getValue(key) is Map) {
+        final existingValue = dockItem.getValue(key) as Map?;
+        if (existingValue != null && value is Map) {
+          value = {...existingValue.cast<String, dynamic>(), ...value};
+        }
+      }
       dockItem.update(key, value);
       return true;
     }
@@ -224,7 +231,10 @@ class DockManager {
   }) {
     final dockItem = getDockItemById(dockTabsId, tabId, itemId);
     if (dockItem != null) {
-      return dockItem.getValue(key) as T? ?? defaultValue;
+      final value = dockItem.getValue(key);
+      if (value is T) {
+        return value;
+      }
     }
     return defaultValue;
   }

@@ -27,12 +27,13 @@ class LibraryTabManager {
   static void updateFilter(
     String tabId,
     String itemId,
-    Map<String, dynamic> filter,
-  ) {
+    Map<String, dynamic> filter, {
+    bool overwrite = true,
+  }) {
     DockManager.updateLibraryTabValue(tabId, itemId, 'filter', {
       ...getCurrentFilter(tabId, itemId),
       ...filter,
-    });
+    }, overwrite: overwrite);
 
     // 重置分页到第一页
     DockManager.updateLibraryTabValue(tabId, itemId, 'paginationOptions', {
