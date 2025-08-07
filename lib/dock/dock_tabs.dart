@@ -7,6 +7,7 @@ import 'package:mira/dock/docking/lib/src/docking.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/layout/drop_position.dart'
     as docking_drop;
+import 'package:mira/multi_split_view/lib/multi_split_view.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'package:rxdart/rxdart.dart';
@@ -380,39 +381,34 @@ class DockTabs {
   /// 构建带主题的Docking Widget
   Widget buildDockingWidget(BuildContext context) {
     rebuild(); // 触发布局重建
-    return TabbedViewTheme(
-      data: _themeData ?? DockTheme.createCustomThemeData(context),
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        child: _buildContextMenuWrapper(
-          Docking(
-            layout: _globalLayout,
-            dockingButtonsBuilder: (
-              BuildContext context,
-              DockingTabs? dockingTabs,
-              DockingItem? dockingItem,
-            ) {
-              return _buildTabsAreaButtons(context, dockingTabs);
-            },
-            onItemClose: _handleItemClose,
-            onItemSelection: _handleItemSelection,
-            onTabMove: _handleItemMove,
-            onTabLayoutChanged: _handleItemLayoutChanged,
-            onItemPositionChanged: _handleItemPositionChanged,
-          ),
+    Docking docking = Docking(
+      layout: _globalLayout,
+      dockingButtonsBuilder: (
+        BuildContext context,
+        DockingTabs? dockingTabs,
+        DockingItem? dockingItem,
+      ) {
+        return _buildTabsAreaButtons(context, dockingTabs);
+      },
+      onItemClose: _handleItemClose,
+      onItemSelection: _handleItemSelection,
+      onTabMove: _handleItemMove,
+      onTabLayoutChanged: _handleItemLayoutChanged,
+      onItemPositionChanged: _handleItemPositionChanged,
+    );
+    MultiSplitViewTheme theme = MultiSplitViewTheme(
+      child: docking,
+      data: MultiSplitViewThemeData(
+        dividerPainter: DividerPainters.grooved1(
+          color: Colors.indigo[100]!,
+          highlightedColor: Colors.indigo[900]!,
         ),
       ),
     );
-  }
 
-  /// 包装右键菜单功能
-  Widget _buildContextMenuWrapper(Widget child) {
-    return GestureDetector(
-      onSecondaryTapDown: (details) {
-        // 这里需要获取当前被右键点击的tab信息
-        // 由于docking库的限制，我们将在DockItem级别处理右键菜单
-      },
-      child: child,
+    return TabbedViewTheme(
+      data: _themeData ?? DockTheme.createCustomThemeData(context),
+      child: Container(padding: const EdgeInsets.all(16), child: theme),
     );
   }
 
@@ -632,12 +628,6 @@ class DockTabs {
       return false;
     }
     try {
-      // 尝试恢复元数据
-      final metadataString = DockLayoutManager.getSavedLayout('${id}_metadata');
-      if (metadataString != null) {
-        // 这里可以解析元数据来恢复状态
-      }
-
       // 为所有可能的tab注册parser
       for (var entry in _dockTabs.entries) {
         final tabParser = DefaultDockLayoutParser(
@@ -683,51 +673,5 @@ class DockTabs {
       print('Failed to load layout: $e');
       return false;
     }
-  }
-
-  /// 保存当前Tab的布局
-  String? saveTabLayout(String tabId) {
-    final tab = getDockTab(tabId);
-    if (tab != null) {
-      final parser = DefaultDockLayoutParser(dockTabsId: id, tabId: tabId);
-      DockLayoutManager.registerParser('${id}_${tabId}_layout', parser);
-      return DockLayoutManager.saveLayout(
-        '${id}_${tabId}_layout',
-        tab.layout,
-        parser,
-      );
-    }
-    return null;
-  }
-
-  /// 加载Tab布局
-  bool loadTabLayout(String tabId, String layoutString) {
-    final tab = getDockTab(tabId);
-    if (tab != null) {
-      try {
-        final parser = DefaultDockLayoutParser(dockTabsId: id, tabId: tabId);
-        DockLayoutManager.registerParser('${id}_${tabId}_layout', parser);
-
-        // 临时保存布局字符串
-        DockLayoutManager.setSavedLayout('${id}_${tabId}_layout', layoutString);
-
-        final success = DockLayoutManager.loadLayout(
-          '${id}_${tabId}_layout',
-          tab.layout,
-        );
-        emitEvent(
-          DockTabEvent(
-            type: DockEventType.layoutChanged,
-            dockTabsId: id,
-            values: {'tabId': tabId, 'layoutString': layoutString},
-          ),
-        );
-        return success;
-      } catch (e) {
-        print('Failed to load tab layout: $e');
-        return false;
-      }
-    }
-    return false;
   }
 }

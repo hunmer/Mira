@@ -164,36 +164,25 @@ class DockLayoutController {
   Future<String?> loadLayout() async {
     try {
       _isLayoutLoading = true;
-      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': true});
 
       final layoutId = '${dockTabsId}_layout';
       final layoutString = await _storageManager!.readJson(layoutId, null);
 
       if (layoutString != null && layoutString is String) {
-        print('DockLayoutController: Layout loaded successfully');
-        _emitEvent(
-          DockEventType.layoutLoaded,
-          data: {'success': true, 'layoutData': layoutString},
-        );
         return layoutString;
       }
-      _emitEvent(DockEventType.layoutLoaded, data: {'success': false});
-      return '';
     } catch (e) {
       print('DockLayoutController: Error loading layout: $e');
-      _emitEvent(DockEventType.layoutLoaded, data: {'success': false});
-      return null;
     } finally {
       _isLayoutLoading = false;
-      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': false});
     }
+    return null;
   }
 
   /// 加载完整的布局（包括DockingData和Layout字符串）
   Future<bool> loadCompleteLayout() async {
     try {
       _isLayoutLoading = true;
-      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': true});
 
       // 首先加载 DockingData
       final dockingData = await _loadDockingData();
@@ -221,7 +210,6 @@ class DockLayoutController {
       return false;
     } finally {
       _isLayoutLoading = false;
-      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': false});
     }
   }
 
@@ -230,10 +218,8 @@ class DockLayoutController {
     if (layoutString.isEmpty) {
       return false;
     }
-
     try {
       _isLayoutLoading = true;
-      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': true});
 
       // 直接应用布局字符串，不通过存储
       final dockTabs = DockManager.getDockTabs(dockTabsId);
@@ -261,7 +247,6 @@ class DockLayoutController {
       return false;
     } finally {
       _isLayoutLoading = false;
-      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': false});
     }
   }
 
@@ -269,7 +254,6 @@ class DockLayoutController {
   Future<bool> resetToDefaultLayout() async {
     try {
       _isLayoutLoading = true;
-      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': true});
 
       // 清除保存的布局字符串
       final layoutId = '${dockTabsId}_layout';
@@ -288,7 +272,6 @@ class DockLayoutController {
       return false;
     } finally {
       _isLayoutLoading = false;
-      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': false});
     }
   }
 
@@ -350,7 +333,6 @@ class DockLayoutController {
   Future<bool> loadLayoutFromPreset(String presetId) async {
     try {
       _isLayoutLoading = true;
-      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': true});
 
       // 获取所有预设并找到指定的预设
       final presets = await LayoutPresetManager.getAllPresets();
@@ -388,7 +370,6 @@ class DockLayoutController {
       return false;
     } finally {
       _isLayoutLoading = false;
-      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': false});
     }
   }
 

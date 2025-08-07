@@ -63,7 +63,16 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
   void _onDockControllerChanged(DockEvent event) {
     print('tabs_view changed: ${event.type}');
-    _dockChangeSubject.add(null);
+    switch (event.type) {
+      case DockEventType.tabClosed:
+      case DockEventType.tabCreated:
+      case DockEventType.layoutLoaded:
+        _dockChangeSubject.add(null);
+        break;
+
+      default:
+        break;
+    }
   }
 
   @override

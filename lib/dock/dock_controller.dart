@@ -98,36 +98,18 @@ class DockController {
     if (event is DockTabEvent) {
       final item = event.values['item'] as DockingItem?;
       final tab = event.values['tabs'] as DockTabs?;
-      switch (event.type) {
-        case DockEventType.tabClosed:
-        case DockEventType.tabCreated:
-          if (tab!.isEmpty) {
-            print('is Empty');
-          }
-          // 不需要再次调用 _onLayoutControllerChanged，因为这会导致循环
-          break;
-        default:
-          break;
-      }
-    } else {
-      switch (event.type) {
-        case DockEventType.update:
-          // 不需要再次调用 _onLayoutControllerChanged，因为这会导致循环
-          break;
-        case DockEventType.layoutChanged:
-          break;
-        case DockEventType.tabPositionChanged:
-          break;
-        default:
-          break;
+      if ([
+        DockEventType.tabClosed,
+        DockEventType.tabCreated,
+      ].contains(event.type)) {
+        if (tab!.isEmpty) {
+          print('is Empty');
+        }
       }
     }
 
     // 只对特定的事件类型进行延迟保存布局
-    if (event.type == DockEventType.tabClosed ||
-        event.type == DockEventType.tabCreated ||
-        event.type == DockEventType.update ||
-        event.type == DockEventType.layoutChanged) {
+    if (event.type == DockEventType.tabPositionChanged) {
       // 延迟保存布局
       Future.delayed(const Duration(milliseconds: 1000), () {
         saveLayout();
