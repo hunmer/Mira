@@ -7,6 +7,7 @@ enum DockEventType {
   tabCreated,
   tabSelected,
   layoutChanged,
+  allTabsCleared,
   tabPositionChanged,
 }
 

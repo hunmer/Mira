@@ -7,6 +7,88 @@ import 'package:mira/core/event/event_manager.dart';
 export 'package:mira/core/event/event_manager.dart' show EventArgs;
 export 'package:mira/core/event/event_args.dart' show MapEventArgs;
 
+/// 回调信息类
+class _CallbackInfo {
+  final int id;
+  final void Function(EventArgs) callback;
+  bool isPaused;
+
+  _CallbackInfo({
+    required this.id,
+    required this.callback,
+    // ignore: unused_element_parameter
+    this.isPaused = false,
+  });
+}
+
+/// 自定义的 StreamSubscription 实现，用于管理回调的移除
+class _CallbackSubscription implements StreamSubscription<EventArgs> {
+  final String eventType;
+  final int callbackId;
+  final LibraryEventManager manager;
+  bool _isCancelled = false;
+
+  _CallbackSubscription({
+    required this.eventType,
+    required this.callbackId,
+    required this.manager,
+  });
+
+  @override
+  Future<void> cancel() async {
+    if (!_isCancelled) {
+      _isCancelled = true;
+      manager._removeCallback(eventType, callbackId);
+    }
+  }
+
+  @override
+  void onData(void Function(EventArgs data)? handleData) {
+    // 这个方法在我们的实现中不需要
+  }
+
+  @override
+  void onDone(void Function()? handleDone) {
+    // 这个方法在我们的实现中不需要
+  }
+
+  @override
+  void onError(Function? handleError) {
+    // 这个方法在我们的实现中不需要
+  }
+
+  @override
+  void pause([Future<void>? resumeSignal]) {
+    manager._pauseCallback(eventType, callbackId);
+    if (resumeSignal != null) {
+      resumeSignal.then((_) => resume());
+    }
+  }
+
+  @override
+  void resume() {
+    manager._resumeCallback(eventType, callbackId);
+  }
+
+  @override
+  bool get isPaused {
+    final callbacks = manager._typeCallbacks[eventType];
+    if (callbacks != null) {
+      for (final info in callbacks) {
+        if (info.id == callbackId) {
+          return info.isPaused;
+        }
+      }
+    }
+    return false;
+  }
+
+  @override
+  Future<E> asFuture<E>([E? futureValue]) {
+    throw UnimplementedError('asFuture is not supported');
+  }
+}
+
 class LibraryEventManager {
   static LibraryEventManager? _instance;
   static LibraryEventManager get instance {
@@ -18,8 +100,11 @@ class LibraryEventManager {
 
   final List<StreamSubscription> _subscriptions = [];
   final Map<String, EventDebouncer> _typeDebouncers = {};
+  final Map<String, List<_CallbackInfo>> _typeCallbacks = {};
+  final Map<String, StreamSubscription> _typeSubscriptions = {};
   late EventDebouncer _changedStream;
   bool _isInitialized = false;
+  int _nextCallbackId = 0;
 
   // 事件类型别名映射
   static const Map<String, List<String>> _eventTypeMap = {
@@ -79,10 +164,29 @@ class LibraryEventManager {
       );
     }
 
-    // 如果该类型的 debouncer 不存在，创建一个新的
-    if (!_typeDebouncers.containsKey(eventType)) {
+    // 如果该类型的回调列表不存在，创建一个新的
+    if (!_typeCallbacks.containsKey(eventType)) {
+      _typeCallbacks[eventType] = [];
+
+      // 创建 debouncer 和单一的 stream 监听器
       final typeDebouncer = EventDebouncer(duration: Duration(seconds: 1));
       _typeDebouncers[eventType] = typeDebouncer;
+
+      // 创建单一的 stream 监听器，调用所有回调
+      _typeSubscriptions[eventType] = typeDebouncer.stream.listen((args) {
+        final callbacks = _typeCallbacks[eventType];
+        if (callbacks != null) {
+          for (final callbackInfo in List.from(callbacks)) {
+            if (!callbackInfo.isPaused) {
+              try {
+                callbackInfo.callback(args);
+              } catch (e) {
+                print('Error in event callback for $eventType: $e');
+              }
+            }
+          }
+        }
+      });
 
       // 订阅对应的事件
       for (final event in events) {
@@ -93,8 +197,59 @@ class LibraryEventManager {
       }
     }
 
-    // 返回对这个类型事件流的监听
-    return _typeDebouncers[eventType]!.stream.listen(onEvent);
+    // 创建回调信息并添加到列表中
+    final callbackId = _nextCallbackId++;
+    final callbackInfo = _CallbackInfo(id: callbackId, callback: onEvent);
+    _typeCallbacks[eventType]!.add(callbackInfo);
+
+    // 返回一个自定义的 StreamSubscription，用于移除回调
+    return _CallbackSubscription(
+      eventType: eventType,
+      callbackId: callbackId,
+      manager: this,
+    );
+  }
+
+  /// 移除指定类型的回调
+  void _removeCallback(String eventType, int callbackId) {
+    final callbacks = _typeCallbacks[eventType];
+    if (callbacks != null) {
+      callbacks.removeWhere((info) => info.id == callbackId);
+
+      // 如果没有更多回调，清理资源
+      if (callbacks.isEmpty) {
+        _typeSubscriptions[eventType]?.cancel();
+        _typeSubscriptions.remove(eventType);
+        _typeDebouncers.remove(eventType);
+        _typeCallbacks.remove(eventType);
+      }
+    }
+  }
+
+  /// 暂停指定的回调
+  void _pauseCallback(String eventType, int callbackId) {
+    final callbacks = _typeCallbacks[eventType];
+    if (callbacks != null) {
+      for (final info in callbacks) {
+        if (info.id == callbackId) {
+          info.isPaused = true;
+          break;
+        }
+      }
+    }
+  }
+
+  /// 恢复指定的回调
+  void _resumeCallback(String eventType, int callbackId) {
+    final callbacks = _typeCallbacks[eventType];
+    if (callbacks != null) {
+      for (final info in callbacks) {
+        if (info.id == callbackId) {
+          info.isPaused = false;
+          break;
+        }
+      }
+    }
   }
 
   /// 获取可用的事件类型
@@ -112,10 +267,16 @@ class LibraryEventManager {
     }
     _subscriptions.clear();
 
-    // 清理类型 debouncers
-    for (final debouncer in _typeDebouncers.values) {
-      // EventDebouncer 可能需要清理方法，如果有的话
+    // 清理类型订阅
+    for (final subscription in _typeSubscriptions.values) {
+      subscription.cancel();
     }
+    _typeSubscriptions.clear();
+
+    // 清理回调列表
+    _typeCallbacks.clear();
+
+    // 清理类型 debouncers
     _typeDebouncers.clear();
 
     _isInitialized = false;

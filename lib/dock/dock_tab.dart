@@ -78,9 +78,7 @@ class DockTab {
       dockItem = dockItem.copyWith(title: _displayName);
     }
     _dockItems.add(dockItem);
-    // if (rebuildLayout) {
     _rebuildLayout();
-    // }
   }
 
   bool removeDockItem(DockItem dockItem) {
@@ -184,14 +182,13 @@ class DockTab {
                 ? DockManager.createDefaultHomePageDockItem()
                 : DockingTabs(dockingItems),
       );
-      // 通知父级DockTabs布局变化
-      _onLayoutChanged?.call();
     } catch (e) {
       print('DockTab: Error during layout rebuild: $e');
       // 发生错误时，使用默认布局
       _layout = DockingLayout(
         root: DockManager.createDefaultHomePageDockItem(),
       );
+    } finally {
       _onLayoutChanged?.call();
     }
   }
@@ -219,9 +216,7 @@ class DockTab {
       for (var item in _dockItems) {
         item.dispose();
       }
-      if (rebuildLayout) {
-        _rebuildLayout();
-      }
+      _rebuildLayout();
     }
   }
 

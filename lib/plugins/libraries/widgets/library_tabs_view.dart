@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/utils/utils.dart';
@@ -38,7 +37,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
     // 设置防抖监听
     _subscriptions.add(
-      _dockChangeSubject.debounceTime(Duration(milliseconds: 1000)).listen((_) {
+      _dockChangeSubject.debounceTime(Duration(milliseconds: 500)).listen((_) {
         _dockUpdateNotifier.value = _dockUpdateNotifier.value + 1;
       }),
     );

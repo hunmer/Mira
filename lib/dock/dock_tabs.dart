@@ -29,9 +29,8 @@ class DockTabs {
   DockEventStreamController? _eventStreamController;
 
   // 防抖控制 - 使用 RxDart
-  final PublishSubject<void> _rebuildSubject = PublishSubject<void>();
-  late final StreamSubscription _rebuildSubscription;
-  static const Duration _rebuildDelay = Duration(milliseconds: 1000);
+  final PublishSubject<DockEvent> _emitdSubject = PublishSubject<DockEvent>();
+  late final StreamSubscription _emitSubscription;
   bool get isEmpty => _dockTabs.isEmpty;
 
   DockTabs({
@@ -43,29 +42,14 @@ class DockTabs {
     _themeData = themeData;
     _eventStreamController = eventStreamController;
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin?;
-
-    // 初始化防抖订阅
-    _rebuildSubscription = _rebuildSubject
-        .debounceTime(_rebuildDelay)
-        .listen((_) => _performRebuild());
-
-    if (initData != null) {
-      _initializeFromJson(initData);
-    } else {
-      _rebuildGlobalLayout(); // 直接重构添加默认布局
-    }
-  }
-
-  /// 安全获取全局布局，如果未初始化则创建默认布局
-  DockingLayout get _safeGlobalLayout {
-    _globalLayout ??= DockingLayout(
-      root: DockManager.createDefaultHomePageDockItem(),
-    );
-    return _globalLayout!;
+    _initializeFromJson(initData);
   }
 
   /// 从JSON数据初始化
-  void _initializeFromJson(Map<String, dynamic> data) {
+  void _initializeFromJson(Map<String, dynamic>? data) {
+    if (data == null) {
+      return _rebuildGlobalLayout();
+    }
     final tabs = data['tabs'] as Map<String, dynamic>? ?? {};
 
     for (var entry in tabs.entries) {
@@ -137,10 +121,6 @@ class DockTabs {
 
     _dockTabs[tabId] = dockTab;
     _activeTabId ??= tabId;
-
-    if (rebuildLayout) {
-      _rebuildGlobalLayout();
-    }
 
     // 发送tab创建事件
     emitEvent(
@@ -217,11 +197,11 @@ class DockTabs {
   /// 重建全局布局（使用 RxDart 防抖控制）
   void _rebuildGlobalLayout() {
     print('🔄 DockTabs._rebuildGlobalLayout called');
-    _rebuildSubject.add(null);
+    emitEvent(DockLayoutEvent(dockTabsId: id));
   }
 
   /// 执行实际的布局重建
-  void _performRebuild() {
+  void rebuild() {
     // 多个tab时，创建tab布局，将所有tab作为DockingItem显示
     final tabItems =
         _dockTabs.entries.map((entry) {
@@ -258,8 +238,6 @@ class DockTabs {
               ? DockingTabs(tabItems)
               : DockManager.createDefaultHomePageDockItem(),
     );
-    // 触发布局变化通知
-    emitEvent(DockLayoutEvent(dockTabsId: id));
   }
 
   /// 构建带事件监听的Tab内容
@@ -403,13 +381,14 @@ class DockTabs {
 
   /// 构建带主题的Docking Widget
   Widget buildDockingWidget(BuildContext context) {
+    rebuild(); // 触发布局重建
     return TabbedViewTheme(
       data: _themeData ?? DockTheme.createCustomThemeData(context),
       child: Container(
         padding: const EdgeInsets.all(16),
         child: _buildContextMenuWrapper(
           Docking(
-            layout: _safeGlobalLayout,
+            layout: _globalLayout,
             dockingButtonsBuilder: (
               BuildContext context,
               DockingTabs? dockingTabs,
@@ -587,13 +566,19 @@ class DockTabs {
       dockTab.dispose();
     }
     _dockTabs.clear();
-    _rebuildGlobalLayout();
+    emitEvent(
+      DockTabEvent(
+        type: DockEventType.allTabsCleared,
+        dockTabsId: id,
+        values: {'tabs': this},
+      ),
+    );
   }
 
   /// 释放资源
   void dispose() {
-    _rebuildSubscription.cancel();
-    _rebuildSubject.close();
+    _emitSubscription.cancel();
+    _emitdSubject.close();
     clear();
   }
 
@@ -636,7 +621,7 @@ class DockTabs {
 
     final layoutString = DockLayoutManager.saveLayout(
       '${id}_layout',
-      _safeGlobalLayout,
+      _globalLayout!,
       mainParser!,
     );
 
@@ -732,9 +717,13 @@ class DockTabs {
           '${id}_${tabId}_layout',
           tab.layout,
         );
-        if (success) {
-          _rebuildGlobalLayout();
-        }
+        emitEvent(
+          DockTabEvent(
+            type: DockEventType.layoutChanged,
+            dockTabsId: id,
+            values: {'tabId': tabId, 'layoutString': layoutString},
+          ),
+        );
         return success;
       } catch (e) {
         print('Failed to load tab layout: $e');
