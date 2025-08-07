@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/dock_item.dart';
 import 'package:mira/dock/dock_manager.dart';
-import 'package:mira/dock/dock_tab.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:uuid/uuid.dart';
 import '../models/docking_tab_data.dart';
@@ -16,10 +15,12 @@ class DockingDockItem extends DockItem {
   late final GlobalKey _contentKey;
 
   DockingDockItem({
+    required String id,
     required this.tabData,
     Map<String, ValueNotifier<dynamic>>? initialValues,
   }) : super(
          type: 'docking_tab',
+         id: id,
          title: tabData.title.isNotEmpty ? tabData.title : 'Docking',
          values: _initializeValues(tabData, initialValues),
          builder: (item) {
@@ -55,7 +56,7 @@ class DockingDockItem extends DockItem {
 
   /// 注册docking_tab类型的builder
   static void registerDockingTabBuilder() {
-    DockTab.registerBuilder('docking_tab', (dockItem) {
+    DockManager.registerBuilder('docking_tab', (dockItem) {
       // 从dockItem中获取DockingDockItem的实例
       if (dockItem is DockingDockItem) {
         return dockItem.buildDockingItem();
@@ -73,6 +74,7 @@ class DockingDockItem extends DockItem {
 
           // 创建新的DockingDockItem
           final dockingDockItem = DockingDockItem(
+            id: dockItem.id,
             tabData: tabData,
             initialValues: dockItem.values,
           );
@@ -307,10 +309,10 @@ class DockingDockItem extends DockItem {
     Map<String, dynamic>? themeConfig,
     Map<String, dynamic>? buttonsConfig,
     String dockTabsId = 'main',
-    String? dockTabId, // 改为可为空，默认不指定
+    required String dockTabId,
   }) {
     final tabData = DockingTabData(
-      id: Uuid().v4(),
+      id: const Uuid().v4(),
       title: title,
       createDate: DateTime.now(),
       stored: {
@@ -323,7 +325,10 @@ class DockingDockItem extends DockItem {
       },
     );
 
-    final dockingDockItem = DockingDockItem(tabData: tabData);
+    final dockingDockItem = DockingDockItem(
+      id: const Uuid().v4(),
+      tabData: tabData,
+    );
 
     // 通过DockManager添加到dock系统
     final success = DockManager.addDockItem(

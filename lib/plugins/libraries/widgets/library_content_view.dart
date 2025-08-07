@@ -1,17 +1,11 @@
 import 'package:flutter/material.dart';
-import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_data.dart';
 
 class LibraryContentView extends StatefulWidget {
-  final LibrariesPlugin plugin;
   final LibraryTabData tabData;
 
-  const LibraryContentView({
-    super.key,
-    required this.plugin,
-    required this.tabData,
-  });
+  const LibraryContentView({super.key, required this.tabData});
 
   @override
   State<LibraryContentView> createState() => _LibraryContentViewState();
@@ -26,9 +20,6 @@ class _LibraryContentViewState extends State<LibraryContentView>
   Widget build(BuildContext context) {
     super.build(context);
     return LibraryGalleryView(
-      plugin: widget.plugin,
-      tabId: widget.tabData.id,
-      library: widget.tabData.library,
       tabData: widget.tabData, // 传递tabData
     );
   }

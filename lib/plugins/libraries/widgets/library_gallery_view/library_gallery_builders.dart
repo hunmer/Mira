@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_data.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:multi_value_listenable_builder/multi_value_listenable_builder.dart';
 import 'package:number_pagination/number_pagination.dart';
@@ -23,24 +25,29 @@ class LibraryGalleryBuilders {
   final LibraryGalleryEvents events;
   final LibrariesPlugin plugin;
   final Library library;
-  final String tabId;
+  late final String tabId;
+  late final String itemId;
   final VoidCallback? onShowDropDialog;
   final Function(LibraryFile) onFileOpen;
   final Function(LibraryFile) onFileSelected;
   final Function(LibraryFile) onToggleSelected;
   late BuildContext context;
+  final LibraryTabData tabData;
 
   LibraryGalleryBuilders({
     required this.state,
     required this.events,
     required this.plugin,
     required this.library,
-    required this.tabId,
+    required this.tabData,
     this.onShowDropDialog,
     required this.onFileOpen,
     required this.onFileSelected,
     required this.onToggleSelected,
-  });
+  }) {
+    tabId = tabData.tabId;
+    itemId = tabData.itemId;
+  }
 
   /// 构建响应式布局
   Widget buildResponsiveLayout(
@@ -346,7 +353,7 @@ class LibraryGalleryBuilders {
             child: IconButton(
               icon: Icon(Icons.delete),
               onPressed: () {
-                state.tabManager.addTab(
+                LibraryTabManager.addTab(
                   library,
                   isRecycleBin: true,
                   title: '回收站',
@@ -370,7 +377,7 @@ class LibraryGalleryBuilders {
         isSelectionMode: state.isSelectionModeNotifier.value,
         onToggleSelection:
             (bool enable) => state.isSelectionModeNotifier.value = enable,
-        isRecycleBin: state.tabData!.isRecycleBin,
+        isRecycleBin: state.tabData.isRecycleBin,
         onSelectionChanged: (Set<int> selected) {
           state.selectedFileIds.value = selected;
         },
@@ -381,7 +388,7 @@ class LibraryGalleryBuilders {
           if (filterOptions != null &&
               state.filterOptionsNotifier.value != filterOptions) {
             state.filterOptionsNotifier.value = filterOptions;
-            state.tabManager.updateFilter(tabId, filterOptions);
+            LibraryTabManager.updateFilter(tabId, itemId, filterOptions);
           }
         },
         onUpload: onShowDropDialog ?? () {},
@@ -389,12 +396,17 @@ class LibraryGalleryBuilders {
         displayFields: Set<String>.from(state.displayFieldsNotifier.value),
         onDisplayFieldsChanged: (Set<String> fields) {
           state.displayFieldsNotifier.value = fields;
-          state.tabManager.setStoreValue(tabId, 'displayFields', fields);
+          LibraryTabManager.setStoreValue(
+            tabId,
+            itemId,
+            'displayFields',
+            fields,
+          );
         },
         imagesPerRow: state.imagesPerRowNotifier.value,
         onImagesPerRowChanged: (count) {
           state.imagesPerRowNotifier.value = count;
-          state.tabManager.setStoreValue(tabId, 'imagesPerRow', count);
+          LibraryTabManager.setStoreValue(tabId, itemId, 'imagesPerRow', count);
         },
         onRefresh: events.refresh,
         sortOptions: state.sortOptionsNotifier.value,
@@ -402,14 +414,24 @@ class LibraryGalleryBuilders {
           if (sortOptions != null &&
               state.sortOptionsNotifier.value != sortOptions) {
             state.sortOptionsNotifier.value = sortOptions;
-            state.tabManager.setStoreValue(tabId, 'sortOptions', sortOptions);
+            LibraryTabManager.setStoreValue(
+              tabId,
+              itemId,
+              'sortOptions',
+              sortOptions,
+            );
             events.loadFiles();
           }
         },
         viewType: state.viewTypeNotifier.value,
         onViewTypeChanged: (DragSelectViewType viewType) {
           state.viewTypeNotifier.value = viewType;
-          state.tabManager.setStoreValue(tabId, 'viewType', viewType.index);
+          LibraryTabManager.setStoreValue(
+            tabId,
+            itemId,
+            'viewType',
+            viewType.index,
+          );
         },
       ),
     );
@@ -434,6 +456,7 @@ class LibraryGalleryBuilders {
             plugin: plugin,
             library: library,
             tabId: tabId,
+            itemId: itemId,
             tags: tags,
             tagsSelected: List<String>.from(filterOptions['tags'] ?? []),
             folders: folders,
@@ -498,7 +521,7 @@ class LibraryGalleryBuilders {
             plugin: plugin,
             library: library,
             viewType: values[5] as DragSelectViewType,
-            isRecycleBin: state.tabData!.isRecycleBin,
+            isRecycleBin: state.tabData.isRecycleBin,
             displayFields: values[3] as Set<String>,
             items: values[0] as List<LibraryFile>,
             isSelectionMode: values[1] as bool,

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/dock_item.dart';
 import 'package:mira/dock/dock_manager.dart';
-import 'package:mira/dock/dock_tab.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
@@ -24,20 +23,18 @@ class LibraryDockItem extends DockItem {
     Map<String, ValueNotifier<dynamic>>? initialValues,
   }) : super(
          type: 'library_tab',
+         id: tabData.itemId,
          title: tabData.title.isNotEmpty ? tabData.title : tabData.library.name,
          values: _initializeValues(tabData, initialValues),
          builder: (item) {
            final libraryItem = item as LibraryDockItem;
            return DockingItem(
-             id: 'library_${tabData.id}',
+             id: Uuid().v4(),
              name: item.title,
              closable: true,
              keepAlive: true, // 启用keepAlive
              widget: LibraryContentView(
                key: libraryItem._contentKey, // 使用固定的GlobalKey
-               plugin:
-                   PluginManager.instance.getPlugin('libraries')
-                       as LibrariesPlugin,
                tabData: tabData,
              ),
            );
@@ -47,7 +44,7 @@ class LibraryDockItem extends DockItem {
     _ensureBuilderRegistered();
 
     // 初始化固定的GlobalKey
-    _contentKey = GlobalKey(debugLabel: 'library_content_${tabData.id}');
+    _contentKey = GlobalKey();
     plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
 
     _setupValueListeners();
@@ -63,7 +60,7 @@ class LibraryDockItem extends DockItem {
 
   /// 注册library_tab类型的builder
   static void registerLibraryTabBuilder() {
-    DockTab.registerBuilder('library_tab', (dockItem) {
+    DockManager.registerBuilder('library_tab', (dockItem) {
       // 从dockItem中获取LibraryDockItem的实例
       if (dockItem is LibraryDockItem) {
         return dockItem.buildDockingItem();
@@ -145,7 +142,6 @@ class LibraryDockItem extends DockItem {
           ],
     );
     values['needUpdate'] = ValueNotifier(tabData.needUpdate);
-    values['isActive'] = ValueNotifier(tabData.isActive);
 
     // 存储LibraryTabData的完整信息以便恢复
     values['_tabDataJson'] = ValueNotifier(tabData.toJson());
@@ -188,12 +184,6 @@ class LibraryDockItem extends DockItem {
       tabData.needUpdate = values['needUpdate']!.value;
       values['_tabDataJson']?.value = tabData.toJson();
     });
-
-    // 监听激活状态变化
-    values['isActive']?.addListener(() {
-      tabData.isActive = values['isActive']!.value;
-      values['_tabDataJson']?.value = tabData.toJson();
-    });
   }
 
   /// 更新stored值并保存
@@ -202,18 +192,20 @@ class LibraryDockItem extends DockItem {
     // 更新_tabDataJson以保持数据同步
     values['_tabDataJson']?.value = tabData.toJson();
     // 这里会通过DockManager来保存数据
+    // TODO: 数据保存到本地
   }
 
   /// 静态方法：添加库标签页
-  static String addTab(
+  static bool addTab(
     Library library, {
     String title = '',
     bool isRecycleBin = false,
     String dockTabsId = 'main',
-    String? dockTabId, // 改为可为空，默认不指定
+    required String dockTabId,
   }) {
     final tabData = LibraryTabData(
-      id: Uuid().v4(),
+      tabId: dockTabId,
+      itemId: const Uuid().v4(),
       library: library,
       title: title,
       isRecycleBin: isRecycleBin,
@@ -244,11 +236,7 @@ class LibraryDockItem extends DockItem {
       dockTabId,
       libraryDockItem,
     );
-
-    if (success) {
-      return tabData.id;
-    }
-    throw Exception('Failed to add library tab');
+    return success;
   }
 
   /// 获取stored值

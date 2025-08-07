@@ -72,7 +72,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
     _subscriptions.addAll([
       changedStream.stream.listen((EventArgs args) {
-        //  服务器广播文件更新
         if (args is MapEventArgs) {
           final libraryId = args.item['libraryId'];
           // TODO: 更新对应的dock item

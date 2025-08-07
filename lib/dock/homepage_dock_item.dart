@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mira/dock/dock_tab.dart';
+import 'package:mira/dock/dock_manager.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'dock_item.dart';
 
@@ -10,6 +10,7 @@ class HomePageDockItem extends DockItem {
 
   HomePageDockItem({this.onCreateNewTab, super.title = 'Home'})
     : super(
+        id: 'homepage_${DateTime.now().millisecondsSinceEpoch}',
         type: 'homepage',
         values: {},
         builder: (dockItem) => _buildDockingItem(dockItem),
@@ -27,7 +28,7 @@ class HomePageDockItem extends DockItem {
 
   /// 注册homepage类型的builder
   static void registerHomePageTabBuilder() {
-    DockTab.registerBuilder('homepage', (dockItem) {
+    DockManager.registerBuilder('homepage', (dockItem) {
       if (dockItem is HomePageDockItem) {
         return DockingItem(
           name: dockItem.title,

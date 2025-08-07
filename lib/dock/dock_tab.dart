@@ -22,10 +22,6 @@ class DockTab {
   late StreamSubscription<void> _rebuildSubscription;
   static const Duration _rebuildDelay = Duration(milliseconds: 500);
 
-  // 静态注册的builder映射
-  static final Map<String, DockingItem Function(DockItem)> _registeredBuilders =
-      {};
-
   DockTab({
     required this.id,
     this.parentDockTabId,
@@ -67,45 +63,13 @@ class DockTab {
 
   /// 根据type获取对应的builder
   DockingItem Function(DockItem) _getBuilderForType(String type) {
-    if (_registeredBuilders.containsKey(type)) {
-      return _registeredBuilders[type]!;
+    if (DockManager.isTypeRegistered(type)) {
+      return DockManager.getRegisteredBuilder(type)!;
     }
     return (dockItem) => DockingItem(
       name: dockItem.title,
       widget: Center(child: Text('Unknown type: ${dockItem.type}')),
     );
-  }
-
-  /// 静态方法：注册DockItem类型的builder
-  static void registerBuilder(
-    String type,
-    DockingItem Function(DockItem) builder,
-  ) {
-    _registeredBuilders[type] = builder;
-    print('DockTab: Registered builder for type "$type"');
-  }
-
-  /// 静态方法：注销DockItem类型的builder
-  static void unregisterBuilder(String type) {
-    final removed = _registeredBuilders.remove(type);
-    if (removed != null) {
-      print('DockTab: Unregistered builder for type "$type"');
-    }
-  }
-
-  /// 静态方法：检查类型是否已注册
-  static bool isTypeRegistered(String type) {
-    return _registeredBuilders.containsKey(type);
-  }
-
-  /// 静态方法：获取所有已注册的类型
-  static List<String> getRegisteredTypes() {
-    return _registeredBuilders.keys.toList();
-  }
-
-  /// 静态方法：调试用，打印所有已注册的类型
-  static void printRegisteredTypes() {
-    print('DockTab registered types: ${getRegisteredTypes()}');
   }
 
   /// 添加DockItem
@@ -163,23 +127,12 @@ class DockTab {
 
   /// 获取DockItem (基于ID)
   DockItem? getDockItemById(String id) {
-    if (_dockItems.isEmpty) {
-      return null;
-    }
-    try {
-      for (var item in _dockItems) {
-        if (item.id == id) {
-          print('Found match by ID: ${item.id} (${item.title})');
-          return item;
-        }
+    for (var item in _dockItems) {
+      if (item.id == id) {
+        return item;
       }
-
-      print('No match found for ID: "$id"');
-      return null;
-    } catch (e) {
-      print('Error in getDockItemById for ID "$id": $e');
-      return null;
     }
+    return null;
   }
 
   /// 获取所有DockItem

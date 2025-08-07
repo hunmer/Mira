@@ -14,20 +14,12 @@ class DockItem {
   DockingItem? _cachedDockingItem;
 
   DockItem({
-    String? id,
+    required this.id,
     required this.type,
     required this.title,
     Map<String, ValueNotifier<dynamic>>? values,
     required this.builder,
-  }) : id = id ?? _generateId(),
-       values = values ?? {};
-
-  /// 生成唯一ID
-  static String _generateId() {
-    return 'dock_item_${DateTime.now().millisecondsSinceEpoch}_${_idCounter++}';
-  }
-
-  static int _idCounter = 0;
+  }) : values = values ?? {};
 
   /// 更新values中的数据
   void update(String key, dynamic value) {

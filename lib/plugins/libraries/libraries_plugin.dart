@@ -36,7 +36,7 @@ class LibrariesPlugin extends PluginBase {
   late final FoldersTagsCache foldersTagsController; // 文件夹标签缓存
   late final LibrarySidebarView sidebarController;
   late final FileDownloader fileDownloader;
-  late final LibraryTabManagerDockAdapter tabManager; // dock适配器
+  late final LibraryTabManager tabManager; // dock适配器
 
   @override
   Future<void> registerToApp(
@@ -59,7 +59,7 @@ class LibrariesPlugin extends PluginBase {
     await dataController.init();
     foldersTagsController = FoldersTagsCache();
     await foldersTagsController.init();
-    tabManager = LibraryTabManagerDockAdapter(); // 初始化适配器
+    tabManager = LibraryTabManager(); // 初始化适配器
     libraryController = LibraryDataController(plugin: this);
     // 仅在非Web平台启用WebSocketServer
     if (!kIsWeb) {

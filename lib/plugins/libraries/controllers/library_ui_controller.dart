@@ -8,6 +8,7 @@ import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import 'package:mira/widgets/tree_view.dart';
+import 'package:uuid/uuid.dart';
 
 class LibraryUIController {
   final LibrariesPlugin _plugin;
@@ -75,7 +76,7 @@ class LibraryUIController {
     final libraries = _plugin.dataController.libraries;
     final itemCount = libraries.length;
     if (itemCount == 1) {
-      LibraryDockItem.addTab(libraries.first);
+      LibraryDockItem.addTab(libraries.first, dockTabId: Uuid().v4());
       return;
     }
     final selectedLibrary = await showDialog<Library>(
@@ -94,7 +95,7 @@ class LibraryUIController {
           ),
     );
     if (selectedLibrary != null) {
-      LibraryDockItem.addTab(selectedLibrary);
+      LibraryDockItem.addTab(selectedLibrary, dockTabId: Uuid().v4());
     }
   }
 }

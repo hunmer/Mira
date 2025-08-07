@@ -5,12 +5,18 @@ import 'library_dock_item.dart';
 
 /// LibraryTabManager的dock适配器
 /// 提供与原LibraryTabManager兼容的接口，但使用dock系统作为后端
-class LibraryTabManagerDockAdapter {
+class LibraryTabManager {
   /// 获取存储值
 
-  dynamic getStoredValue(String tabId, String key, dynamic defaultValue) {
-    return DockManager.getLibraryTabStoredValue(
+  static dynamic getStoredValue(
+    String tabId,
+    String itemId,
+    String key,
+    dynamic defaultValue,
+  ) {
+    return DockManager.getLibraryTabValue(
       tabId,
+      itemId,
       key,
       defaultValue: defaultValue,
     );
@@ -18,23 +24,28 @@ class LibraryTabManagerDockAdapter {
 
   /// 更新过滤器
 
-  void updateFilter(String tabId, Map<String, dynamic> filter) {
-    DockManager.updateLibraryTabStoredValue(tabId, 'filter', {
-      ..._getCurrentFilter(tabId),
+  static void updateFilter(
+    String tabId,
+    String itemId,
+    Map<String, dynamic> filter,
+  ) {
+    DockManager.updateLibraryTabValue(tabId, itemId, 'filter', {
+      ...getCurrentFilter(tabId, itemId),
       ...filter,
     });
 
     // 重置分页到第一页
-    DockManager.updateLibraryTabStoredValue(tabId, 'paginationOptions', {
+    DockManager.updateLibraryTabValue(tabId, itemId, 'paginationOptions', {
       'page': 1,
       'perPage': 1000,
     });
   }
 
   /// 获取当前过滤器
-  Map<String, dynamic> _getCurrentFilter(String tabId) {
-    return DockManager.getLibraryTabStoredValue<Map<String, dynamic>>(
+  static Map<String, dynamic> getCurrentFilter(String tabId, String itemId) {
+    return DockManager.getLibraryTabValue<Map<String, dynamic>>(
           tabId,
+          itemId,
           'filter',
           defaultValue: <String, dynamic>{},
         ) ??
@@ -43,39 +54,38 @@ class LibraryTabManagerDockAdapter {
 
   /// 获取tab数据 - 从dock系统中获取
 
-  LibraryTabData? getTabData(String tabId) {
+  static LibraryTabData? getTabData(String tabId, String itemId) {
     // 首先尝试从dock系统获取DockItem
-    final dockItem = DockManager.getDockItemById(
-      'main',
-      'home',
-      'library_$tabId',
-    );
+    final dockItem = DockManager.getDockItemById('main', tabId, itemId);
 
     if (dockItem != null && dockItem is LibraryDockItem) {
       return dockItem.tabData;
     }
-
-    // 如果找不到，返回null
-    // 调用者应该处理这种情况
     return null;
   }
 
   /// 设置存储值
 
-  void setStoreValue(String tabId, String key, dynamic value) {
-    DockManager.updateLibraryTabStoredValue(tabId, key, value);
+  static void setStoreValue(
+    String tabId,
+    String itemId,
+    String key,
+    dynamic value,
+  ) {
+    DockManager.updateLibraryTabValue(tabId, itemId, key, value);
   }
 
   /// 设置值
 
-  void setValue(String tabId, String key, dynamic value) {
+  static void setValue(String tabId, String itemId, String key, dynamic value) {
     // 根据key的不同，映射到dock系统的不同存储位置
     switch (key) {
       case 'stored':
         if (value is Map<String, dynamic>) {
           for (final entry in value.entries) {
-            DockManager.updateLibraryTabStoredValue(
+            DockManager.updateLibraryTabValue(
               tabId,
+              itemId,
               entry.key,
               entry.value,
             );
@@ -83,19 +93,19 @@ class LibraryTabManagerDockAdapter {
         }
         break;
       case 'needUpdate':
-        DockManager.updateLibraryTabStoredValue(tabId, 'needUpdate', value);
+        DockManager.updateLibraryTabValue(tabId, itemId, 'needUpdate', value);
         break;
       default:
-        DockManager.updateLibraryTabStoredValue(tabId, key, value);
+        DockManager.updateLibraryTabValue(tabId, itemId, key, value);
     }
   }
 
   /// 尝试更新
 
-  void tryUpdate(String tabId) {
-    final needUpdate = getStoredValue(tabId, 'needUpdate', false);
+  static void tryUpdate(String tabId, String itemId) {
+    final needUpdate = getStoredValue(tabId, itemId, 'needUpdate', false);
     if (needUpdate == true) {
-      setValue(tabId, 'needUpdate', false);
+      setValue(tabId, itemId, 'needUpdate', false);
       // 广播更新事件
       // EventManager.instance.broadcast('tab::doUpdate', MapEventArgs({'tabId': tabId}));
     }
@@ -103,16 +113,25 @@ class LibraryTabManagerDockAdapter {
 
   /// 设置排序选项
 
-  void setSortOptions(String tabId, Map<String, dynamic> sortOptions) {
-    DockManager.updateLibraryTabStoredValue(tabId, 'sortOptions', sortOptions);
+  static void setSortOptions(
+    String tabId,
+    String itemId,
+    Map<String, dynamic> sortOptions,
+  ) {
+    DockManager.updateLibraryTabValue(
+      tabId,
+      itemId,
+      'sortOptions',
+      sortOptions,
+    );
   }
 
-  String? getCurrentTabId() {
+  static String? getCurrentTabId() {
     // TODO: 需要在DockManager中实现获取当前活动tab的逻辑
     return null;
   }
 
-  void addTab(
+  static void addTab(
     Library library, {
     String title = '',
     bool isRecycleBin = false,
@@ -123,7 +142,7 @@ class LibraryTabManagerDockAdapter {
     // DockManager.addDockItem(
     //   dockTabsId,
     //   dockTabId,
-    //   LibraryDockItem(tabData: {library: library}),
+    //   LibraryDockItem(tabData: LibraryTabData(library: library, createDate: createDate, stored: stored)),
     // );
   }
 }

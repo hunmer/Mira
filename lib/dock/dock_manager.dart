@@ -15,6 +15,9 @@ class DockManager {
 
   final Map<String, DockTabs> _dockTabsMap = {};
   bool _isInitialized = false;
+  // 静态注册的builder映射
+  static final Map<String, DockingItem Function(DockItem)> _registeredBuilders =
+      {};
 
   /// 检查是否已初始化
   static bool get isInitialized => _instance._isInitialized;
@@ -23,6 +26,38 @@ class DockManager {
   static DockingItem createDefaultHomePageDockItem() {
     final homePageItem = HomePageDockItem();
     return homePageItem.buildDockingItem();
+  }
+
+  /// 静态方法：注册DockItem类型的builder
+  static void registerBuilder(
+    String type,
+    DockingItem Function(DockItem) builder,
+  ) {
+    _registeredBuilders[type] = builder;
+    print('DockTab: Registered builder for type "$type"');
+  }
+
+  /// 静态方法：注销DockItem类型的builder
+  static void unregisterBuilder(String type) {
+    final removed = _registeredBuilders.remove(type);
+    if (removed != null) {
+      print('DockTab: Unregistered builder for type "$type"');
+    }
+  }
+
+  /// 静态方法：检查类型是否已注册
+  static bool isTypeRegistered(String type) {
+    return _registeredBuilders.containsKey(type);
+  }
+
+  /// 静态方法：获取所有已注册的类型
+  static List<String> getRegisteredTypes() {
+    return _registeredBuilders.keys.toList();
+  }
+
+  // getregisteredBuilder
+  static DockingItem Function(DockItem)? getRegisteredBuilder(String type) {
+    return _registeredBuilders[type];
   }
 
   /// 创建DockTabs
@@ -117,30 +152,20 @@ class DockManager {
   }
 
   /// 添加DockItem到指定的DockTab
-  static bool addDockItem(String dockTabsId, String? tabId, DockItem dockItem) {
+  static bool addDockItem(String dockTabsId, String tabId, DockItem dockItem) {
     final dockTabs = getDockTabs(dockTabsId);
     if (dockTabs == null) return false;
-
-    // 如果没有指定tabId，创建一个新的tab
-    if (tabId == null || tabId.isEmpty) {
-      // 根据DockItem类型生成不同的前缀
-      final newTabId =
-          '${dockItem.type}_${DateTime.now().millisecondsSinceEpoch}';
-      final newTab = dockTabs.createDockTab(
-        newTabId,
-        displayName: dockItem.title,
-        closable: true,
-        rebuildLayout: false, // 创建tab时先不刷新布局
-      );
-      if (newTab != null) {
-        newTab.addDockItem(dockItem, rebuildLayout: true); // 添加item时再刷新布局
-        return true;
-      }
-      return false;
+    final newTab = dockTabs.createDockTab(
+      tabId,
+      displayName: dockItem.title,
+      closable: true,
+      rebuildLayout: false, // 创建tab时先不刷新布局
+    );
+    if (newTab != null) {
+      newTab.addDockItem(dockItem, rebuildLayout: true); // 添加item时再刷新布局
+      return true;
     }
-
-    // 尝试添加到现有tab
-    return dockTabs.addDockItemToTab(tabId, dockItem);
+    return false;
   }
 
   /// 获取DockItem (基于ID)
@@ -151,17 +176,6 @@ class DockManager {
   ) {
     final dockTabs = getDockTabs(dockTabsId);
     return dockTabs?.getDockItemFromTabById(tabId, itemId);
-  }
-
-  /// 获取DockItem (基于title，保持向后兼容)
-  static DockItem? getDockItem(
-    String dockTabsId,
-    String tabId,
-    String itemTitle,
-  ) {
-    final dockTabs = getDockTabs(dockTabsId);
-    // 先尝试按ID查找，如果找不到再按title查找（为了向后兼容）
-    return dockTabs?.getDockItemFromTabById(tabId, itemTitle);
   }
 
   /// 更新DockItem (基于ID)
@@ -185,37 +199,32 @@ class DockManager {
 
   // ===================== Library Tab Management =====================
   /// 更新库标签页的stored值
-  static bool updateLibraryTabStoredValue(
+  static bool updateLibraryTabValue(
     String tabId,
+    String itemId,
     String key,
     dynamic value, {
     String dockTabsId = 'main',
-    String dockTabId = 'home',
   }) {
-    final dockItem = getDockItem(dockTabsId, dockTabId, 'library_$tabId');
+    final dockItem = getDockItemById(dockTabsId, tabId, itemId);
     if (dockItem != null) {
-      final stored = Map<String, dynamic>.from(
-        dockItem.getValue('stored') as Map<String, dynamic>? ?? {},
-      );
-      stored[key] = value;
-      dockItem.update('stored', stored);
+      dockItem.update(key, value);
       return true;
     }
     return false;
   }
 
   /// 获取库标签页的stored值
-  static T? getLibraryTabStoredValue<T>(
+  static T? getLibraryTabValue<T>(
     String tabId,
+    String itemId,
     String key, {
     T? defaultValue,
     String dockTabsId = 'main',
-    String dockTabId = 'home',
   }) {
-    final dockItem = getDockItem(dockTabsId, dockTabId, 'library_$tabId');
+    final dockItem = getDockItemById(dockTabsId, tabId, itemId);
     if (dockItem != null) {
-      final stored = dockItem.getValue('stored') as Map<String, dynamic>?;
-      return stored?[key] as T? ?? defaultValue;
+      return dockItem.getValue(key) as T? ?? defaultValue;
     }
     return defaultValue;
   }

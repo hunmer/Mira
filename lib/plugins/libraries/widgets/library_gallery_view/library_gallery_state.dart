@@ -5,11 +5,14 @@ import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/services/upload_queue_service.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_data.dart';
-import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
 import 'drag_select_view.dart';
 
 /// 图库视图的状态管理类
 class LibraryGalleryState {
+  late final String tabId;
+  late final String itemId;
+  late LibraryTabData tabData;
+
   // 上传相关状态
   late UploadQueueService uploadQueue;
   final ValueNotifier<double> uploadProgressNotifier = ValueNotifier(0);
@@ -31,10 +34,6 @@ class LibraryGalleryState {
   final ValueNotifier<bool> isItemsLoadingNotifier = ValueNotifier(true);
   final ValueNotifier<List<LibraryFolder>> folders = ValueNotifier([]);
   final ValueNotifier<List<LibraryTag>> tags = ValueNotifier([]);
-
-  // Tab管理
-  late LibraryTabManagerDockAdapter tabManager;
-  late LibraryTabData? tabData;
 
   // UI状态
   final ValueNotifier<bool> showSidebarNotifier = ValueNotifier(true);
@@ -64,42 +63,30 @@ class LibraryGalleryState {
   bool isFirstLoad = false;
   final List<String> eventSubscribes = [];
 
-  /// 初始化状态
-  void initializeState(String tabId, LibraryTabManagerDockAdapter manager) {
-    tabManager = manager;
-    // 从存储中恢复状态
+  LibraryGalleryState({required this.tabData}) {
+    tabId = tabData.tabId;
+    itemId = tabData.itemId;
+    // 从tabData中恢复状态
     paginationOptionsNotifier.value = Map<String, dynamic>.from(
-      tabManager.getStoredValue(tabId, 'paginationOptions', {
-        'page': 1,
-        'perPage': 1000,
-      }),
+      _getStoredValue('paginationOptions', {'page': 1, 'perPage': 1000}),
     );
 
     displayFieldsNotifier.value = Set<String>.from(
-      tabManager.getStoredValue(tabId, 'displayFields', <String>{}),
+      _getStoredValue('displayFields', <String>{}),
     );
 
     filterOptionsNotifier.value = Map<String, dynamic>.from(
-      tabManager.getStoredValue(tabId, 'filter', {
-        'name': '',
-        'tags': [],
-        'folder': '',
-      }),
+      _getStoredValue('filter', {'name': '', 'tags': [], 'folder': ''}),
     );
 
     sortOptionsNotifier.value = Map<String, dynamic>.from(
-      tabManager.getStoredValue(tabId, 'sortOptions', {
-        'sort': 'imported_at',
-        'order': 'desc',
-      }),
+      _getStoredValue('sortOptions', {'sort': 'imported_at', 'order': 'desc'}),
     );
 
-    imagesPerRowNotifier.value =
-        tabManager.getStoredValue(tabId, 'imagesPerRow', 0) as int;
+    imagesPerRowNotifier.value = _getStoredValue('imagesPerRow', 0) as int;
 
     viewTypeNotifier.value =
-        DragSelectViewType
-            .values[tabManager.getStoredValue(tabId, 'viewType', 0) as int];
+        DragSelectViewType.values[_getStoredValue('viewType', 0) as int];
 
     // 监听选择模式状态变化，当退出选择模式时重置最后选中索引
     isSelectionModeNotifier.addListener(() {
@@ -111,6 +98,11 @@ class LibraryGalleryState {
         areaSelectionStartPoint = null;
       }
     });
+  }
+
+  /// 从tabData.stored中获取存储的值
+  dynamic _getStoredValue(String key, dynamic defaultValue) {
+    return tabData.stored[key] ?? defaultValue;
   }
 
   /// 清理资源

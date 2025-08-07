@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:mira/dock/dock_manager.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/widgets/folder_tree_widget.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
 import 'package:mira/widgets/checkable_treeview/treeview.dart';
 import 'package:mira/widgets/tree_view.dart';
 import '../libraries_plugin.dart';
@@ -12,6 +12,7 @@ class LibrarySidebarView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Library library;
   final String tabId;
+  final String itemId;
   final List<LibraryTag> tags;
   final List<String> tagsSelected;
   final List<LibraryFolder> folders;
@@ -21,6 +22,7 @@ class LibrarySidebarView extends StatefulWidget {
     super.key,
     required this.plugin,
     required this.tabId,
+    required this.itemId,
     required this.library,
     required this.tags,
     this.tagsSelected = const [],
@@ -36,30 +38,6 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
   @override
   void initState() {
     super.initState();
-  }
-
-  /// 更新过滤器 - 通过dock系统
-  void _updateFilter(Map<String, dynamic> filter) {
-    DockManager.updateLibraryTabStoredValue(widget.tabId, 'filter', {
-      ..._getCurrentFilter(),
-      ...filter,
-    });
-
-    // 重置分页到第一页
-    DockManager.updateLibraryTabStoredValue(widget.tabId, 'paginationOptions', {
-      'page': 1,
-      'perPage': 1000,
-    });
-  }
-
-  /// 获取当前过滤器
-  Map<String, dynamic> _getCurrentFilter() {
-    return DockManager.getLibraryTabStoredValue<Map<String, dynamic>>(
-          widget.tabId,
-          'filter',
-          defaultValue: <String, dynamic>{},
-        ) ??
-        <String, dynamic>{};
   }
 
   @override
@@ -78,7 +56,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
             library: widget.library,
             showSelectAll: false,
             onSelectionChanged: (ids) {
-              _updateFilter({
+              LibraryTabManager.updateFilter(widget.tabId, widget.itemId, {
                 'folder': ids != null && ids.isNotEmpty ? ids.first : '',
               });
             },
@@ -97,7 +75,12 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
             library: widget.library,
             selected: Set<String>.from(widget.tagsSelected),
             showSelectAll: false,
-            onSelectionChanged: (ids) => _updateFilter({'tags': ids}),
+            onSelectionChanged:
+                (ids) => LibraryTabManager.updateFilter(
+                  widget.tabId,
+                  widget.itemId,
+                  {'tags': ids},
+                ),
             type: 'tags',
           ),
         ),

@@ -2,11 +2,10 @@ import 'package:mira/core/utils/utils.dart';
 import '../models/library.dart';
 
 class LibraryTabData {
-  final String id;
   final Library library;
-  final bool isPinned;
   final bool isRecycleBin;
-  bool isActive;
+  final String tabId;
+  final String itemId;
   bool needUpdate;
   String title;
   final DateTime createDate;
@@ -14,11 +13,10 @@ class LibraryTabData {
 
   LibraryTabData({
     this.title = '',
-    this.isActive = false,
+    required this.tabId,
+    required this.itemId,
     this.needUpdate = false,
-    required this.id,
     required this.library,
-    this.isPinned = false,
     this.isRecycleBin = false,
     required this.createDate,
     required this.stored,
@@ -26,11 +24,10 @@ class LibraryTabData {
 
   factory LibraryTabData.fromMap(Map<String, dynamic> map) {
     return LibraryTabData(
-      id: map['id'] as String,
       title: map['title'] as String,
+      tabId: map['tabId'] as String,
+      itemId: map['itemId'] as String,
       library: Library.fromMap(map['library']),
-      isActive: map['isActive'] as bool? ?? false,
-      isPinned: map['isPinned'] as bool? ?? false,
       isRecycleBin: map['isRecycleBin'] as bool? ?? false,
       createDate: DateTime.parse(map['create_date'] as String),
       stored: Map<String, dynamic>.from(map['stored'] as Map),
@@ -39,11 +36,10 @@ class LibraryTabData {
 
   Map<String, dynamic> toJson() {
     return {
-      'id': id,
       'title': title,
+      'tabId': tabId,
+      'itemId': itemId,
       'library': library.toJson(),
-      'isActive': isActive,
-      'isPinned': isPinned,
       'isRecycleBin': isRecycleBin,
       'create_date': createDate.toIso8601String(),
       'stored': convertSetsToLists(stored),
@@ -51,7 +47,8 @@ class LibraryTabData {
   }
 
   LibraryTabData copyWith({
-    String? id,
+    String? tabId,
+    String? itemId,
     String? title,
     Library? library,
     bool? needUpdate,
@@ -62,12 +59,11 @@ class LibraryTabData {
     Map<String, dynamic>? stored,
   }) {
     return LibraryTabData(
-      id: id ?? this.id,
       title: title ?? this.title,
+      tabId: tabId ?? this.tabId,
+      itemId: itemId ?? this.itemId,
       library: library ?? this.library,
       needUpdate: needUpdate ?? this.needUpdate,
-      isPinned: isPinned ?? this.isPinned,
-      isActive: isActive ?? this.isActive,
       isRecycleBin: isRecycleBin ?? this.isRecycleBin,
       createDate: createDate ?? this.createDate,
       stored: stored ?? this.stored,

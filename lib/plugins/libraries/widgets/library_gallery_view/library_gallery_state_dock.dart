@@ -20,6 +20,7 @@ class LibraryGalleryStateDock {
 
   // Tab数据
   String? tabId;
+  String? itemId;
   LibraryTabData? tabData;
 
   // UI状态
@@ -54,8 +55,14 @@ class LibraryGalleryStateDock {
   final List<String> eventSubscribes = [];
 
   /// 初始化状态 - 使用dock系统
-  void initializeStateDock(String tabId, LibraryTabData tabData) {
+  void initializeStateDock(
+    String tabId,
+    String,
+    itemId,
+    LibraryTabData tabData,
+  ) {
     this.tabId = tabId;
+    this.itemId = itemId;
     this.tabData = tabData;
 
     // 从dock系统恢复状态
@@ -70,8 +77,9 @@ class LibraryGalleryStateDock {
     if (tabId == null) return;
 
     paginationOptionsNotifier.value = Map<String, dynamic>.from(
-      DockManager.getLibraryTabStoredValue(
+      DockManager.getLibraryTabValue(
             tabId!,
+            itemId!,
             'paginationOptions',
             defaultValue: {'page': 1, 'perPage': 1000},
           ) ??
@@ -79,8 +87,9 @@ class LibraryGalleryStateDock {
     );
 
     displayFieldsNotifier.value = Set<String>.from(
-      DockManager.getLibraryTabStoredValue<List<dynamic>>(
+      DockManager.getLibraryTabValue<List<dynamic>>(
             tabId!,
+            itemId!,
             'displayFields',
             defaultValue: <String>[],
           ) ??
@@ -88,8 +97,9 @@ class LibraryGalleryStateDock {
     );
 
     sortOptionsNotifier.value = Map<String, dynamic>.from(
-      DockManager.getLibraryTabStoredValue(
+      DockManager.getLibraryTabValue(
             tabId!,
+            itemId!,
             'sortOptions',
             defaultValue: {'field': 'id', 'order': 'desc'},
           ) ??
@@ -97,8 +107,9 @@ class LibraryGalleryStateDock {
     );
 
     filterOptionsNotifier.value = Map<String, dynamic>.from(
-      DockManager.getLibraryTabStoredValue(
+      DockManager.getLibraryTabValue(
             tabId!,
+            itemId!,
             'filter',
             defaultValue: <String, dynamic>{},
           ) ??
@@ -106,8 +117,9 @@ class LibraryGalleryStateDock {
     );
 
     imagesPerRowNotifier.value =
-        DockManager.getLibraryTabStoredValue<int>(
+        DockManager.getLibraryTabValue<int>(
           tabId!,
+          itemId!,
           'imagesPerRow',
           defaultValue: 0,
         ) ??
@@ -147,7 +159,7 @@ class LibraryGalleryStateDock {
   /// 保存到dock系统
   void _saveToDock(String key, dynamic value) {
     if (tabId != null) {
-      DockManager.updateLibraryTabStoredValue(tabId!, key, value);
+      DockManager.updateLibraryTabValue(tabId!, itemId!, key, value);
     }
   }
 
@@ -200,8 +212,9 @@ class LibraryGalleryStateDock {
   /// 获取存储值
   T? getStoredValue<T>(String key, T? defaultValue) {
     if (tabId == null) return defaultValue;
-    return DockManager.getLibraryTabStoredValue<T>(
+    return DockManager.getLibraryTabValue<T>(
       tabId!,
+      itemId!,
       key,
       defaultValue: defaultValue,
     );

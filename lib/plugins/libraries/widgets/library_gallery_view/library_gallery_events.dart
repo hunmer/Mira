@@ -6,6 +6,8 @@ import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
 import 'package:mira/plugins/libraries/models/tag.dart';
 import 'package:mira/plugins/libraries/services/server_item_event.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_data.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
 import 'library_gallery_state.dart';
 
 /// 图库视图的事件处理类
@@ -13,14 +15,19 @@ class LibraryGalleryEvents {
   final LibraryGalleryState state;
   final LibrariesPlugin plugin;
   final Library library;
-  final String tabId;
+  late final String tabId;
+  late final String itemId;
+  final LibraryTabData tabData;
 
   LibraryGalleryEvents({
     required this.state,
+    required this.tabData,
     required this.plugin,
     required this.library,
-    required this.tabId,
-  });
+  }) {
+    tabId = tabData.tabId;
+    itemId = tabData.itemId;
+  }
 
   /// 初始化事件监听
   void initEvents() {
@@ -140,7 +147,7 @@ class LibraryGalleryEvents {
     final sortOptions = state.sortOptionsNotifier.value;
 
     final query = {
-      'recycled': state.tabData!.isRecycleBin,
+      'recycled': state.tabData.isRecycleBin,
       'name': filterOptions['name'] ?? '',
       'tags': filterOptions['tags'] ?? [],
       'folder': filterOptions['folder'] ?? '',
@@ -190,7 +197,12 @@ class LibraryGalleryEvents {
   void updateSort(String sort, String order) {
     final newSortOptions = {'sort': sort, 'order': order};
     state.sortOptionsNotifier.value = newSortOptions;
-    state.tabManager.setStoreValue(tabId, 'sortOptions', newSortOptions);
+    LibraryTabManager.setStoreValue(
+      tabId,
+      itemId,
+      'sortOptions',
+      newSortOptions,
+    );
     loadFiles();
   }
 

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mira/core/plugin_manager.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
@@ -8,24 +9,17 @@ import 'package:mira/plugins/libraries/widgets/file_upload_list_dialog.dart';
 import 'package:mira/plugins/libraries/widgets/library_file_preview_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_bottom_sheet.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_data.dart';
-import 'package:uuid/uuid.dart';
 
 // 导入分离后的组件
 import 'library_gallery_view/index.dart';
 
 /// 图库视图主组件
 class LibraryGalleryView extends StatefulWidget {
-  final LibrariesPlugin plugin;
-  final Library library;
-  final String tabId;
   final LibraryTabData? tabData; // 添加tabData参数
 
   const LibraryGalleryView({
-    required this.plugin,
-    required this.library,
-    required this.tabId,
-    this.tabData, // 可选参数
     super.key,
+    required this.tabData, // 可选参数
   });
 
   @override
@@ -36,22 +30,21 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late LibraryGalleryState _state;
   late LibraryGalleryEvents _events;
   late LibraryGalleryBuilders _builders;
+  late final LibrariesPlugin plugin;
+  late final Library library;
+  late final String tabId;
+  late final String itemId;
 
   @override
   void initState() {
     super.initState();
+    plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
+    library = widget.tabData!.library;
 
     // 初始化状态管理
-    _state = LibraryGalleryState();
-    _state.initializeState(widget.tabId, widget.plugin.tabManager);
-
-    // 如果widget提供了tabData，优先使用它
-    if (widget.tabData != null) {
-      _state.tabData = widget.tabData;
-    }
-
+    _state = LibraryGalleryState(tabData: widget.tabData!);
     // 初始化上传队列
-    _state.uploadQueue = UploadQueueService(widget.plugin, widget.library);
+    _state.uploadQueue = UploadQueueService(plugin, library);
     _state.progressSubscription = _state.uploadQueue.progressStream.listen((
       completed,
     ) {
@@ -61,18 +54,18 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
     // 初始化事件处理
     _events = LibraryGalleryEvents(
       state: _state,
-      plugin: widget.plugin,
-      library: widget.library,
-      tabId: widget.tabId,
+      tabData: widget.tabData!,
+      plugin: plugin,
+      library: library,
     );
     _events.initEvents();
 
     _builders = LibraryGalleryBuilders(
       state: _state,
       events: _events,
-      plugin: widget.plugin,
-      library: widget.library,
-      tabId: widget.tabId,
+      plugin: plugin,
+      library: library,
+      tabData: widget.tabData!,
       onShowDropDialog: _showDropDialog,
       onFileOpen: _onFileOpen,
       onFileSelected: _onFileSelected,
@@ -93,7 +86,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       context: context,
       builder:
           (context) => FileUploadListDialog(
-            plugin: widget.plugin,
+            plugin: plugin,
             uploadQueue: _state.uploadQueue,
           ),
     );
@@ -105,8 +98,8 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       MaterialPageRoute(
         builder:
             (context) => LibraryFilePreviewView(
-              plugin: widget.plugin,
-              library: widget.library,
+              plugin: plugin,
+              library: library,
               file: file,
             ),
       ),
@@ -136,7 +129,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   @override
   Widget build(BuildContext context) {
     return FutureBuilder<dynamic>(
-      future: widget.plugin.libraryController.loadLibraryInst(widget.library),
+      future: plugin.libraryController.loadLibraryInst(library),
       builder: (context, snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
@@ -156,14 +149,15 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   /// 构建主要内容
   Widget _buildContent() {
     // 如果tabData为空，使用widget.tabData或创建默认值
-    final tabData = _state.tabData ?? widget.tabData;
+    final tabData = _state.tabData;
     if (tabData == null) {
       // 如果仍然没有tabData，创建一个基于当前library的默认tabData
-      print('Creating default tabData for library: ${widget.library.name}');
+      print('Creating default tabData for library: ${library.name}');
       final defaultTabData = LibraryTabData(
-        id: widget.tabId.isNotEmpty ? widget.tabId : Uuid().v4(),
-        library: widget.library,
-        title: widget.library.name,
+        tabId: widget.tabData!.tabId,
+        itemId: widget.tabData!.itemId,
+        library: library,
+        title: library.name,
         isRecycleBin: false,
         createDate: DateTime.now(),
         stored: {
@@ -186,7 +180,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       _state.tabData = defaultTabData;
     }
 
-    final isRecycleBin = (_state.tabData ?? tabData)!.isRecycleBin;
+    final isRecycleBin = (_state.tabData).isRecycleBin;
     final paginationOptions = _state.paginationOptionsNotifier.value;
     final totalPages =
         (_state.totalItemsNotifier.value / paginationOptions['perPage']).ceil();
