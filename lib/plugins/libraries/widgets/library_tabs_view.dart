@@ -3,13 +3,11 @@ import 'dart:io';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:mira/core/event/event_args.dart';
-import 'package:mira/core/event/event_debounce.dart';
-import 'package:mira/core/event/event_manager.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/dock/dock_controller.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/plugins/libraries/services/library_event_manager.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
 import 'package:mira/core/widgets/hotkey_settings_view.dart';
 import 'package:mira/core/widgets/window_controls.dart';
@@ -66,32 +64,18 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   }
 
   Future<void> init() async {
-    final changedStream = EventDebouncer(
-      duration: Duration(seconds: 1),
-    ); // 广播更新节流
+    // 使用 LibraryEventManager 监听库更新事件
+    final eventSubscription = LibraryEventManager.instance.addListener((
+      EventArgs args,
+    ) {
+      if (args is MapEventArgs) {
+        final libraryId = args.item['libraryId'];
+        // TODO: 更新对应的dock item
+        print('Library updated: $libraryId');
+      }
+    });
 
-    _subscriptions.addAll([
-      changedStream.stream.listen((EventArgs args) {
-        if (args is MapEventArgs) {
-          final libraryId = args.item['libraryId'];
-          // TODO: 更新对应的dock item
-          print('Library updated: $libraryId');
-        }
-      }),
-    ]);
-
-    EventManager.instance.subscribe(
-      'file::changed',
-      (args) => changedStream.onCall(args),
-    );
-    EventManager.instance.subscribe(
-      'tags::updated',
-      (args) => changedStream.onCall(args),
-    );
-    EventManager.instance.subscribe(
-      'folder::updated',
-      (args) => changedStream.onCall(args),
-    );
+    _subscriptions.add(eventSubscription);
   }
 
   @override

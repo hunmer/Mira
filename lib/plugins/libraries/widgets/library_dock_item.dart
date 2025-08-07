@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mira/dock/dock_item.dart';
 import 'package:mira/dock/dock_manager.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:mira/plugins/libraries/services/library_event_manager.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
 import 'package:uuid/uuid.dart';
 import '../models/library.dart';
@@ -189,6 +190,10 @@ class LibraryDockItem extends DockItem {
     // 这里会通过DockManager来保存数据
     // TODO: 数据保存到本地
     // TODO: 通知刷新
+    LibraryEventManager.instance.broadcast(
+      'tab::doUpdate',
+      MapEventArgs({'tabId': tabData.tabId, 'itemId': tabData.itemId}),
+    );
   }
 
   /// 静态方法：添加库标签页

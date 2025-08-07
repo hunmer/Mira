@@ -38,14 +38,14 @@ class LibraryGalleryEvents {
       ),
       EventManager.instance.subscribe('tab::doUpdate', (EventArgs args) {
         if (args is MapEventArgs) {
-          if (args.item['tabId'] == tabId) {
+          if (args.item['tabId'] == tabId && args.item['itemId'] == itemId) {
             refresh();
             print('updated Tab $tabId');
           }
         }
       }),
-      EventManager.instance.subscribe('filter::updated', onFilterUpdate),
-      EventManager.instance.subscribe('sort::updated', onSortUpdate),
+      // EventManager.instance.subscribe('filter::updated', onFilterUpdate),
+      // EventManager.instance.subscribe('sort::updated', onSortUpdate),
       EventManager.instance.subscribeOnce('library::connected', doFirstLoad),
     ]);
   }
@@ -197,12 +197,7 @@ class LibraryGalleryEvents {
   void updateSort(String sort, String order) {
     final newSortOptions = {'sort': sort, 'order': order};
     state.sortOptionsNotifier.value = newSortOptions;
-    LibraryTabManager.setStoreValue(
-      tabId,
-      itemId,
-      'sortOptions',
-      newSortOptions,
-    );
+    LibraryTabManager.setValue(tabId, itemId, 'sortOptions', newSortOptions);
     loadFiles();
   }
 

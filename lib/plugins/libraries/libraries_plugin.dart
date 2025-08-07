@@ -11,6 +11,7 @@ import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
 import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
+import 'package:mira/plugins/libraries/services/library_event_manager.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'services/websocket_server.dart';
 
@@ -37,6 +38,7 @@ class LibrariesPlugin extends PluginBase {
   late final LibrarySidebarView sidebarController;
   late final FileDownloader fileDownloader;
   late final LibraryTabManager tabManager; // dock适配器
+  late final LibraryEventManager eventManager; // 事件管理器
 
   @override
   Future<void> registerToApp(
@@ -53,6 +55,10 @@ class LibrariesPlugin extends PluginBase {
     LibraryDockItem.ensureRegistered();
     HomePageDockItem.ensureRegistered();
     DockingDockItem.ensureRegistered();
+
+    // 初始化事件管理器
+    eventManager = LibraryEventManager.instance;
+    await eventManager.initialize();
 
     libraryUIController = LibraryUIController(this);
     dataController = LibraryLocalDataController(this);
@@ -75,6 +81,7 @@ class LibrariesPlugin extends PluginBase {
 
   void dispose() {
     libraryController.close();
+    eventManager.dispose();
     server?.stop(); // 仅在server存在时停止
   }
 }

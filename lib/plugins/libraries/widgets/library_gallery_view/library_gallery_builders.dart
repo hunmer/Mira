@@ -396,17 +396,12 @@ class LibraryGalleryBuilders {
         displayFields: Set<String>.from(state.displayFieldsNotifier.value),
         onDisplayFieldsChanged: (Set<String> fields) {
           state.displayFieldsNotifier.value = fields;
-          LibraryTabManager.setStoreValue(
-            tabId,
-            itemId,
-            'displayFields',
-            fields,
-          );
+          LibraryTabManager.setValue(tabId, itemId, 'displayFields', fields);
         },
         imagesPerRow: state.imagesPerRowNotifier.value,
         onImagesPerRowChanged: (count) {
           state.imagesPerRowNotifier.value = count;
-          LibraryTabManager.setStoreValue(tabId, itemId, 'imagesPerRow', count);
+          LibraryTabManager.setValue(tabId, itemId, 'imagesPerRow', count);
         },
         onRefresh: events.refresh,
         sortOptions: state.sortOptionsNotifier.value,
@@ -414,7 +409,7 @@ class LibraryGalleryBuilders {
           if (sortOptions != null &&
               state.sortOptionsNotifier.value != sortOptions) {
             state.sortOptionsNotifier.value = sortOptions;
-            LibraryTabManager.setStoreValue(
+            LibraryTabManager.setValue(
               tabId,
               itemId,
               'sortOptions',
@@ -426,12 +421,7 @@ class LibraryGalleryBuilders {
         viewType: state.viewTypeNotifier.value,
         onViewTypeChanged: (DragSelectViewType viewType) {
           state.viewTypeNotifier.value = viewType;
-          LibraryTabManager.setStoreValue(
-            tabId,
-            itemId,
-            'viewType',
-            viewType.index,
-          );
+          LibraryTabManager.setValue(tabId, itemId, 'viewType', viewType.index);
         },
       ),
     );

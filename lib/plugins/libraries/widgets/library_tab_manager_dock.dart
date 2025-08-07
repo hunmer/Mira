@@ -8,7 +8,7 @@ import 'library_dock_item.dart';
 class LibraryTabManager {
   /// 获取存储值
 
-  static dynamic getStoredValue(
+  static dynamic getValue(
     String tabId,
     String itemId,
     String key,
@@ -54,7 +54,6 @@ class LibraryTabManager {
   }
 
   /// 获取tab数据 - 从dock系统中获取
-
   static LibraryTabData? getTabData(String tabId, String itemId) {
     // 首先尝试从dock系统获取DockItem
     final dockItem = DockManager.getDockItemById('main', tabId, itemId);
@@ -66,54 +65,11 @@ class LibraryTabManager {
   }
 
   /// 设置存储值
-
-  static void setStoreValue(
-    String tabId,
-    String itemId,
-    String key,
-    dynamic value,
-  ) {
+  static void setValue(String tabId, String itemId, String key, dynamic value) {
     DockManager.updateLibraryTabValue(tabId, itemId, key, value);
   }
 
-  /// 设置值
-
-  static void setValue(String tabId, String itemId, String key, dynamic value) {
-    // 根据key的不同，映射到dock系统的不同存储位置
-    switch (key) {
-      case 'stored':
-        if (value is Map<String, dynamic>) {
-          for (final entry in value.entries) {
-            DockManager.updateLibraryTabValue(
-              tabId,
-              itemId,
-              entry.key,
-              entry.value,
-            );
-          }
-        }
-        break;
-      case 'needUpdate':
-        DockManager.updateLibraryTabValue(tabId, itemId, 'needUpdate', value);
-        break;
-      default:
-        DockManager.updateLibraryTabValue(tabId, itemId, key, value);
-    }
-  }
-
-  /// 尝试更新
-
-  static void tryUpdate(String tabId, String itemId) {
-    final needUpdate = getStoredValue(tabId, itemId, 'needUpdate', false);
-    if (needUpdate == true) {
-      setValue(tabId, itemId, 'needUpdate', false);
-      // 广播更新事件
-      // EventManager.instance.broadcast('tab::doUpdate', MapEventArgs({'tabId': tabId}));
-    }
-  }
-
   /// 设置排序选项
-
   static void setSortOptions(
     String tabId,
     String itemId,
@@ -125,11 +81,6 @@ class LibraryTabManager {
       'sortOptions',
       sortOptions,
     );
-  }
-
-  static String? getCurrentTabId() {
-    // TODO: 需要在DockManager中实现获取当前活动tab的逻辑
-    return null;
   }
 
   static void addTab(
