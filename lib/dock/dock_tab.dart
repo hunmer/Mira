@@ -13,7 +13,6 @@ class DockTab {
   String _displayName;
   final List<DockItem> _dockItems = [];
   late DockingLayout _layout;
-  final VoidCallback? _onLayoutChanged;
   final Map<String, dynamic> _defaultDockingItemConfig;
   final DockEventStreamController? _eventStreamController;
 
@@ -27,12 +26,10 @@ class DockTab {
     this.parentDockTabId,
     String? displayName,
     Map<String, dynamic>? initData,
-    VoidCallback? onLayoutChanged,
     void Function(DockingItem)? onItemClose,
     Map<String, dynamic>? defaultDockingItemConfig,
     DockEventStreamController? eventStreamController,
   }) : _displayName = displayName ?? id,
-       _onLayoutChanged = onLayoutChanged,
        _defaultDockingItemConfig = defaultDockingItemConfig ?? {},
        _eventStreamController = eventStreamController {
     // 首先初始化默认布局，确保_layout字段不为null
@@ -188,8 +185,6 @@ class DockTab {
       _layout = DockingLayout(
         root: DockManager.createDefaultHomePageDockItem(),
       );
-    } finally {
-      _onLayoutChanged?.call();
     }
   }
 
@@ -203,12 +198,6 @@ class DockTab {
 
   /// 获取显示名称
   String get displayName => _displayName;
-
-  /// 设置显示名称
-  void setDisplayName(String name) {
-    _displayName = name;
-    _onLayoutChanged?.call(); // 通知布局更新
-  }
 
   /// 清空所有DockItem
   void clear({bool rebuildLayout = true}) {

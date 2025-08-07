@@ -1,5 +1,4 @@
 import 'dart:async';
-import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_manager.dart';
@@ -8,17 +7,24 @@ import 'dock_events.dart';
 import 'dock_layout_controller.dart';
 
 /// DockController - 控制器类，管理Dock系统的业务逻辑
-class DockController extends ChangeNotifier {
+class DockController {
   final String dockTabsId;
   DockTabs? _dockTabs;
   late DockEventStreamController _eventStreamController;
   late StreamSubscription<DockEvent> _eventSubscription;
+  late StreamSubscription<DockEvent> _layoutEventSubscription;
   late DockLayoutController layoutController;
   bool _isInitialized = false;
 
   DockController({this.dockTabsId = 'main'}) {
+    // 立即初始化事件流控制器，以便外部可以访问 eventStream
+    _eventStreamController = DockEventStreamController(id: dockTabsId);
+
     layoutController = DockLayoutController(dockTabsId: dockTabsId);
-    layoutController.addListener(_onLayoutControllerChanged);
+    // 监听布局控制器的事件流
+    _layoutEventSubscription = layoutController.eventStream.listen(
+      _onLayoutControllerChanged,
+    );
   }
 
   DockTabs? get dockTabs => _dockTabs;
@@ -26,9 +32,20 @@ class DockController extends ChangeNotifier {
   Stream<DockEvent> get eventStream => _eventStreamController.stream;
 
   /// 布局控制器状态变化时的回调
-  void _onLayoutControllerChanged() {
-    print('LayoutController state changed');
-    notifyListeners();
+  void _onLayoutControllerChanged(DockEvent event) {
+    print('LayoutController state changed: ${event.type}');
+
+    // 避免某些事件类型的重复发射，防止循环
+    switch (event.type) {
+      case DockEventType.layoutSaved:
+      case DockEventType.layoutLoading:
+        // 这些事件不需要重新发射，避免循环
+        break;
+      default:
+        // 其他事件可以重新发射
+        _eventStreamController.emit(event);
+        break;
+    }
   }
 
   /// 初始化存储管理器
@@ -39,8 +56,6 @@ class DockController extends ChangeNotifier {
   /// 初始化Dock系统
   Future<void> initializeDockSystem() async {
     if (_isInitialized) return;
-    // 创建事件流控制器
-    _eventStreamController = DockEventStreamController(id: dockTabsId);
     // 监听事件并处理
     _eventSubscription = _eventStreamController.stream.listen(_handleDockEvent);
     // 等待DockManager完成初始化后再尝试加载布局
@@ -89,7 +104,7 @@ class DockController extends ChangeNotifier {
           if (tab!.isEmpty) {
             print('is Empty');
           }
-          _onLayoutControllerChanged();
+          // 不需要再次调用 _onLayoutControllerChanged，因为这会导致循环
           break;
         default:
           break;
@@ -97,7 +112,7 @@ class DockController extends ChangeNotifier {
     } else {
       switch (event.type) {
         case DockEventType.update:
-          _onLayoutControllerChanged();
+          // 不需要再次调用 _onLayoutControllerChanged，因为这会导致循环
           break;
         case DockEventType.layoutChanged:
           break;
@@ -107,10 +122,17 @@ class DockController extends ChangeNotifier {
           break;
       }
     }
-    // 延迟保存布局
-    Future.delayed(const Duration(milliseconds: 1000), () {
-      saveLayout();
-    });
+
+    // 只对特定的事件类型进行延迟保存布局
+    if (event.type == DockEventType.tabClosed ||
+        event.type == DockEventType.tabCreated ||
+        event.type == DockEventType.update ||
+        event.type == DockEventType.layoutChanged) {
+      // 延迟保存布局
+      Future.delayed(const Duration(milliseconds: 1000), () {
+        saveLayout();
+      });
+    }
   }
 
   /// 保存布局
@@ -122,12 +144,10 @@ class DockController extends ChangeNotifier {
     return false;
   }
 
-  @override
   void dispose() {
     _eventSubscription.cancel();
+    _layoutEventSubscription.cancel();
     _eventStreamController.dispose();
-    layoutController.removeListener(_onLayoutControllerChanged);
     layoutController.dispose();
-    super.dispose();
   }
 }

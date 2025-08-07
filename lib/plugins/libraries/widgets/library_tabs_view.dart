@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/dock/dock_controller.dart';
+import 'package:mira/dock/dock_events.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
 import 'package:mira/core/widgets/hotkey_settings_view.dart';
@@ -37,14 +38,19 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
 
     // 设置防抖监听
     _subscriptions.add(
-      _dockChangeSubject.debounceTime(Duration(milliseconds: 500)).listen((_) {
+      _dockChangeSubject.debounceTime(Duration(milliseconds: 500)).listen((
+        event,
+      ) {
         _dockUpdateNotifier.value = _dockUpdateNotifier.value + 1;
       }),
     );
 
     // 初始化dock controller
     _dockController = DockController(dockTabsId: 'main');
-    _dockController.addListener(_onDockControllerChanged);
+    // 监听 dock controller 的事件流
+    _subscriptions.add(
+      _dockController.eventStream.listen(_onDockControllerChanged),
+    );
 
     // 异步初始化dock系统
     _initializeDock();
@@ -55,15 +61,17 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     await _dockController.initializeDockSystem();
   }
 
-  void _onDockControllerChanged() {
-    print('tabs_view changed');
+  void _onDockControllerChanged(DockEvent event) {
+    print('tabs_view changed: ${event.type}');
     _dockChangeSubject.add(null);
   }
 
   @override
   void dispose() {
     super.dispose();
-    _dockController.removeListener(_onDockControllerChanged);
+    for (final subscription in _subscriptions) {
+      subscription.cancel();
+    }
     _dockController.dispose();
     _dockChangeSubject.close();
     _showSidebar.dispose();

@@ -1,13 +1,13 @@
 import 'dart:async';
 import 'package:collection/collection.dart';
-import 'package:flutter/foundation.dart';
 import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_manager.dart';
 import 'dock_layout_preset_dialog.dart';
+import 'dock_events.dart';
 
 /// DockLayoutController - 专门管理Dock布局的控制器
 /// 负责布局的保存、加载、恢复、预设管理等所有布局相关操作
-class DockLayoutController extends ChangeNotifier {
+class DockLayoutController {
   final String dockTabsId;
   bool _isLayoutLoading = false;
 
@@ -15,7 +15,27 @@ class DockLayoutController extends ChangeNotifier {
   StorageManager? _storageManager;
   bool _isStorageInitialized = false;
 
-  DockLayoutController({required this.dockTabsId});
+  // 事件流控制器
+  late DockEventStreamController _eventStreamController;
+
+  DockLayoutController({required this.dockTabsId}) {
+    _eventStreamController = DockEventStreamController(
+      id: '${dockTabsId}_layout',
+    );
+  }
+
+  /// 事件流
+  Stream<DockEvent> get eventStream => _eventStreamController.stream;
+
+  /// 发射事件
+  void _emitEvent(DockEventType type, {Map<String, dynamic> data = const {}}) {
+    final event = DockLayoutControllerEvent(
+      type: type,
+      dockTabsId: dockTabsId,
+      data: data,
+    );
+    _eventStreamController.emit(event);
+  }
 
   /// 是否正在加载布局
   bool get isLayoutLoading => _isLayoutLoading;
@@ -85,15 +105,21 @@ class DockLayoutController extends ChangeNotifier {
   /// 保存当前布局 - 传递 string 直接 JSON 写入
   Future<bool> saveLayout(String layoutString) async {
     if (layoutString.isEmpty) {
+      _emitEvent(DockEventType.layoutSaved, data: {'success': false});
       return false;
     }
     try {
       final layoutId = '${dockTabsId}_layout';
       await _storageManager!.writeJson(layoutId, layoutString);
       await _saveDockingData();
+      _emitEvent(
+        DockEventType.layoutSaved,
+        data: {'success': true, 'layoutData': layoutString},
+      );
       return true;
     } catch (e) {
       print('DockLayoutController: Error saving layout: $e');
+      _emitEvent(DockEventType.layoutSaved, data: {'success': false});
     }
     return false;
   }
@@ -138,20 +164,28 @@ class DockLayoutController extends ChangeNotifier {
   Future<String?> loadLayout() async {
     try {
       _isLayoutLoading = true;
+      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': true});
+
       final layoutId = '${dockTabsId}_layout';
       final layoutString = await _storageManager!.readJson(layoutId, null);
 
       if (layoutString != null && layoutString is String) {
         print('DockLayoutController: Layout loaded successfully');
+        _emitEvent(
+          DockEventType.layoutLoaded,
+          data: {'success': true, 'layoutData': layoutString},
+        );
         return layoutString;
       }
+      _emitEvent(DockEventType.layoutLoaded, data: {'success': false});
       return '';
     } catch (e) {
       print('DockLayoutController: Error loading layout: $e');
+      _emitEvent(DockEventType.layoutLoaded, data: {'success': false});
       return null;
     } finally {
       _isLayoutLoading = false;
-      notifyListeners();
+      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': false});
     }
   }
 
@@ -159,6 +193,8 @@ class DockLayoutController extends ChangeNotifier {
   Future<bool> loadCompleteLayout() async {
     try {
       _isLayoutLoading = true;
+      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': true});
+
       // 首先加载 DockingData
       final dockingData = await _loadDockingData();
       if (dockingData != null) {
@@ -176,13 +212,16 @@ class DockLayoutController extends ChangeNotifier {
         loadLayoutFromString(layoutString);
       }
 
-      return dockingData != null; // 如果至少有DockingData就认为成功
+      final success = dockingData != null;
+      _emitEvent(DockEventType.layoutLoaded, data: {'success': success});
+      return success; // 如果至少有DockingData就认为成功
     } catch (e) {
       print('DockLayoutController: Error loading complete layout: $e');
+      _emitEvent(DockEventType.layoutLoaded, data: {'success': false});
       return false;
     } finally {
       _isLayoutLoading = false;
-      notifyListeners();
+      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': false});
     }
   }
 
@@ -194,10 +233,13 @@ class DockLayoutController extends ChangeNotifier {
 
     try {
       _isLayoutLoading = true;
+      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': true});
+
       // 直接应用布局字符串，不通过存储
       final dockTabs = DockManager.getDockTabs(dockTabsId);
       if (dockTabs == null) {
         print('DockLayoutController: DockTabs not found for $dockTabsId');
+        _emitEvent(DockEventType.layoutLoaded, data: {'success': false});
         return false;
       }
 
@@ -208,13 +250,18 @@ class DockLayoutController extends ChangeNotifier {
         print('DockLayoutController: Failed to load layout from string');
       }
 
+      _emitEvent(
+        DockEventType.layoutLoaded,
+        data: {'success': success, 'layoutData': layoutString},
+      );
       return success;
     } catch (e) {
       print('DockLayoutController: Error loading layout from string: $e');
+      _emitEvent(DockEventType.layoutLoaded, data: {'success': false});
       return false;
     } finally {
       _isLayoutLoading = false;
-      notifyListeners();
+      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': false});
     }
   }
 
@@ -222,6 +269,8 @@ class DockLayoutController extends ChangeNotifier {
   Future<bool> resetToDefaultLayout() async {
     try {
       _isLayoutLoading = true;
+      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': true});
+
       // 清除保存的布局字符串
       final layoutId = '${dockTabsId}_layout';
       await _storageManager!.writeJson(layoutId, null);
@@ -231,13 +280,15 @@ class DockLayoutController extends ChangeNotifier {
       await _storageManager!.writeJson(dockingDataId, null);
 
       print('DockLayoutController: Reset to default layout successfully');
+      _emitEvent(DockEventType.layoutReset, data: {'success': true});
       return true;
     } catch (e) {
       print('DockLayoutController: Error resetting to default layout: $e');
+      _emitEvent(DockEventType.layoutReset, data: {'success': false});
       return false;
     } finally {
       _isLayoutLoading = false;
-      notifyListeners();
+      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': false});
     }
   }
 
@@ -252,6 +303,10 @@ class DockLayoutController extends ChangeNotifier {
       final currentLayout = await getLayoutData(dockTabsId);
       if (currentLayout == null || currentLayout.isEmpty) {
         print('DockLayoutController: No current layout to save as preset');
+        _emitEvent(
+          DockEventType.presetSaved,
+          data: {'success': false, 'presetName': presetName},
+        );
         return false;
       }
 
@@ -272,9 +327,21 @@ class DockLayoutController extends ChangeNotifier {
       }
 
       print('DockLayoutController: Saved layout as preset: $presetName');
+      _emitEvent(
+        DockEventType.presetSaved,
+        data: {
+          'success': true,
+          'presetName': presetName,
+          'presetId': preset.id,
+        },
+      );
       return true;
     } catch (e) {
       print('DockLayoutController: Error saving layout as preset: $e');
+      _emitEvent(
+        DockEventType.presetSaved,
+        data: {'success': false, 'presetName': presetName},
+      );
       return false;
     }
   }
@@ -283,10 +350,16 @@ class DockLayoutController extends ChangeNotifier {
   Future<bool> loadLayoutFromPreset(String presetId) async {
     try {
       _isLayoutLoading = true;
+      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': true});
+
       // 获取所有预设并找到指定的预设
       final presets = await LayoutPresetManager.getAllPresets();
       final preset = presets.firstWhereOrNull((p) => p.id == presetId);
       if (preset == null) {
+        _emitEvent(
+          DockEventType.presetLoaded,
+          data: {'success': false, 'presetId': presetId},
+        );
         return false;
       }
       final success = loadLayoutFromString(preset.layoutData);
@@ -297,13 +370,25 @@ class DockLayoutController extends ChangeNotifier {
         );
       }
 
+      _emitEvent(
+        DockEventType.presetLoaded,
+        data: {
+          'success': success,
+          'presetId': presetId,
+          'presetName': preset.name,
+        },
+      );
       return success;
     } catch (e) {
       print('DockLayoutController: Error loading layout from preset: $e');
+      _emitEvent(
+        DockEventType.presetLoaded,
+        data: {'success': false, 'presetId': presetId},
+      );
       return false;
     } finally {
       _isLayoutLoading = false;
-      notifyListeners();
+      _emitEvent(DockEventType.layoutLoading, data: {'isLoading': false});
     }
   }
 
@@ -322,9 +407,17 @@ class DockLayoutController extends ChangeNotifier {
     try {
       await LayoutPresetManager.deletePreset(presetId);
       print('DockLayoutController: Deleted preset: $presetId');
+      _emitEvent(
+        DockEventType.presetDeleted,
+        data: {'success': true, 'presetId': presetId},
+      );
       return true;
     } catch (e) {
       print('DockLayoutController: Error deleting preset: $e');
+      _emitEvent(
+        DockEventType.presetDeleted,
+        data: {'success': false, 'presetId': presetId},
+      );
       return false;
     }
   }
@@ -340,8 +433,7 @@ class DockLayoutController extends ChangeNotifier {
   /// 检查存储是否已初始化
   bool get isStorageInitialized => _isStorageInitialized;
 
-  @override
   void dispose() {
-    super.dispose();
+    _eventStreamController.dispose();
   }
 }

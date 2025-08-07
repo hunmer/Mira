@@ -60,7 +60,6 @@ class DockTabs {
         initData: tabData,
         defaultDockingItemConfig:
             tabData['defaultDockingItemConfig'] as Map<String, dynamic>? ?? {},
-        onLayoutChanged: _rebuildGlobalLayout,
       );
       _dockTabs[entry.key] = dockTab;
     }
@@ -102,7 +101,6 @@ class DockTabs {
       displayName: displayName,
       parentDockTabId: id,
       initData: initData,
-      onLayoutChanged: _rebuildGlobalLayout,
       eventStreamController: _eventStreamController,
       // 传递 DockingItem 属性配置
       defaultDockingItemConfig: {

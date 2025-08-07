@@ -13,9 +13,6 @@ class LibraryDockItem extends DockItem {
   final LibraryTabData tabData;
   static bool _isBuilderRegistered = false;
 
-  // 为每个实例创建固定的GlobalKey
-  late final GlobalKey _contentKey;
-
   LibraryDockItem({
     required this.tabData,
     Map<String, ValueNotifier<dynamic>>? initialValues,
@@ -32,7 +29,7 @@ class LibraryDockItem extends DockItem {
              closable: true,
              keepAlive: true, // 启用keepAlive
              widget: LibraryGalleryView(
-               key: libraryItem._contentKey, // 使用固定的GlobalKey
+               // 移除额外的key，让DockingItem的keepAlive机制处理
                tabData: tabData,
                dockValues: item.values, // 传递dock values
              ),
@@ -42,8 +39,6 @@ class LibraryDockItem extends DockItem {
     // 确保builder已注册
     _ensureBuilderRegistered();
 
-    // 初始化固定的GlobalKey
-    _contentKey = GlobalKey();
     // 值变化监听器的设置现在在 LibraryGalleryEvents 中处理
   }
 

@@ -9,6 +9,14 @@ enum DockEventType {
   layoutChanged,
   allTabsCleared,
   tabPositionChanged,
+  // 布局控制器事件
+  layoutLoading,
+  layoutLoaded,
+  layoutSaved,
+  layoutReset,
+  presetSaved,
+  presetLoaded,
+  presetDeleted,
 }
 
 /// 基础Dock事件类
@@ -46,6 +54,24 @@ class DockLayoutEvent extends DockEvent {
 
   DockLayoutEvent({required super.dockTabsId, this.tabId, this.layoutData})
     : super(type: DockEventType.layoutChanged);
+}
+
+/// 布局控制器事件
+class DockLayoutControllerEvent extends DockEvent {
+  final Map<String, dynamic> data;
+
+  DockLayoutControllerEvent({
+    required super.type,
+    required super.dockTabsId,
+    this.data = const {},
+  });
+
+  // 便捷访问器
+  bool? get isLoading => data['isLoading'] as bool?;
+  String? get layoutData => data['layoutData'] as String?;
+  String? get presetId => data['presetId'] as String?;
+  String? get presetName => data['presetName'] as String?;
+  bool? get success => data['success'] as bool?;
 }
 
 /// Dock事件流管理器
