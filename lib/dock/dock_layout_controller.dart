@@ -51,7 +51,7 @@ class DockLayoutController {
       }
 
       // 获取当前实时的布局数据
-      final layoutString = dockTabs.getLayoutString();
+      final layoutString = dockTabs.updateLayout();
       if (layoutString.isEmpty) {
         print('当前布局数据为空');
         return null;
@@ -186,19 +186,16 @@ class DockLayoutController {
 
       // 首先加载 DockingData
       final dockingData = await _loadDockingData();
+      final layoutString = await loadLayout();
       if (dockingData != null) {
         final dockTabs = DockManager.getDockTabs(dockTabsId);
         if (dockTabs != null) {
+          // 先设置布局字符
+          dockTabs.setLayout(layoutString ?? '');
           // 恢复 DockingData
           dockTabs.loadFromJson(dockingData);
           print('DockLayoutController: DockingData restored successfully');
         }
-      }
-
-      // 然后加载并应用 Layout 字符串
-      final layoutString = await loadLayout();
-      if (layoutString != null) {
-        loadLayoutFromString(layoutString);
       }
 
       final success = dockingData != null;
@@ -220,27 +217,14 @@ class DockLayoutController {
     }
     try {
       _isLayoutLoading = true;
-
-      // 直接应用布局字符串，不通过存储
       final dockTabs = DockManager.getDockTabs(dockTabsId);
       if (dockTabs == null) {
-        print('DockLayoutController: DockTabs not found for $dockTabsId');
         _emitEvent(DockEventType.layoutLoaded, data: {'success': false});
         return false;
       }
-
-      final success = dockTabs.loadLayout(layoutString);
-      if (success) {
-        print('DockLayoutController: Layout loaded from string successfully');
-      } else {
-        print('DockLayoutController: Failed to load layout from string');
-      }
-
-      _emitEvent(
-        DockEventType.layoutLoaded,
-        data: {'success': success, 'layoutData': layoutString},
-      );
-      return success;
+      dockTabs.setLayout(layoutString);
+      _emitEvent(DockEventType.layoutLoaded, data: {'success': true});
+      return true;
     } catch (e) {
       print('DockLayoutController: Error loading layout from string: $e');
       _emitEvent(DockEventType.layoutLoaded, data: {'success': false});

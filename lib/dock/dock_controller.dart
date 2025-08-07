@@ -37,7 +37,6 @@ class DockController {
 
     // 避免某些事件类型的重复发射，防止循环
     switch (event.type) {
-      case DockEventType.layoutSaved:
       case DockEventType.layoutLoading:
         // 这些事件不需要重新发射，避免循环
         break;

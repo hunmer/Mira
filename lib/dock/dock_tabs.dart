@@ -48,23 +48,22 @@ class DockTabs {
 
   /// 从JSON数据初始化
   void _initializeFromJson(Map<String, dynamic>? data) {
-    if (data == null) {
-      return _rebuildGlobalLayout();
+    if (data != null) {
+      final tabs = data['tabs'] as Map<String, dynamic>? ?? {};
+      for (var entry in tabs.entries) {
+        final tabData = entry.value as Map<String, dynamic>;
+        final dockTab = DockTab(
+          id: entry.key,
+          parentDockTabId: id,
+          initData: tabData,
+          defaultDockingItemConfig:
+              tabData['defaultDockingItemConfig'] as Map<String, dynamic>? ??
+              {},
+        );
+        _dockTabs[entry.key] = dockTab;
+      }
     }
-    final tabs = data['tabs'] as Map<String, dynamic>? ?? {};
-
-    for (var entry in tabs.entries) {
-      final tabData = entry.value as Map<String, dynamic>;
-      final dockTab = DockTab(
-        id: entry.key,
-        parentDockTabId: id,
-        initData: tabData,
-        defaultDockingItemConfig:
-            tabData['defaultDockingItemConfig'] as Map<String, dynamic>? ?? {},
-      );
-      _dockTabs[entry.key] = dockTab;
-    }
-
+    _rebuildGlobalLayout();
     // 恢复激活状态
     // final activeTabId = data['activeTabId'] as String?;
     // if (activeTabId != null && _dockTabs.containsKey(activeTabId)) {
@@ -133,6 +132,10 @@ class DockTabs {
   }
 
   void emitEvent(DockEvent event) {
+    if (event.type == DockEventType.tabClosed) {
+      // 更新布局信息，因为布局要跟标签数量一致
+      updateLayout();
+    }
     _eventStreamController?.emit(event);
   }
 
@@ -208,6 +211,15 @@ class DockTabs {
           final tabId = entry.key;
           final config = tab.getDefaultDockingItemConfig();
 
+          final tabParser = DefaultDockLayoutParser(
+            dockTabsId: id,
+            tabId: entry.key,
+          );
+          DockLayoutManager.registerParser(
+            '${id}_${entry.key}_layout',
+            tabParser,
+          );
+
           return DockingItem(
             name: tab.displayName,
             id: tabId,
@@ -231,79 +243,41 @@ class DockTabs {
           );
         }).toList();
 
+    final mainParser = DefaultDockLayoutParser(dockTabsId: id, tabId: '');
+    DockLayoutManager.registerParser('${id}_layout', mainParser);
+
+    // 创建一个新的布局实例来加载数据
     _globalLayout = DockingLayout(
       root:
           tabItems.isNotEmpty
               ? DockingTabs(tabItems)
               : DockManager.createDefaultHomePageDockItem(),
     );
+
+    // 加载布局
+    DockLayoutManager.loadLayout('${id}_layout', _globalLayout!);
+    emitEvent(DockLayoutEvent(dockTabsId: id));
   }
 
   /// 构建带事件监听的Tab内容
   Widget _buildTabContentWithEvents(DockTab tab) {
     final items = tab.getAllDockItems();
     final defaultConfig = tab.getDefaultDockingItemConfig();
-    if (items.isEmpty) {
-      return DockManager.createDefaultHomePageDockItem().widget;
-    } else if (items.length == 1) {
-      return items.first.buildDockingItem(defaultConfig: defaultConfig).widget;
-    } else {
-      // 创建TabData列表
-      final tabDataList =
-          items.map((item) {
-            final dockingItem = item.buildDockingItem(
-              defaultConfig: defaultConfig,
-            );
-            return TabData(
-              value: dockingItem,
-              text: dockingItem.name ?? 'Untitled',
-              content: dockingItem.widget,
-              closable: dockingItem.closable,
-            );
-          }).toList();
-
-      return TabbedView(
-        controller: TabbedViewController(tabDataList),
-        // tabsAreaButtonsBuilder: (context, tabsCount) {
-        //   return _buildTabsAreaButtons(context, tabsCount);
-        // },
-        onDraggableBuild: (controller, tabIndex, tabData) {
-          final dockingItem = tabData.value as DockingItem;
-          return DraggableConfig(
-            feedback: Material(
-              color: Colors.transparent,
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: 12,
-                  vertical: 6,
-                ),
-                decoration: BoxDecoration(
-                  // ignore: deprecated_member_use
-                  color: Colors.blueAccent.withOpacity(0.85),
-                  borderRadius: BorderRadius.circular(16),
-                  boxShadow: [
-                    BoxShadow(
-                      color: Colors.black12,
-                      blurRadius: 6,
-                      offset: Offset(0, 2),
-                    ),
-                  ],
-                ),
-                child: Text(
-                  dockingItem.name ?? 'Untitled',
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 14,
-                  ),
-                  overflow: TextOverflow.ellipsis,
-                ),
-              ),
-            ),
+    // 创建TabData列表
+    final tabDataList =
+        items.map((item) {
+          final dockingItem = item.buildDockingItem(
+            defaultConfig: defaultConfig,
           );
-        },
-      );
-    }
+          return TabData(
+            value: dockingItem,
+            text: dockingItem.name ?? 'Untitled',
+            content: dockingItem.widget,
+            closable: dockingItem.closable,
+          );
+        }).toList();
+
+    return TabbedView(controller: TabbedViewController(tabDataList));
   }
 
   /// 构建Tab区域的按钮
@@ -374,7 +348,8 @@ class DockTabs {
 
     if (result != null && result.isNotEmpty) {
       // 重新加载布局
-      loadLayout(result);
+      setLayout(result);
+      _rebuildGlobalLayout();
     }
   }
 
@@ -396,19 +371,20 @@ class DockTabs {
       onTabLayoutChanged: _handleItemLayoutChanged,
       onItemPositionChanged: _handleItemPositionChanged,
     );
-    MultiSplitViewTheme theme = MultiSplitViewTheme(
-      child: docking,
-      data: MultiSplitViewThemeData(
-        dividerPainter: DividerPainters.grooved1(
-          color: Colors.indigo[100]!,
-          highlightedColor: Colors.indigo[900]!,
-        ),
-      ),
-    );
-
     return TabbedViewTheme(
       data: _themeData ?? DockTheme.createCustomThemeData(context),
-      child: Container(padding: const EdgeInsets.all(16), child: theme),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        child: MultiSplitViewTheme(
+          child: docking,
+          data: MultiSplitViewThemeData(
+            dividerPainter: DividerPainters.grooved1(
+              color: Colors.indigo[100]!,
+              highlightedColor: Colors.indigo[900]!,
+            ),
+          ),
+        ),
+      ),
     );
   }
 
@@ -586,8 +562,8 @@ class DockTabs {
     return {'id': id, 'tabs': tabsMap, 'activeTabId': _activeTabId};
   }
 
-  /// 获取当前布局
-  String getLayoutString() {
+  /// 更新布局缓存并返回当前布局
+  String updateLayout() {
     // 保存当前的激活tab状态
     final layoutData = {
       'activeTabId': _activeTabId,
@@ -623,55 +599,8 @@ class DockTabs {
   }
 
   /// 加载布局
-  bool loadLayout(String layoutString) {
-    if (_dockTabs.isEmpty) {
-      return false;
-    }
-    try {
-      // 为所有可能的tab注册parser
-      for (var entry in _dockTabs.entries) {
-        final tabParser = DefaultDockLayoutParser(
-          dockTabsId: id,
-          tabId: entry.key,
-        );
-        DockLayoutManager.registerParser(
-          '${id}_${entry.key}_layout',
-          tabParser,
-        );
-      }
-
-      final mainParser = DefaultDockLayoutParser(
-        dockTabsId: id,
-        tabId: _activeTabId ?? _dockTabs.keys.first,
-      );
-      DockLayoutManager.registerParser('${id}_layout', mainParser);
-      // 临时保存布局字符串
-      DockLayoutManager.setSavedLayout('${id}_layout', layoutString);
-
-      // 创建一个新的布局实例来加载数据
-      final tempLayout = DockingLayout(
-        root: DockingItem(
-          name: 'temp',
-          widget: const Center(child: Text('Loading...')),
-        ),
-      );
-
-      // 加载布局到临时对象中
-      final success = DockLayoutManager.loadLayout('${id}_layout', tempLayout);
-
-      if (success) {
-        // 将加载的布局设置为全局布局
-        _globalLayout = tempLayout;
-        // 强制重新构建UI
-        emitEvent(DockLayoutEvent(dockTabsId: id, layoutData: layoutString));
-        return true;
-      } else {
-        print('Failed to load layout - loadLayout returned false');
-        return false;
-      }
-    } catch (e) {
-      print('Failed to load layout: $e');
-      return false;
-    }
+  bool setLayout(String layoutString) {
+    DockLayoutManager.setSavedLayout('${id}_layout', layoutString);
+    return true;
   }
 }
