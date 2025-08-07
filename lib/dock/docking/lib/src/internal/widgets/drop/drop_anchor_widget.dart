@@ -4,7 +4,7 @@ import '../../../layout/drop_position.dart';
 import '../../../on_item_position_changed.dart';
 import 'package:flutter/material.dart';
 
-import 'package:tabbed_view/tabbed_view.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 
 typedef DropWidgetListener = void Function(DropPosition? dropPosition);
 

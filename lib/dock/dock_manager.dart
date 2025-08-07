@@ -1,5 +1,5 @@
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
-import 'package:tabbed_view/tabbed_view.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'package:mira/core/storage/storage_manager.dart';
 import 'dock_tabs.dart';
 import 'dock_tab.dart';

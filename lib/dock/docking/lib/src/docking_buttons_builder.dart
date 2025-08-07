@@ -1,4 +1,4 @@
-import 'package:tabbed_view/tabbed_view.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'package:flutter/widgets.dart';
 import 'layout/docking_layout.dart';
 

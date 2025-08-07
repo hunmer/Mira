@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:tabbed_view/tabbed_view.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 
 /// DockItem类 - 包含id、type、title、values和builder属性

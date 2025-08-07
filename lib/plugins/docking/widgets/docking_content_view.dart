@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/docking.dart';
-import 'package:tabbed_view/tabbed_view.dart';
-import 'package:multi_split_view/multi_split_view.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
+import 'package:mira/multi_split_view/lib/multi_split_view.dart';
 import '../models/docking_tab_data.dart';
 
 /// DockingContentView - Docking内容视图

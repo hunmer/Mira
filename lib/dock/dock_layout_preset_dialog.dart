@@ -3,7 +3,6 @@ import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/storage/storage_manager.dart';
 import 'package:mira/dock/dock_layout_controller.dart';
-import 'dock_manager.dart';
 
 /// 布局预设对话框
 class DockLayoutPresetDialog extends StatefulWidget {

@@ -12,8 +12,8 @@ import 'layout_parser.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 
-import 'package:multi_split_view/multi_split_view.dart';
-import 'package:tabbed_view/tabbed_view.dart';
+import 'package:mira/multi_split_view/lib/multi_split_view.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 
 mixin DropArea {}
 

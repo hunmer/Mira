@@ -8,7 +8,6 @@ import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:provider/provider.dart';
 import 'package:mira/core/theme_controller.dart';
 import 'package:mira/screens/settings_screen/controllers/permission_controller.dart';
-import 'package:mira/screens/settings_screen/l10n/log_settings_localizations.dart';
 import 'package:mira/screens/settings_screen/l10n/settings_screen_localizations.dart';
 import 'package:mira/screens/settings_screen/screens/data_management_localizations.dart';
 import 'package:mira/screens/settings_screen/widgets/l10n/webdav_localizations.dart';
@@ -166,7 +165,6 @@ class _MyAppState extends State<MyApp> {
             SettingsScreenLocalizations.delegate,
             DataManagementLocalizations.delegate,
             LibrariesLocalizations.delegate,
-            LogSettingsLocalizationsDelegate(),
             GroupSelectorLocalizations.delegate,
             LocationPickerLocalizations.delegate,
             GlobalMaterialLocalizations.delegate,

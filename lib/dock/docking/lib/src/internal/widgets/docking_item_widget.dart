@@ -15,7 +15,7 @@ import '../../theme/docking_theme.dart';
 import '../../theme/docking_theme_data.dart';
 import 'package:flutter/material.dart';
 
-import 'package:tabbed_view/tabbed_view.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 
 /// Represents a widget for [DockingItem].
 

@@ -11,7 +11,7 @@ import 'on_item_close.dart';
 import 'on_item_selection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
-import 'package:multi_split_view/multi_split_view.dart';
+import 'package:mira/multi_split_view/lib/multi_split_view.dart';
 
 /// The docking widget.
 class Docking extends StatefulWidget {

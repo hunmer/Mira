@@ -8,7 +8,7 @@ import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/layout/drop_position.dart'
     as docking_drop;
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
-import 'package:tabbed_view/tabbed_view.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'package:rxdart/rxdart.dart';
 import 'dock_tab.dart';
 import 'dock_item.dart';
