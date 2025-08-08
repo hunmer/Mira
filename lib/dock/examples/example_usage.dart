@@ -7,7 +7,6 @@ import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'dock_manager.dart';
 import 'docking_persistence_logic.dart';
 import 'widgets/counter_widget.dart';
-import 'widgets/debug_dialog.dart';
 
 // ========= 示例页面 =========
 
@@ -109,9 +108,19 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
         ),
         actions: [
           IconButton(
+            icon: Icon(Icons.dashboard),
+            tooltip: '多功能工具面板',
+            onPressed: () => logic.showMultiTabDialog(),
+          ),
+          IconButton(
             icon: Icon(Icons.bug_report),
             tooltip: '调试工具',
-            onPressed: _showDebugDialog,
+            onPressed: () => logic.showDebugTab(),
+          ),
+          IconButton(
+            icon: Icon(Icons.add_box),
+            tooltip: '添加组件',
+            onPressed: () => logic.showAddComponentTab(),
           ),
           IconButton(icon: Icon(Icons.save), onPressed: logic.saveLayout),
           IconButton(icon: Icon(Icons.restore), onPressed: logic.restoreLayout),
@@ -138,36 +147,6 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Tooltip(
-            message: '添加组件（统一对话框）',
-            child: FloatingActionButton.small(
-              tooltip: '添加组件',
-              heroTag: 'add_component',
-              onPressed: logic.showAddComponentDialog,
-              child: const Icon(Icons.add_box),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Tooltip(
-            message: '快速添加计数器',
-            child: FloatingActionButton.small(
-              tooltip: '添加计数器',
-              heroTag: 'add_counter',
-              onPressed: logic.addCounter,
-              child: const Icon(Icons.add_circle),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Tooltip(
-            message: '快速添加文本',
-            child: FloatingActionButton.small(
-              tooltip: '添加文本',
-              heroTag: 'add_text',
-              onPressed: logic.addText,
-              child: const Icon(Icons.text_fields),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Tooltip(
             message: '切换拖拽功能',
             child: FloatingActionButton.small(
               tooltip: '切换拖拽',
@@ -175,12 +154,6 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
               onPressed: _toggleDraggable,
               child: Icon(_draggable ? Icons.pan_tool_alt : Icons.do_not_touch),
             ),
-          ),
-          const SizedBox(height: 8),
-          FloatingActionButton(
-            heroTag: 'main_add',
-            onPressed: logic.addGenericText,
-            child: Icon(Icons.add),
           ),
         ],
       ),
@@ -194,13 +167,6 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
   }
 
   // ========= 事件处理 =========
-
-  void _showDebugDialog() {
-    showDialog(
-      context: context,
-      builder: (context) => DebugDialog(manager: manager),
-    );
-  }
 
   void _toggleDraggable() {
     setState(() => _draggable = !_draggable);

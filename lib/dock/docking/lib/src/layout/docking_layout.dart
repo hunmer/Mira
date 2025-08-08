@@ -331,8 +331,16 @@ class DockingRow extends DockingParentArea {
          minimalSize: minimalSize,
        ) {
     controller = MultiSplitViewController(areas: children);
+    controller.addListener(_onAreasChanged);
     if (_children.length < 2) {
       throw ArgumentError('Insufficient number of children');
+    }
+  }
+
+  void _onAreasChanged() {
+    // 实时输出所有区域的大小
+    for (int i = 0; i < controller.areas.length; i++) {
+      print('Area $i size: ${controller.areas[i].size}');
     }
   }
 
@@ -392,8 +400,16 @@ class DockingColumn extends DockingParentArea {
          minimalSize: minimalSize,
        ) {
     controller = MultiSplitViewController(areas: children);
+    controller.addListener(_onAreasChanged);
     if (_children.length < 2) {
       throw ArgumentError('Insufficient number of children');
+    }
+  }
+
+  void _onAreasChanged() {
+    // 实时输出所有区域的大小
+    for (int i = 0; i < controller.areas.length; i++) {
+      print('Area $i size: ${controller.areas[i].size}');
     }
   }
 

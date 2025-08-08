@@ -19,6 +19,58 @@ class AddComponentDialog extends StatefulWidget {
 }
 
 class _AddComponentDialogState extends State<AddComponentDialog> {
+  @override
+  Widget build(BuildContext context) {
+    return Dialog(
+      child: Container(
+        width: 800,
+        height: 650,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text('添加组件', style: Theme.of(context).textTheme.headlineSmall),
+            const SizedBox(height: 16),
+            Expanded(
+              child: AddComponentDialogContent(
+                manager: widget.manager,
+                onShowSnackBar: widget.onShowSnackBar,
+              ),
+            ),
+            const SizedBox(height: 16),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                TextButton(
+                  onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('关闭'),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// 添加组件对话框内容组件（可在标签页中重用）
+class AddComponentDialogContent extends StatefulWidget {
+  final DockManager manager;
+  final Function(String message) onShowSnackBar;
+
+  const AddComponentDialogContent({
+    Key? key,
+    required this.manager,
+    required this.onShowSnackBar,
+  }) : super(key: key);
+
+  @override
+  State<AddComponentDialogContent> createState() =>
+      _AddComponentDialogContentState();
+}
+
+class _AddComponentDialogContentState extends State<AddComponentDialogContent> {
   DockingArea? _selectedArea;
   DropPosition? _selectedPosition;
   String _selectedComponentType = 'counter';
@@ -29,148 +81,138 @@ class _AddComponentDialogState extends State<AddComponentDialog> {
     final allAreas = widget.manager.layout.layoutAreas();
     final dropAreas = allAreas.where((area) => area is DropArea).toList();
 
-    return Dialog(
-      child: Container(
-        width: 700,
-        height: 600,
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text('添加组件', style: Theme.of(context).textTheme.headlineSmall),
-            const SizedBox(height: 16),
-
-            // 组件类型选择
-            Card(
-              child: Padding(
-                padding: const EdgeInsets.all(12),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      '选择组件类型',
-                      style: Theme.of(context).textTheme.titleMedium,
-                    ),
-                    const SizedBox(height: 8),
-                    Row(
-                      children: [
-                        Radio<String>(
-                          value: 'counter',
-                          groupValue: _selectedComponentType,
-                          onChanged: (value) {
-                            setState(() => _selectedComponentType = value!);
-                          },
-                        ),
-                        const Text('计数器'),
-                        const SizedBox(width: 16),
-                        Radio<String>(
-                          value: 'text',
-                          groupValue: _selectedComponentType,
-                          onChanged: (value) {
-                            setState(() => _selectedComponentType = value!);
-                          },
-                        ),
-                        const Text('文本组件'),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 目标区域选择
-            Expanded(
-              flex: 2,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '选择目标区域',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(
-                        child: ListView.builder(
-                          itemCount: dropAreas.length,
-                          itemBuilder: (context, index) {
-                            final area = dropAreas[index];
-                            final isSelected = _selectedArea == area;
-                            return ListTile(
-                              selected: isSelected,
-                              leading: Icon(_getAreaIcon(area)),
-                              title: Text(_getAreaDisplayName(area)),
-                              subtitle: Text(_getAreaDescription(area)),
-                              trailing:
-                                  (area is DockingItem && area.maximized) ||
-                                          (area is DockingTabs &&
-                                              area.maximized)
-                                      ? const Icon(Icons.fullscreen, size: 16)
-                                      : null,
-                              onTap: () {
-                                setState(() {
-                                  _selectedArea = area;
-                                  _selectedPosition = null;
-                                  _selectedDropIndex = null;
-                                });
-                              },
-                            );
-                          },
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 插入位置选择
-            Expanded(
-              flex: 1,
-              child: Card(
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        '选择插入位置',
-                        style: Theme.of(context).textTheme.titleMedium,
-                      ),
-                      const SizedBox(height: 8),
-                      Expanded(child: _buildPositionSelector()),
-                    ],
-                  ),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 16),
-
-            // 操作按钮
-            Row(
-              mainAxisAlignment: MainAxisAlignment.end,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // 组件类型选择
+        Card(
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('取消'),
-                ),
-                const SizedBox(width: 8),
-                ElevatedButton(
-                  onPressed: _canAdd() ? _addComponent : null,
-                  child: const Text('添加'),
+                Text('选择组件类型', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    Radio<String>(
+                      value: 'counter',
+                      groupValue: _selectedComponentType,
+                      onChanged: (value) {
+                        setState(() => _selectedComponentType = value!);
+                      },
+                    ),
+                    const Text('计数器'),
+                    const SizedBox(width: 16),
+                    Radio<String>(
+                      value: 'text',
+                      groupValue: _selectedComponentType,
+                      onChanged: (value) {
+                        setState(() => _selectedComponentType = value!);
+                      },
+                    ),
+                    const Text('文本组件'),
+                  ],
                 ),
               ],
             ),
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // 目标区域选择和插入位置选择并排显示
+        Expanded(
+          flex: 3,
+          child: Row(
+            children: [
+              // 左侧：目标区域选择
+              Expanded(
+                flex: 1,
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '选择目标区域',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(
+                          child: ListView.builder(
+                            itemCount: dropAreas.length,
+                            itemBuilder: (context, index) {
+                              final area = dropAreas[index];
+                              final isSelected = _selectedArea == area;
+                              return ListTile(
+                                selected: isSelected,
+                                leading: Icon(_getAreaIcon(area)),
+                                title: Text(_getAreaDisplayName(area)),
+                                subtitle: Text(_getAreaDescription(area)),
+                                trailing:
+                                    (area is DockingItem && area.maximized) ||
+                                            (area is DockingTabs &&
+                                                area.maximized)
+                                        ? const Icon(Icons.fullscreen, size: 16)
+                                        : null,
+                                onTap: () {
+                                  setState(() {
+                                    _selectedArea = area;
+                                    _selectedPosition = null;
+                                    _selectedDropIndex = null;
+                                  });
+                                },
+                              );
+                            },
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+
+              const SizedBox(width: 8),
+
+              // 右侧：插入位置选择
+              Expanded(
+                flex: 1,
+                child: Card(
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '选择插入位置',
+                          style: Theme.of(context).textTheme.titleMedium,
+                        ),
+                        const SizedBox(height: 8),
+                        Expanded(child: _buildPositionSelector()),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+
+        const SizedBox(height: 16),
+
+        // 操作按钮
+        Row(
+          mainAxisAlignment: MainAxisAlignment.end,
+          children: [
+            ElevatedButton(
+              onPressed: _canAdd() ? _addComponent : null,
+              child: const Text('添加'),
+            ),
           ],
         ),
-      ),
+      ],
     );
   }
 

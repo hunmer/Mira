@@ -3,6 +3,7 @@ import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'dock_manager.dart';
 import 'widgets/add_component_dialog.dart';
+import 'widgets/multi_tab_dialog.dart';
 
 /// Docking 持久化演示的业务逻辑
 class DockingPersistenceLogic {
@@ -16,6 +17,29 @@ class DockingPersistenceLogic {
     ScaffoldMessenger.of(context)
       ..hideCurrentSnackBar()
       ..showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  /// 显示多标签对话框
+  void showMultiTabDialog({int initialTabIndex = 0}) {
+    showDialog(
+      context: context,
+      builder:
+          (context) => MultiTabDialog(
+            manager: manager,
+            onShowSnackBar: showSnackBar,
+            initialTabIndex: initialTabIndex,
+          ),
+    );
+  }
+
+  /// 显示调试工具（多标签对话框的调试页面）
+  void showDebugTab() {
+    showMultiTabDialog(initialTabIndex: 0);
+  }
+
+  /// 显示添加组件工具（多标签对话框的添加组件页面）
+  void showAddComponentTab() {
+    showMultiTabDialog(initialTabIndex: 1);
   }
 
   /// 显示添加组件对话框
