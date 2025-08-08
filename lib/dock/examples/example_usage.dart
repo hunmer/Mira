@@ -6,7 +6,20 @@ import 'package:mira/multi_split_view/lib/multi_split_view.dart';
 import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'dock_manager.dart';
 import 'docking_persistence_logic.dart';
-import 'widgets/counter_widget.dart';
+import 'widgets/dynamic_widget.dart';
+import 'widgets/counter_config_dialog.dart';
+import 'widgets/text_config_dialog.dart';
+import 'widgets/dynamic_widget_config_dialog.dart';
+import '../debug_layout_preset_dialog.dart';
+import 'package:mira/dock/dock_theme.dart';
+import 'package:mira/dock/docking/lib/src/docking.dart';
+import 'package:mira/core/widgets/window_controls.dart';
+import 'package:mira/multi_split_view/lib/multi_split_view.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
+import 'dock_manager.dart';
+import 'docking_persistence_logic.dart';
+import 'register/counter_widget.dart';
+import 'register/dynamic_widget.dart';
 import '../debug_layout_preset_dialog.dart';
 
 // ========= 示例页面 =========
@@ -78,6 +91,21 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
             ),
           ),
     );
+
+    manager.registry.register(
+      'dynamic_widget',
+      builder: (values) {
+        final jsonData =
+            values['jsonData'] as Map<String, dynamic>? ??
+            DynamicWidgetPresets.welcomeCard;
+        return DynamicWidget(
+          jsonData: jsonData,
+          onDataChanged: () {
+            // 当数据发生变化时，可以在这里处理
+          },
+        );
+      },
+    );
   }
 
   @override
@@ -128,8 +156,6 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
             tooltip: '添加组件',
             onPressed: () => logic.showAddComponentTab(),
           ),
-          IconButton(icon: Icon(Icons.save), onPressed: logic.saveLayout),
-          IconButton(icon: Icon(Icons.restore), onPressed: logic.restoreLayout),
           IconButton(icon: Icon(Icons.delete), onPressed: logic.clearLayout),
         ],
       ),

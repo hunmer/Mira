@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import '../dock_manager.dart';
-import 'item_info_panel.dart';
-import 'tabs_info_panel.dart';
+import '../widgets/item_info_panel.dart';
+import '../widgets/tabs_info_panel.dart';
 
 /// 调试对话框主界面
 class DebugDialog extends StatefulWidget {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import '../dock_manager.dart';
-import 'debug_dialog_utils.dart';
+import '../dialog/debug_dialog_utils.dart';
 
 /// 标签页信息面板
 class ItemInfoPanel extends StatelessWidget {

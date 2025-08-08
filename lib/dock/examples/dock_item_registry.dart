@@ -6,6 +6,13 @@ typedef DockItemBuilder = Widget Function(Map<String, dynamic> values);
 /// 组件数据提取器，从 Widget 提取当前状态
 typedef DockItemDataExtractor = Map<String, dynamic> Function(Widget widget);
 
+/// 组件配置对话框构建器
+typedef DockItemConfigBuilder =
+    Widget Function(
+      BuildContext context,
+      Function(Map<String, dynamic>) onConfirm,
+    );
+
 /// DockItem 的数据模型
 class DockItemData {
   final String id;
@@ -29,15 +36,15 @@ class DockItemData {
   });
 
   Map<String, dynamic> toJson() => {
-        'id': id,
-        'type': type,
-        'values': values,
-        if (name != null) 'name': name,
-        'closable': closable,
-        'keepAlive': keepAlive,
-        if (maximizable != null) 'maximizable': maximizable,
-        if (weight != null) 'weight': weight,
-      };
+    'id': id,
+    'type': type,
+    'values': values,
+    if (name != null) 'name': name,
+    'closable': closable,
+    'keepAlive': keepAlive,
+    if (maximizable != null) 'maximizable': maximizable,
+    if (weight != null) 'weight': weight,
+  };
 
   factory DockItemData.fromJson(Map<String, dynamic> json) {
     return DockItemData(
@@ -61,16 +68,21 @@ class DockItemRegistry {
 
   final Map<String, DockItemBuilder> _builders = {};
   final Map<String, DockItemDataExtractor> _extractors = {};
+  final Map<String, DockItemConfigBuilder> _configBuilders = {};
 
   /// 注册组件类型
   void register(
     String type, {
     required DockItemBuilder builder,
     DockItemDataExtractor? extractor,
+    DockItemConfigBuilder? configBuilder,
   }) {
     _builders[type] = builder;
     if (extractor != null) {
       _extractors[type] = extractor;
+    }
+    if (configBuilder != null) {
+      _configBuilders[type] = configBuilder;
     }
   }
 
@@ -86,6 +98,22 @@ class DockItemRegistry {
     return extractor?.call(widget) ?? {};
   }
 
+  /// 构建配置对话框
+  Widget? buildConfigDialog(
+    String type,
+    BuildContext context,
+    Function(Map<String, dynamic>) onConfirm,
+  ) {
+    final configBuilder = _configBuilders[type];
+    return configBuilder?.call(context, onConfirm);
+  }
+
   /// 检查类型是否已注册
   bool hasType(String type) => _builders.containsKey(type);
+
+  /// 获取所有已注册的组件类型
+  List<String> get registeredTypes => _builders.keys.toList();
+
+  /// 获取有配置对话框的组件类型
+  List<String> get typesWithConfig => _configBuilders.keys.toList();
 }

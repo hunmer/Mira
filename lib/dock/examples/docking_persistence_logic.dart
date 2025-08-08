@@ -2,8 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'dock_manager.dart';
-import 'widgets/add_component_dialog.dart';
-import 'widgets/multi_tab_dialog.dart';
+import 'dialog/add_component_dialog.dart';
+import 'dialog/multi_tab_dialog.dart';
+import 'register/dynamic_widget.dart';
 
 /// Docking 持久化演示的业务逻辑
 class DockingPersistenceLogic {
@@ -124,18 +125,124 @@ class DockingPersistenceLogic {
 
   /// 清除布局
   Future<void> clearLayout() async {
-    await manager.clearSavedData();
     manager.setRoot(null);
     showSnackBar('Layout cleared');
   }
 
   /// 创建默认布局
   void createDefaultLayout() {
+    // 直接构建 dynamic widget
+    final welcomeWidget = DynamicWidget(
+      jsonData: {
+        'type': 'card',
+        'args': {
+          'margin': {'all': 16},
+          'elevation': 4,
+          'child': {
+            'type': 'padding',
+            'args': {
+              'padding': {'all': 20},
+              'child': {
+                'type': 'column',
+                'args': {
+                  'crossAxisAlignment': 'start',
+                  'mainAxisSize': 'min',
+                  'children': [
+                    {
+                      'type': 'row',
+                      'args': {
+                        'children': [
+                          {
+                            'type': 'icon',
+                            'args': {
+                              'icon': 57355, // Icons.star.codePoint
+                              'color': '#FFD700',
+                              'size': 32,
+                            },
+                          },
+                          {
+                            'type': 'sized_box',
+                            'args': {'width': 12},
+                          },
+                          {
+                            'type': 'expanded',
+                            'args': {
+                              'child': {
+                                'type': 'text',
+                                'args': {
+                                  'data': '欢迎使用 Dynamic Widget',
+                                  'style': {
+                                    'fontSize': 20,
+                                    'fontWeight': 'bold',
+                                    'color': '#1976D2',
+                                  },
+                                },
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                    {
+                      'type': 'sized_box',
+                      'args': {'height': 16},
+                    },
+                    {
+                      'type': 'text',
+                      'args': {
+                        'data':
+                            '这是一个通过 JSON 动态构建的 Widget 示例。你可以通过修改 JSON 数据来改变界面布局和样式。',
+                        'style': {
+                          'fontSize': 14,
+                          'color': '#666',
+                          'height': 1.5,
+                        },
+                      },
+                    },
+                    {
+                      'type': 'sized_box',
+                      'args': {'height': 20},
+                    },
+                    {
+                      'type': 'row',
+                      'args': {
+                        'mainAxisAlignment': 'spaceBetween',
+                        'children': [
+                          {
+                            'type': 'elevated_button',
+                            'args': {
+                              'child': {
+                                'type': 'text',
+                                'args': {'data': '开始使用'},
+                              },
+                            },
+                          },
+                          {
+                            'type': 'text_button',
+                            'args': {
+                              'child': {
+                                'type': 'text',
+                                'args': {'data': '了解更多'},
+                              },
+                            },
+                          },
+                        ],
+                      },
+                    },
+                  ],
+                },
+              },
+            },
+          },
+        },
+      },
+    );
+
     final rootTabs = DockingTabs([
       DockingItem(
         id: 'welcome',
-        name: 'Welcome',
-        widget: Center(child: Text('Welcome to Docking Demo')),
+        name: 'Dynamic Welcome',
+        widget: welcomeWidget,
       ),
     ], id: 'root');
 

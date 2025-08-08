@@ -225,6 +225,24 @@ class DockManager extends ChangeNotifier {
     layout.root = root;
   }
 
+  void removeAllItems() {
+    // 清空缓存
+    _itemDataCache.clear();
+
+    // 获取所有 DockingItem 的 id
+    final allItemIds = <dynamic>[];
+    for (final area in layout.layoutAreas()) {
+      if (area is DockingItem) {
+        allItemIds.add(area.id);
+      }
+    }
+
+    // 批量移除所有 items
+    if (allItemIds.isNotEmpty) {
+      layout.removeItemByIds(allItemIds);
+    }
+  }
+
   void removeItemById(dynamic id) {
     _itemDataCache.remove(id.toString());
     layout.removeItemByIds([id]);

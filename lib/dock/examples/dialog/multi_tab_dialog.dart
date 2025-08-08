@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import '../dock_manager.dart';
-import 'debug_dialog_new.dart';
+import 'dock_debug_dialog.dart';
 import 'add_component_dialog.dart';
 
 /// 多功能标签页对话框

@@ -84,6 +84,7 @@ dependencies:
   cached_video_player_plus: ^4.0.3
   video_player: ^2.10.0
   video_player_win: ^2.3.11
+  json_dynamic_widget: ^10.0.2
 
 dev_dependencies:
   flutter_test:
