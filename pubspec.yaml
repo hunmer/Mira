@@ -85,6 +85,7 @@ dependencies:
   video_player: ^2.10.0
   video_player_win: ^2.3.11
   json_dynamic_widget: ^10.0.2
+  json_dynamic_widget_codegen: ^3.0.0
 
 dev_dependencies:
   flutter_test:

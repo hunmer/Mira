@@ -1,4 +1,6 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import '../register/dynamic_widget.dart';
 
 /// Dynamic Widget 配置对话框
 class DynamicWidgetConfigDialog extends StatefulWidget {
@@ -14,119 +16,61 @@ class DynamicWidgetConfigDialog extends StatefulWidget {
 
 class _DynamicWidgetConfigDialogState extends State<DynamicWidgetConfigDialog> {
   final _nameController = TextEditingController();
+  final _jsonController = TextEditingController();
   String _name = 'Dynamic Widget';
-  String _selectedPreset = 'welcomeCard';
+  String _selectedPreset = 'simpleText';
 
   final Map<String, String> _presets = {
+    'simpleText': '简单文本',
     'welcomeCard': '欢迎卡片',
-    'featureList': '功能列表',
-    'counterExample': '计数器示例',
   };
 
   @override
   void initState() {
     super.initState();
     _nameController.text = _name;
+    _updateJsonFromPreset();
   }
 
   @override
   void dispose() {
     _nameController.dispose();
+    _jsonController.dispose();
     super.dispose();
+  }
+
+  void _updateJsonFromPreset() {
+    final jsonData = _getPresetData();
+    const JsonEncoder encoder = JsonEncoder.withIndent('  ');
+    _jsonController.text = encoder.convert(jsonData);
   }
 
   Map<String, dynamic> _getPresetData() {
     switch (_selectedPreset) {
+      case 'simpleText':
+        return DynamicWidgetPresets.simpleText;
       case 'welcomeCard':
-        return {
-          'type': 'card',
-          'args': {
-            'margin': {'all': 16},
-            'elevation': 4,
-            'child': {
-              'type': 'padding',
-              'args': {
-                'padding': {'all': 20},
-                'child': {
-                  'type': 'text',
-                  'args': {
-                    'data': '欢迎使用 Dynamic Widget',
-                    'style': {
-                      'fontSize': 18,
-                      'fontWeight': 'bold',
-                      'color': '#1976D2',
-                    },
-                  },
-                },
-              },
-            },
-          },
-        };
-      case 'featureList':
-        return {
-          'type': 'column',
-          'args': {
-            'children': [
-              {
-                'type': 'list_tile',
-                'args': {
-                  'leading': {
-                    'type': 'icon',
-                    'args': {
-                      'icon': 59534, // Icons.build.codePoint
-                      'color': '#4CAF50',
-                    },
-                  },
-                  'title': {
-                    'type': 'text',
-                    'args': {'data': '动态构建'},
-                  },
-                  'subtitle': {
-                    'type': 'text',
-                    'args': {'data': '通过 JSON 动态构建 Widget'},
-                  },
-                },
-              },
-            ],
-          },
-        };
-      case 'counterExample':
-        return {
-          'type': 'container',
-          'args': {
-            'padding': {'all': 16},
-            'decoration': {'color': '#F5F5F5', 'borderRadius': 12},
-            'child': {
-              'type': 'column',
-              'args': {
-                'mainAxisAlignment': 'center',
-                'children': [
-                  {
-                    'type': 'text',
-                    'args': {
-                      'data': '计数器示例',
-                      'style': {'fontSize': 18, 'fontWeight': 'bold'},
-                    },
-                  },
-                ],
-              },
-            },
-          },
-        };
+        return DynamicWidgetPresets.welcomeCard;
       default:
-        return {
-          'type': 'text',
-          'args': {'data': 'Dynamic Widget'},
-        };
+        return DynamicWidgetPresets.simpleText;
     }
   }
 
   void _onConfirm() {
-    final values = {
-      'jsonData': _getPresetData(),
-      'name': _name.isEmpty ? 'Dynamic Widget' : _name,
-    };
-    widget.onConfirm(values);
+    try {
+      // 尝试解析 JSON
+      final jsonData = jsonDecode(_jsonController.text) as Map<String, dynamic>;
+      final values = {
+        'jsonData': jsonData,
+        'name': _name.isEmpty ? 'Dynamic Widget' : _name,
+      };
+      widget.onConfirm(values);
+    } catch (e) {
+      // 显示 JSON 解析错误
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('JSON 格式错误: $e'), backgroundColor: Colors.red),
+      );
+    }
   }
 
   @override
@@ -183,6 +127,7 @@ class _DynamicWidgetConfigDialogState extends State<DynamicWidgetConfigDialog> {
                     onChanged: (value) {
                       setState(() {
                         _selectedPreset = value!;
+                        _updateJsonFromPreset();
                       });
                     },
                   );
@@ -191,39 +136,76 @@ class _DynamicWidgetConfigDialogState extends State<DynamicWidgetConfigDialog> {
             ),
             const SizedBox(height: 16),
 
-            // 预览区域
-            Container(
-              width: double.infinity,
-              height: 200,
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: Colors.grey[50],
-                border: Border.all(color: Colors.grey[300]!),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    '预览',
-                    style: Theme.of(
-                      context,
-                    ).textTheme.labelMedium?.copyWith(color: Colors.grey[600]),
+            // JSON 编辑器
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('JSON 配置', style: Theme.of(context).textTheme.titleMedium),
+                const SizedBox(height: 8),
+                Container(
+                  width: double.infinity,
+                  height: 300,
+                  decoration: BoxDecoration(
+                    border: Border.all(color: Colors.grey[300]!),
+                    borderRadius: BorderRadius.circular(8),
                   ),
-                  const SizedBox(height: 8),
-                  Expanded(
-                    child: SingleChildScrollView(
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        child: Text(
-                          '预设: ${_presets[_selectedPreset]}',
-                          style: const TextStyle(fontSize: 14),
-                        ),
-                      ),
+                  child: TextField(
+                    controller: _jsonController,
+                    maxLines: null,
+                    expands: true,
+                    style: const TextStyle(
+                      fontFamily: 'monospace',
+                      fontSize: 12,
+                    ),
+                    decoration: const InputDecoration(
+                      hintText: '请输入或编辑 JSON 配置...',
+                      contentPadding: EdgeInsets.all(12),
+                      border: InputBorder.none,
                     ),
                   ),
-                ],
-              ),
+                ),
+                const SizedBox(height: 8),
+                Row(
+                  children: [
+                    TextButton.icon(
+                      onPressed: () {
+                        _updateJsonFromPreset();
+                      },
+                      icon: const Icon(Icons.refresh, size: 16),
+                      label: const Text('重置为预设'),
+                      style: TextButton.styleFrom(foregroundColor: Colors.blue),
+                    ),
+                    const SizedBox(width: 8),
+                    TextButton.icon(
+                      onPressed: () {
+                        try {
+                          // 验证 JSON 格式
+                          jsonDecode(_jsonController.text);
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            const SnackBar(
+                              content: Text('JSON 格式正确'),
+                              backgroundColor: Colors.green,
+                              duration: Duration(seconds: 1),
+                            ),
+                          );
+                        } catch (e) {
+                          ScaffoldMessenger.of(context).showSnackBar(
+                            SnackBar(
+                              content: Text('JSON 格式错误: $e'),
+                              backgroundColor: Colors.red,
+                            ),
+                          );
+                        }
+                      },
+                      icon: const Icon(Icons.check_circle, size: 16),
+                      label: const Text('验证格式'),
+                      style: TextButton.styleFrom(
+                        foregroundColor: Colors.green,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
             ),
             const SizedBox(height: 24),
 
@@ -250,9 +232,8 @@ class _DynamicWidgetConfigDialogState extends State<DynamicWidgetConfigDialog> {
 
   Widget? _getPresetDescription(String preset) {
     final descriptions = {
-      'welcomeCard': '包含图标、标题和按钮的欢迎卡片',
-      'featureList': '展示功能特性的列表布局',
-      'counterExample': '带计数功能的交互式组件',
+      'simpleText': '显示简单的文本内容',
+      'welcomeCard': '包含标题和内容的卡片布局',
     };
 
     final description = descriptions[preset];
