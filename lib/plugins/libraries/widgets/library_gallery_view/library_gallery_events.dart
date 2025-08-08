@@ -435,17 +435,7 @@ class LibraryGalleryEvents {
     values['imagesPerRow'] = ValueNotifier(stored['imagesPerRow'] ?? 0);
     values['filter'] = ValueNotifier(stored['filter'] ?? {});
     values['displayFields'] = ValueNotifier(
-      stored['displayFields'] ??
-          [
-            'title',
-            'rating',
-            'notes',
-            'createdAt',
-            'tags',
-            'folder',
-            'size',
-            'ext',
-          ],
+      stored['displayFields'] ?? ['title', 'notes', 'tags', 'folder', 'ext'],
     );
     values['needUpdate'] = ValueNotifier(tabData.needUpdate);
 

@@ -121,6 +121,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.3.1"
+  cached_video_player_plus:
+    dependency: "direct main"
+    description:
+      name: cached_video_player_plus
+      sha256: dcdf341d6c037b54c5e29b6a2fecb4cd2c9b9c19389d4b4402713b58008de028
+      url: "https://pub.dev"
+    source: hosted
+    version: "4.0.3"
   characters:
     dependency: transitive
     description:
@@ -408,12 +416,13 @@ packages:
     source: hosted
     version: "4.5.2"
   flutter_cache_manager:
-    dependency: transitive
+    dependency: "direct overridden"
     description:
-      name: flutter_cache_manager
-      sha256: "400b6592f16a4409a7f2bb929a9a7e38c72cceb8ffb99ee57bbf2cb2cecf8386"
-      url: "https://pub.dev"
-    source: hosted
+      path: flutter_cache_manager
+      ref: "54904e499a06d0364a2b3f4ca9789e5f829f1879"
+      resolved-ref: "54904e499a06d0364a2b3f4ca9789e5f829f1879"
+      url: "https://github.com/Baseflow/flutter_cache_manager.git"
+    source: git
     version: "3.4.1"
   flutter_colorpicker:
     dependency: "direct main"
@@ -614,14 +623,22 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.0"
-  fvp:
-    dependency: "direct main"
+  get:
+    dependency: transitive
     description:
-      name: fvp
-      sha256: cb867b293ee684fbc5de188040f88bae8603d967d825b9407ecb96e191dcadc9
+      name: get
+      sha256: c79eeb4339f1f3deffd9ec912f8a923834bec55f7b49c9e882b8fef2c139d425
       url: "https://pub.dev"
     source: hosted
-    version: "0.33.1"
+    version: "4.7.2"
+  get_storage:
+    dependency: transitive
+    description:
+      name: get_storage
+      sha256: "39db1fffe779d0c22b3a744376e86febe4ade43bf65e06eab5af707dc84185a2"
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.1.1"
   giffy_dialog:
     dependency: "direct main"
     description:
@@ -1628,7 +1645,7 @@ packages:
     source: hosted
     version: "2.1.4"
   video_player:
-    dependency: transitive
+    dependency: "direct main"
     description:
       name: video_player
       sha256: "0d55b1f1a31e5ad4c4967bfaa8ade0240b07d20ee4af1dfef5f531056512961a"
@@ -1667,6 +1684,14 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.4.0"
+  video_player_win:
+    dependency: "direct main"
+    description:
+      name: video_player_win
+      sha256: e7b92ae1050086f9be3787eba1fbecbea278b59453cb3589263daa0c62772a88
+      url: "https://pub.dev"
+    source: hosted
+    version: "2.3.11"
   video_thumbnail:
     dependency: "direct main"
     description:

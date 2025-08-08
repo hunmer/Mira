@@ -1,6 +1,7 @@
 // ignore_for_file: deprecated_member_use
 
 import 'dart:async';
+import 'dart:io';
 import 'package:flex_color_scheme/flex_color_scheme.dart';
 import 'package:mira/core/event/event.dart';
 import 'package:mira/plugins/libraries/l10n/libraries_localizations.dart';
@@ -17,6 +18,7 @@ import 'package:mira/widgets/l10n/location_picker_localizations.dart';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:mira/l10n/app_localizations.dart';
 import 'core/plugin_manager.dart';
@@ -25,6 +27,10 @@ import 'core/config_manager.dart';
 import 'core/window_manager_service.dart';
 import 'screens/route.dart';
 import 'screens/settings_screen/controllers/auto_update_controller.dart'; // 自动更新控制器
+
+// Conditional import for Windows video player
+import 'package:video_player_win/video_player_win.dart'
+    if (dart.library.html) 'dart:html';
 
 // 全局导航键
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -38,6 +44,17 @@ late PermissionController _permissionController;
 void main() async {
   // 确保Flutter绑定初始化
   WidgetsFlutterBinding.ensureInitialized();
+
+  // Initialize video player for Windows platform
+  if (!kIsWeb) {
+    try {
+      if (Platform.isWindows) {
+        WindowsVideoPlayer.registerWith();
+      }
+    } catch (e) {
+      debugPrint('Video player initialization error: $e');
+    }
+  }
 
   // 设置首选方向为竖屏
   await SystemChrome.setPreferredOrientations([

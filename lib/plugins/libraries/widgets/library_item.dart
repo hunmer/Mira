@@ -1,19 +1,20 @@
 import 'dart:async';
+// Conditional imports for platform compatibility
+import 'dart:io' show File if (dart.library.html) 'dart:html';
+
+// ignore: depend_on_referenced_packages
+import 'package:cached_video_player_plus/cached_video_player_plus.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/core/utils/utils.dart';
-import 'package:mira/widgets/icon_chip.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:mira/widgets/icon_chip.dart';
 import 'package:path/path.dart' as path;
+import 'package:rxdart/rxdart.dart';
 // ignore: depend_on_referenced_packages
 import 'package:super_drag_and_drop/super_drag_and_drop.dart';
-// ignore: depend_on_referenced_packages
 import 'package:video_player/video_player.dart';
-import 'package:rxdart/rxdart.dart';
-
-// Conditional imports for web compatibility
-import 'dart:io' show File if (dart.library.html) 'dart:html';
 
 class LibraryItem extends StatefulWidget {
   const LibraryItem({
@@ -42,6 +43,7 @@ class LibraryItem extends StatefulWidget {
 }
 
 class _LibraryItemState extends State<LibraryItem> {
+  CachedVideoPlayerPlus? _cachedVideoPlayer;
   VideoPlayerController? _videoController;
   bool _isHovering = false;
   bool _isVideoReady = false;
@@ -49,6 +51,12 @@ class _LibraryItemState extends State<LibraryItem> {
   bool _isLoadError = false;
   double _volume = 0;
   final GlobalKey _mouseRegionKey = GlobalKey();
+
+
+  // Get the current video controller (either cached or regular)
+  VideoPlayerController? get currentController {
+    return _cachedVideoPlayer?.controller ?? _videoController;
+  }
 
   Widget _buildFileIcon() {
     if (_isHovering) {
@@ -64,15 +72,15 @@ class _LibraryItemState extends State<LibraryItem> {
           ),
         );
       }
-      if (!_isVideoReady || _videoController == null) {
+      if (!_isVideoReady || currentController == null) {
         return const Center(child: CircularProgressIndicator());
       } else {
         return Stack(
           alignment: Alignment.bottomCenter,
           children: [
             AspectRatio(
-              aspectRatio: _videoController!.value.aspectRatio,
-              child: VideoPlayer(_videoController!),
+              aspectRatio: currentController!.value.aspectRatio,
+              child: VideoPlayer(currentController!),
             ),
             Positioned(
               top: 8,
@@ -81,7 +89,7 @@ class _LibraryItemState extends State<LibraryItem> {
                 onTap: () {
                   setState(() {
                     _volume = _volume == 0 ? 1 : 0;
-                    _videoController?.setVolume(_volume);
+                    currentController?.setVolume(_volume);
                   });
                 },
                 child: Icon(
@@ -92,7 +100,7 @@ class _LibraryItemState extends State<LibraryItem> {
               ),
             ),
             VideoProgressIndicator(
-              _videoController!,
+              currentController!,
               allowScrubbing: true,
               padding: const EdgeInsets.all(2),
             ),
@@ -173,32 +181,39 @@ class _LibraryItemState extends State<LibraryItem> {
   }
 
   Widget _buildFileExtensionBadge() {
-    return widget.displayFields.contains('ext') ? Positioned(
-      top: 8,
-      right: 8,
-      child: Container(
-        decoration: BoxDecoration(
-          color: Colors.grey[200],
-          borderRadius: BorderRadius.circular(12),
-        ),
-        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.insert_drive_file, size: 14, color: Colors.grey[700]),
-            const SizedBox(width: 4),
-            Text(
-              path.extension(widget.file.name).toUpperCase(),
-              style: const TextStyle(fontSize: 10),
+    return widget.displayFields.contains('ext')
+        ? Positioned(
+          top: 8,
+          right: 8,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.grey[200],
+              borderRadius: BorderRadius.circular(12),
             ),
-          ],
-        ),
-      ),
-    ) : const SizedBox.shrink();
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  Icons.insert_drive_file,
+                  size: 14,
+                  color: Colors.grey[700],
+                ),
+                const SizedBox(width: 4),
+                Text(
+                  path.extension(widget.file.name).toUpperCase(),
+                  style: const TextStyle(fontSize: 10),
+                ),
+              ],
+            ),
+          ),
+        )
+        : const SizedBox.shrink();
   }
 
   @override
   void dispose() {
+    _cachedVideoPlayer?.dispose();
     _videoController?.dispose();
     _hoverTimer?.cancel();
     _positionSubscription?.cancel();
@@ -210,6 +225,8 @@ class _LibraryItemState extends State<LibraryItem> {
     setState(() {
       _isHovering = false;
       _isVideoReady = false;
+      _cachedVideoPlayer?.dispose();
+      _cachedVideoPlayer = null;
       _videoController?.dispose();
       _videoController = null;
     });
@@ -218,13 +235,26 @@ class _LibraryItemState extends State<LibraryItem> {
   Future<void> _initializeVideo() async {
     final filePath = widget.file.path;
     if (filePath == null) return;
+    
+    
     try {
       if (filePath.startsWith('http')) {
-        _videoController = VideoPlayerController.networkUrl(
+        // Use cached video player for network videos
+        _cachedVideoPlayer = CachedVideoPlayerPlus.networkUrl(
           Uri.parse(filePath),
+          invalidateCacheIfOlderThan: const Duration(days: 7),
         );
+        await _cachedVideoPlayer!.initialize();
+        if (mounted) {
+          setState(() {
+            _isVideoReady = true;
+          });
+          await _cachedVideoPlayer!.controller.setLooping(true);
+          await _cachedVideoPlayer!.controller.setVolume(_volume);
+          await _cachedVideoPlayer!.controller.play();
+        }
       } else {
-        // Only use File for non-web platforms
+        // Use regular video player for local files
         if (kIsWeb) {
           // For web, treat local paths as network URLs
           _videoController = VideoPlayerController.networkUrl(
@@ -235,18 +265,23 @@ class _LibraryItemState extends State<LibraryItem> {
             File(filePath.replaceAll('//', '\\\\')),
           );
         }
-      }
-      await _videoController!.initialize();
-      if (mounted) {
-        setState(() {
-          _isVideoReady = true;
-        });
-        await _videoController!.setLooping(true);
-        await _videoController!.setVolume(_volume);
-        await _videoController!.play();
+        await _videoController!.initialize();
+        if (mounted) {
+          setState(() {
+            _isVideoReady = true;
+          });
+          await _videoController!.setLooping(true);
+          await _videoController!.setVolume(_volume);
+          await _videoController!.play();
+        }
       }
     } catch (err) {
-      _isLoadError = true;
+      if (mounted) {
+        setState(() {
+          _isLoadError = true;
+        });
+      }
+      debugPrint('Video initialization error: $err');
     }
   }
 
@@ -256,22 +291,22 @@ class _LibraryItemState extends State<LibraryItem> {
   @override
   void initState() {
     super.initState();
-    // 使用throttleTime控制位置更新频率为50ms
+    // 使用throttleTime控制位置更新频率为250s
     _positionSubscription = _positionSubject.stream
-        .throttleTime(const Duration(milliseconds: 500))
+        .throttleTime(const Duration(milliseconds: 250))
         .listen(_updateVideoPosition);
   }
 
   void _updateVideoPosition(double position) {
-    if (_videoController != null && _videoController!.value.isInitialized) {
-      final duration = _videoController!.value.duration;
-      _videoController!.seekTo(duration * position);
-      // _videoController!.play();
+    if (currentController != null && currentController!.value.isInitialized) {
+      final duration = currentController!.value.duration;
+      currentController!.seekTo(duration * position);
+      // currentController!.play();
     }
   }
 
   void _handleMousePosition(PointerHoverEvent event) {
-    if (_videoController == null || !_videoController!.value.isInitialized) {
+    if (currentController == null || !currentController!.value.isInitialized) {
       return;
     }
     final renderBox =

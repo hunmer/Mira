@@ -172,16 +172,7 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           'sortOptions': {'field': 'id', 'order': 'desc'},
           'imagesPerRow': 0,
           'filter': {},
-          'displayFields': [
-            'title',
-            'rating',
-            'notes',
-            'createdAt',
-            'tags',
-            'folder',
-            'size',
-            'ext',
-          ],
+          'displayFields': ['title', 'notes', 'tags', 'folder', 'ext'],
         },
       );
       _state.tabData = defaultTabData;
