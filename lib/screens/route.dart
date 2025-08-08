@@ -1,7 +1,8 @@
 // ignore_for_file: constant_identifier_names
 
 import 'package:flutter/material.dart';
-import 'package:mira/examples/docking_test.dart';
+import 'package:mira/dock/examples/docking_test.dart';
+import 'package:mira/dock/examples/example_usage.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tabs_view.dart';
 import 'package:mira/screens/settings_screen/settings_screen.dart';
@@ -20,6 +21,7 @@ class AppRoutes extends NavigatorObserver {
   static const String settings = '/settings';
   static const String LibraryTabs = '/LibraryTabs';
   static const String dockingExample = '/dockingExample';
+  static const String DockingPersistence = '/DockingPersistence';
 
   static Route _createRoute(Widget page) {
     return PageRouteBuilder(
@@ -42,6 +44,8 @@ class AppRoutes extends NavigatorObserver {
         return _createRoute(const SettingsScreen());
       case dockingExample:
         return _createRoute(DockingExample());
+      case DockingPersistence:
+        return _createRoute(DockingPersistenceDemo());
       default:
         return _createRoute(
           Scaffold(
@@ -56,7 +60,8 @@ class AppRoutes extends NavigatorObserver {
     LibraryTabs: (context) => const LibraryTabsView(),
     settings: (context) => const SettingsScreen(),
     dockingExample: (context) => DockingExample(),
+    DockingPersistence: (context) => DockingPersistenceDemo(),
   };
 
-  static String get initialRoute => dockingExample;
+  static String get initialRoute => DockingPersistence;
 }

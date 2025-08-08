@@ -107,17 +107,12 @@ class _MyDockingPageState extends State<DockingExample> {
               Icon(
                 Icons.drag_indicator,
                 size: 16,
-                color: Theme.of(context)
-                    .textTheme
-                    .titleMedium
-                    ?.color
-                    ?.withOpacity(0.6),
+                color: Theme.of(
+                  context,
+                ).textTheme.titleMedium?.color?.withOpacity(0.6),
               ),
               const SizedBox(width: 8),
-              const Tooltip(
-                message: '拖拽此区域移动窗口',
-                child: Text('Docking Demo'),
-              ),
+              const Tooltip(message: '拖拽此区域移动窗口', child: Text('Docking Demo')),
             ],
           ),
         ),
