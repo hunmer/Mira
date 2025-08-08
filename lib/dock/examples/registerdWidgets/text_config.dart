@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'dock_item_config_base.dart';
+import '../widgets/dock_item_config_base.dart';
 
 /// 文本组件配置对话框
 class TextConfig extends DockItemConfig {

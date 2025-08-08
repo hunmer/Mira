@@ -1,6 +1,6 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
-import '../register/dynamic_widget.dart';
+import 'dynamic_widget.dart';
 
 /// Dynamic Widget 配置对话框
 class DynamicWidgetConfigDialog extends StatefulWidget {

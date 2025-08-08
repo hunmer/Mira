@@ -4,7 +4,7 @@ import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'dock_manager.dart';
 import 'dialog/add_component_dialog.dart';
 import 'dialog/multi_tab_dialog.dart';
-import 'register/dynamic_widget.dart';
+import 'registerdWidgets/dynamic_widget.dart';
 
 /// Docking 持久化演示的业务逻辑
 class DockingPersistenceLogic {

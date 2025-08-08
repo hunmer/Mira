@@ -6,11 +6,11 @@ import 'package:mira/multi_split_view/lib/multi_split_view.dart';
 import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'dock_manager.dart';
 import 'docking_persistence_logic.dart';
-import 'register/counter_widget.dart';
-import 'register/dynamic_widget.dart';
-import 'widgets/counter_config_dialog.dart';
-import 'widgets/text_config_dialog.dart';
-import 'widgets/dynamic_widget_config_dialog.dart';
+import 'registerdWidgets/counter_widget.dart';
+import 'registerdWidgets/dynamic_widget.dart';
+import 'registerdWidgets/counter_config_dialog.dart';
+import 'registerdWidgets/text_config_dialog.dart';
+import 'registerdWidgets/dynamic_widget_config_dialog.dart';
 import '../debug_layout_preset_dialog.dart';
 
 // ========= 示例页面 =========
