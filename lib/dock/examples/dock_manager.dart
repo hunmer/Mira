@@ -44,6 +44,16 @@ class DockManager extends ChangeNotifier {
     }
   }
 
+  /// 获取当前布局数据（公共方法）
+  DockPersistenceData? getCurrentData() {
+    return _extractCurrentData();
+  }
+
+  /// 从数据恢复布局（公共方法）
+  bool loadFromData(DockPersistenceData data) {
+    return _restoreData(data);
+  }
+
   /// 从文件恢复状态
   Future<bool> restoreFromFile() async {
     final data = await DockPersistence.load(id);

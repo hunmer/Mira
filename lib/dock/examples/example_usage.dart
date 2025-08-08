@@ -7,6 +7,7 @@ import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'dock_manager.dart';
 import 'docking_persistence_logic.dart';
 import 'widgets/counter_widget.dart';
+import '../debug_layout_preset_dialog.dart';
 
 // ========= 示例页面 =========
 
@@ -118,6 +119,11 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
             onPressed: () => logic.showDebugTab(),
           ),
           IconButton(
+            icon: Icon(Icons.storage),
+            tooltip: '调试布局存储管理器',
+            onPressed: () => _showDebugLayoutManager(),
+          ),
+          IconButton(
             icon: Icon(Icons.add_box),
             tooltip: '添加组件',
             onPressed: () => logic.showAddComponentTab(),
@@ -171,5 +177,13 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
   void _toggleDraggable() {
     setState(() => _draggable = !_draggable);
     logic.showSnackBar(_draggable ? '已启用拖拽功能' : '已禁用拖拽功能');
+  }
+
+  /// 显示调试布局存储管理器
+  void _showDebugLayoutManager() {
+    showDialog(
+      context: context,
+      builder: (context) => DebugLayoutPresetDialog(manager: manager),
+    );
   }
 }
