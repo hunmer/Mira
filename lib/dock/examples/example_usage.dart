@@ -104,7 +104,13 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
             tooltip: '添加组件',
             onPressed: () => logic.showAddComponentTab(),
           ),
-          IconButton(icon: Icon(Icons.delete), onPressed: logic.clearLayout),
+          IconButton(
+            icon: Icon(Icons.delete),
+            onPressed: () {
+              logic.clearLayout();
+              logic.createDefaultLayout();
+            },
+          ),
         ],
       ),
       body: TabbedViewTheme(
@@ -180,7 +186,7 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
   }
 
   /// 一键添加多个带 showAtDevices 的 DockingItem
-  void _addDeviceDemoItems() {
+  void _addDeviceDemoItems() async {
     final layout = manager.layout;
 
     // 选择一个可投放的目标区域（优先 DockingTabs，其次任意 DockingItem，再不行用 root 只要是 DropArea）
@@ -188,6 +194,37 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
     if (target is! DropArea) {
       logic.showSnackBar('未找到可添加的目标区域');
       return;
+    }
+
+    // 显示确认对话框，询问用户是否要合并到一个标签页
+    final shouldMergeToTabs = await showDialog<bool>(
+      context: context,
+      builder:
+          (context) => AlertDialog(
+            title: const Text('添加演示项'),
+            content: const Text(
+              '即将添加 5 个演示 DockingItem 来展示不同的设备可见性模式。\n\n'
+              '您希望将它们添加到：',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('分别添加到不同位置'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: const Text('合并到一个标签页'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(context, null),
+                child: const Text('取消'),
+              ),
+            ],
+          ),
+    );
+
+    if (shouldMergeToTabs == null) {
+      return; // 用户取消了操作
     }
 
     // 为了避免 id 冲突，使用时间戳前缀
@@ -200,7 +237,6 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
         devices: [DeviceScreenType.desktop],
         color: Colors.blue,
         visibilityMode: DeviceVisibilityMode.exactDevices,
-        weight: 0.3,
       ),
       (
         id: 'demo_tablet_$ts',
@@ -208,7 +244,6 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
         devices: [DeviceScreenType.tablet],
         color: Colors.green,
         visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
-        weight: 0.25,
       ),
       (
         id: 'demo_mobile_$ts',
@@ -216,7 +251,6 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
         devices: [DeviceScreenType.mobile],
         color: Colors.orange,
         visibilityMode: DeviceVisibilityMode.exactDevices,
-        weight: 0.2,
       ),
       (
         id: 'demo_mobile_plus_$ts',
@@ -224,7 +258,6 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
         devices: [DeviceScreenType.mobile],
         color: Colors.red,
         visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
-        weight: 0.15,
       ),
       (
         id: 'demo_watch_$ts',
@@ -232,16 +265,51 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
         devices: [DeviceScreenType.watch],
         color: Colors.purple,
         visibilityMode: DeviceVisibilityMode.exactDevices,
-        weight: 0.1,
       ),
     ];
 
-    for (final d in demos) {
-      layout.addItemOn(
-        newItem: DockingItem(
+    if (shouldMergeToTabs) {
+      // 找到或创建一个 DockingTabs 来容纳所有演示项
+      DockingTabs? targetTabs;
+
+      // 如果目标本身是 DockingTabs，直接使用
+      if (target is DockingTabs) {
+        targetTabs = target;
+      } else {
+        // 否则，先添加第一个项目，然后将其余项目添加到同一个标签页
+        final firstItem = DockingItem(
+          id: demos.first.id,
+          name: demos.first.name,
+          widget: _buildDeviceDemoBox(
+            demos.first.name,
+            demos.first.devices,
+            demos.first.color,
+            demos.first.visibilityMode,
+          ),
+          showAtDevices: demos.first.devices,
+          visibilityMode: demos.first.visibilityMode,
+          closable: true,
+          keepAlive: true,
+          maximizable: true,
+        );
+
+        layout.addItemOn(
+          newItem: firstItem,
+          targetArea: target as DropArea,
+          dropPosition: DropPosition.right,
+        );
+
+        // 找到刚创建的项目所在的标签页（可能是新创建的）
+        targetTabs = layout.findDockingTabsWithItem(firstItem.id);
+      }
+
+      // 将剩余的项目添加到标签页中
+      final remainingDemos = targetTabs == target ? demos : demos.skip(1);
+
+      for (final d in remainingDemos) {
+        final newItem = DockingItem(
           id: d.id,
           name: d.name,
-          weight: d.weight,
           widget: _buildDeviceDemoBox(
             d.name,
             d.devices,
@@ -253,14 +321,45 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
           closable: true,
           keepAlive: true,
           maximizable: true,
-        ),
-        targetArea: target as DropArea,
-        dropPosition: target is DockingTabs ? null : DropPosition.right,
-        dropIndex: target is DockingTabs ? 0 : null,
-      );
-    }
+        );
 
-    logic.showSnackBar('已添加 ${demos.length} 个演示 DockingItem');
+        if (targetTabs != null) {
+          layout.addItemOn(
+            newItem: newItem,
+            targetArea: targetTabs,
+            dropIndex: 0, // 添加到标签页的第一个位置
+          );
+        }
+      }
+
+      logic.showSnackBar('已添加 ${demos.length} 个演示项到标签页');
+    } else {
+      // 分别添加到不同位置
+      for (final d in demos) {
+        layout.addItemOn(
+          newItem: DockingItem(
+            id: d.id,
+            name: d.name,
+            widget: _buildDeviceDemoBox(
+              d.name,
+              d.devices,
+              d.color,
+              d.visibilityMode,
+            ),
+            showAtDevices: d.devices,
+            visibilityMode: d.visibilityMode,
+            closable: true,
+            keepAlive: true,
+            maximizable: true,
+          ),
+          targetArea: target as DropArea,
+          dropPosition: target is DockingTabs ? null : DropPosition.right,
+          dropIndex: target is DockingTabs ? 0 : null,
+        );
+      }
+
+      logic.showSnackBar('已添加 ${demos.length} 个演示项到不同位置');
+    }
   }
 
   /// 从当前布局中挑选一个合适的可投放区域

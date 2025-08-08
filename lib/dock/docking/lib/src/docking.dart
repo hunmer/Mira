@@ -112,52 +112,144 @@ class _DockingState extends State<Docking> {
     return Container();
   }
 
-  bool _visibleForWidth(double width, DockingItem item) {
-    if (widget.breakpoints == null) return true;
+  DeviceScreenType? _currentDeviceType(BuildContext context) {
+    final bp = widget.breakpoints;
+    if (bp == null) return null;
+    final width = MediaQuery.of(context).size.width;
+    if (width >= bp.desktop) return DeviceScreenType.desktop;
+    if (width >= bp.tablet) return DeviceScreenType.tablet;
+    if (width >= bp.watch) return DeviceScreenType.mobile;
+    return DeviceScreenType.watch;
+  }
+
+  bool _isVisibleForDevice(DockingItem item, DeviceScreenType? type) {
+    if (type == null) return true; // no breakpoints configured
     if (item.showAtDevices == null || item.showAtDevices!.isEmpty) return true;
-    final bp = widget.breakpoints!;
-    final DeviceScreenType type;
-    if (width >= bp.desktop) {
-      type = DeviceScreenType.desktop;
-    } else if (width >= bp.tablet) {
-      type = DeviceScreenType.tablet;
-    } else if (width >= bp.watch) {
-      type = DeviceScreenType.mobile;
-    } else {
-      type = DeviceScreenType.watch;
+
+    if (item.visibilityMode == DeviceVisibilityMode.exactDevices) {
+      return item.showAtDevices!.contains(type);
     }
 
-    // Handle visibility mode
-    if (item.visibilityMode == DeviceVisibilityMode.exactDevices) {
-      // Only visible on exact specified devices
-      return item.showAtDevices!.contains(type);
-    } else {
-      // Visible on specified devices and larger devices
-      final devices = item.showAtDevices!;
+    // specifiedAndLarger
+    if (item.showAtDevices!.contains(type)) return true;
+    const deviceHierarchy = [
+      DeviceScreenType.watch,
+      DeviceScreenType.mobile,
+      DeviceScreenType.tablet,
+      DeviceScreenType.desktop,
+    ];
+    final currentIndex = deviceHierarchy.indexOf(type);
+    for (final specified in item.showAtDevices!) {
+      if (deviceHierarchy.indexOf(specified) <= currentIndex) return true;
+    }
+    return false;
+  }
 
-      // Check if current device type is in the list or is larger than any in the list
-      if (devices.contains(type)) return true;
-
-      // Define device hierarchy (smaller to larger)
-      const deviceHierarchy = [
-        DeviceScreenType.watch,
-        DeviceScreenType.mobile,
-        DeviceScreenType.tablet,
-        DeviceScreenType.desktop,
-      ];
-
-      final currentIndex = deviceHierarchy.indexOf(type);
-
-      // Check if any specified device is smaller than current device
-      for (final specifiedDevice in devices) {
-        final specifiedIndex = deviceHierarchy.indexOf(specifiedDevice);
-        if (specifiedIndex <= currentIndex) {
-          return true;
-        }
+  /// 递归检查一个区域是否有可显示的内容
+  bool _hasVisibleContentWithType(DockingArea area, DeviceScreenType? type) {
+    if (area is DockingItem) {
+      return _isVisibleForDevice(area, type);
+    } else if (area is DockingTabs) {
+      // 检查标签组中是否有任何可显示的标签页
+      for (int i = 0; i < area.childrenCount; i++) {
+        final child = area.childAt(i);
+        if (_isVisibleForDevice(child, type)) return true;
       }
-
+      return false;
+    } else if (area is DockingParentArea) {
+      // 检查是否有任何子项是可显示的
+      for (int i = 0; i < area.childrenCount; i++) {
+        if (_hasVisibleContentWithType(area.childAt(i), type)) return true;
+      }
       return false;
     }
+    return true; // 对于未知类型，默认显示
+  }
+
+  /// Compares two area lists by identity and order.
+  bool _areasIdenticalOrder(List<Area> a, List<DockingArea> b) {
+    if (a.length != b.length) return false;
+    for (var i = 0; i < a.length; i++) {
+      if (!identical(a[i], b[i])) return false;
+    }
+    return true;
+  }
+
+  Widget _row(BuildContext context, DockingRow row) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final deviceType = _currentDeviceType(context);
+        List<Widget> children = [];
+        List<DockingArea> visibleAreas = [];
+
+        row.forEach((child) {
+          if (_hasVisibleContentWithType(child, deviceType)) {
+            children.add(_buildArea(context, child));
+            visibleAreas.add(child);
+          }
+        });
+
+        if (children.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Update controller areas to only include visible areas (compare by identity, not only length)
+        final currentAreas = row.controller.areas.toList();
+        if (!_areasIdenticalOrder(currentAreas, visibleAreas)) {
+          row.controller.areas = visibleAreas.cast<Area>().toList();
+        }
+
+        return MultiSplitView(
+          key: row.key,
+          axis: Axis.horizontal,
+          controller: row.controller,
+          antiAliasingWorkaround: widget.antiAliasingWorkaround,
+          onWeightChange: _forceRebuild,
+          children: children,
+        );
+      },
+    );
+  }
+
+  Widget _column(BuildContext context, DockingColumn column) {
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final deviceType = _currentDeviceType(context);
+        List<Widget> children = [];
+        List<DockingArea> visibleAreas = [];
+
+        column.forEach((child) {
+          if (_hasVisibleContentWithType(child, deviceType)) {
+            children.add(_buildArea(context, child));
+            visibleAreas.add(child);
+          }
+        });
+
+        if (children.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Update controller areas to only include visible areas (compare by identity, not only length)
+        final currentAreas = column.controller.areas.toList();
+        if (!_areasIdenticalOrder(currentAreas, visibleAreas)) {
+          column.controller.areas = visibleAreas.cast<Area>().toList();
+        }
+
+        return MultiSplitView(
+          key: column.key,
+          axis: Axis.vertical,
+          controller: column.controller,
+          antiAliasingWorkaround: widget.antiAliasingWorkaround,
+          onWeightChange: _forceRebuild,
+          children: children,
+        );
+      },
+    );
+  }
+
+  // Backward-compatible width-based helper delegating to device-type logic
+  bool _visibleForWidth(double width, DockingItem item) {
+    return _isVisibleForDevice(item, _currentDeviceType(context));
   }
 
   Widget _buildArea(BuildContext context, DockingArea area) {
@@ -188,9 +280,13 @@ class _DockingState extends State<Docking> {
     } else if (area is DockingColumn) {
       return _column(context, area);
     } else if (area is DockingTabs) {
-      if (area.childrenCount == 1) {
-        return LayoutBuilder(
-          builder: (context, constraints) {
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          // 先整体判断此 Tabs 是否还有可见内容
+          if (!_hasVisibleContentWithType(area, _currentDeviceType(context))) {
+            return const SizedBox.shrink();
+          }
+          if (area.childrenCount == 1) {
             final DockingItem only = area.childAt(0);
             final visible = _visibleForWidth(constraints.maxWidth, only);
             if (!visible) return const SizedBox.shrink();
@@ -209,109 +305,28 @@ class _DockingState extends State<Docking> {
               dockingButtonsBuilder: widget.dockingButtonsBuilder,
               maximizable: widget.maximizableItem,
             );
-          },
-        );
-      }
-      return DockingTabsWidget(
-        key: area.key,
-        layout: widget.layout!,
-        dragOverPosition: _dragOverPosition,
-        draggable: widget.draggable,
-        dockingTabs: area,
-        onItemSelection: widget.onItemSelection,
-        onItemClose: widget.onItemClose,
-        onTabMove: widget.onTabMove,
-        onTabLayoutChanged: widget.onTabLayoutChanged,
-        onItemPositionChanged: widget.onItemPositionChanged,
-        itemCloseInterceptor: widget.itemCloseInterceptor,
-        dockingButtonsBuilder: widget.dockingButtonsBuilder,
-        maximizableTab: widget.maximizableTab,
-        maximizableTabsArea: widget.maximizableTabsArea,
+          }
+          return DockingTabsWidget(
+            key: area.key,
+            layout: widget.layout!,
+            dragOverPosition: _dragOverPosition,
+            draggable: widget.draggable,
+            dockingTabs: area,
+            onItemSelection: widget.onItemSelection,
+            onItemClose: widget.onItemClose,
+            onTabMove: widget.onTabMove,
+            onTabLayoutChanged: widget.onTabLayoutChanged,
+            onItemPositionChanged: widget.onItemPositionChanged,
+            itemCloseInterceptor: widget.itemCloseInterceptor,
+            dockingButtonsBuilder: widget.dockingButtonsBuilder,
+            maximizableTab: widget.maximizableTab,
+            maximizableTabsArea: widget.maximizableTabsArea,
+            breakpoints: widget.breakpoints,
+          );
+        },
       );
     }
     throw UnimplementedError('Unrecognized runtimeType: ${area.runtimeType}');
-  }
-
-  Widget _row(BuildContext context, DockingRow row) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        List<Widget> children = [];
-        List<DockingArea> visibleAreas = [];
-
-        row.forEach((child) {
-          if (child is DockingItem) {
-            final visible = _visibleForWidth(constraints.maxWidth, child);
-            if (visible) {
-              children.add(_buildArea(context, child));
-              visibleAreas.add(child);
-            }
-          } else {
-            children.add(_buildArea(context, child));
-            visibleAreas.add(child);
-          }
-        });
-
-        if (children.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        // Update controller areas to only include visible areas
-        if (visibleAreas.length != row.controller.areasLength) {
-          row.controller.areas =
-              visibleAreas.map((area) => area as Area).toList();
-        }
-
-        return MultiSplitView(
-          key: row.key,
-          axis: Axis.horizontal,
-          controller: row.controller,
-          antiAliasingWorkaround: widget.antiAliasingWorkaround,
-          onWeightChange: _forceRebuild,
-          children: children,
-        );
-      },
-    );
-  }
-
-  Widget _column(BuildContext context, DockingColumn column) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        List<Widget> children = [];
-        List<DockingArea> visibleAreas = [];
-
-        column.forEach((child) {
-          if (child is DockingItem) {
-            final visible = _visibleForWidth(constraints.maxWidth, child);
-            if (visible) {
-              children.add(_buildArea(context, child));
-              visibleAreas.add(child);
-            }
-          } else {
-            children.add(_buildArea(context, child));
-            visibleAreas.add(child);
-          }
-        });
-
-        if (children.isEmpty) {
-          return const SizedBox.shrink();
-        }
-
-        // Update controller areas to only include visible areas
-        if (visibleAreas.length != column.controller.areasLength) {
-          column.controller.areas =
-              visibleAreas.map((area) => area as Area).toList();
-        }
-
-        return MultiSplitView(
-          key: column.key,
-          axis: Axis.vertical,
-          controller: column.controller,
-          antiAliasingWorkaround: widget.antiAliasingWorkaround,
-          onWeightChange: _forceRebuild,
-          children: children,
-        );
-      },
-    );
   }
 
   void _forceRebuild() {

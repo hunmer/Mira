@@ -134,102 +134,34 @@ class DockingPersistenceLogic {
     // 直接构建 dynamic widget
     final welcomeWidget = DynamicWidget(
       jsonData: {
-        'type': 'card',
-        'args': {
-          'margin': {'all': 16},
-          'elevation': 4,
-          'child': {
-            'type': 'padding',
-            'args': {
-              'padding': {'all': 20},
-              'child': {
-                'type': 'column',
-                'args': {
-                  'crossAxisAlignment': 'start',
-                  'mainAxisSize': 'min',
-                  'children': [
-                    {
-                      'type': 'row',
-                      'args': {
-                        'children': [
-                          {
-                            'type': 'icon',
-                            'args': {
-                              'icon': 57355, // Icons.star.codePoint
-                              'color': '#FFD700',
-                              'size': 32,
-                            },
-                          },
-                          {
-                            'type': 'sized_box',
-                            'args': {'width': 12},
-                          },
-                          {
-                            'type': 'expanded',
-                            'args': {
-                              'child': {
-                                'type': 'text',
-                                'args': {
-                                  'data': '欢迎使用 Dynamic Widget',
-                                  'style': {
-                                    'fontSize': 20,
-                                    'fontWeight': 'bold',
-                                    'color': '#1976D2',
-                                  },
-                                },
-                              },
-                            },
-                          },
-                        ],
+        "type": "scaffold",
+        "args": {
+          "appBar": {
+            "type": "app_bar",
+            "args": {
+              "title": {
+                "type": "text",
+                "args": {"text": "Rich Text"},
+              },
+            },
+          },
+          "body": {
+            "type": "center",
+            "args": {
+              "child": {
+                "type": "rich_text",
+                "args": {
+                  "text": {
+                    "children": [
+                      {"text": "Hello "},
+                      {
+                        "style": {"fontSize": 20.0, "fontWeight": "bold"},
+                        "text": "RICH TEXT",
                       },
-                    },
-                    {
-                      'type': 'sized_box',
-                      'args': {'height': 16},
-                    },
-                    {
-                      'type': 'text',
-                      'args': {
-                        'data':
-                            '这是一个通过 JSON 动态构建的 Widget 示例。你可以通过修改 JSON 数据来改变界面布局和样式。',
-                        'style': {
-                          'fontSize': 14,
-                          'color': '#666',
-                          'height': 1.5,
-                        },
-                      },
-                    },
-                    {
-                      'type': 'sized_box',
-                      'args': {'height': 20},
-                    },
-                    {
-                      'type': 'row',
-                      'args': {
-                        'mainAxisAlignment': 'spaceBetween',
-                        'children': [
-                          {
-                            'type': 'elevated_button',
-                            'args': {
-                              'child': {
-                                'type': 'text',
-                                'args': {'data': '开始使用'},
-                              },
-                            },
-                          },
-                          {
-                            'type': 'text_button',
-                            'args': {
-                              'child': {
-                                'type': 'text',
-                                'args': {'data': '了解更多'},
-                              },
-                            },
-                          },
-                        ],
-                      },
-                    },
-                  ],
+                      {"text": " World!"},
+                    ],
+                    "style": {"color": "#000000", "fontSize": 12.0},
+                  },
                 },
               },
             },

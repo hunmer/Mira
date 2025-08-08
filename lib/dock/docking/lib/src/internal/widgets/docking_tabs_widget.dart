@@ -16,6 +16,7 @@ import '../../theme/docking_theme.dart';
 import '../../theme/docking_theme_data.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 /// Represents a widget for [DockingTabs].
 class DockingTabsWidget extends StatefulWidget {
@@ -34,6 +35,7 @@ class DockingTabsWidget extends StatefulWidget {
     required this.maximizableTab,
     required this.maximizableTabsArea,
     required this.draggable,
+    this.breakpoints,
   });
 
   final DockingLayout layout;
@@ -49,6 +51,7 @@ class DockingTabsWidget extends StatefulWidget {
   final bool maximizableTabsArea;
   final DragOverPosition dragOverPosition;
   final bool draggable;
+  final ScreenBreakpoints? breakpoints;
 
   @override
   State<StatefulWidget> createState() => DockingTabsWidgetState();
@@ -58,6 +61,54 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
     with DraggableConfigMixin {
   DropPosition? _activeDropPosition;
 
+  bool _visibleForWidth(double width, DockingItem item) {
+    if (widget.breakpoints == null) return true;
+    if (item.showAtDevices == null || item.showAtDevices!.isEmpty) return true;
+    final bp = widget.breakpoints!;
+    final DeviceScreenType type;
+    if (width >= bp.desktop) {
+      type = DeviceScreenType.desktop;
+    } else if (width >= bp.tablet) {
+      type = DeviceScreenType.tablet;
+    } else if (width >= bp.watch) {
+      type = DeviceScreenType.mobile;
+    } else {
+      type = DeviceScreenType.watch;
+    }
+
+    // Handle visibility mode
+    if (item.visibilityMode == DeviceVisibilityMode.exactDevices) {
+      // Only visible on exact specified devices
+      return item.showAtDevices!.contains(type);
+    } else {
+      // Visible on specified devices and larger devices
+      final devices = item.showAtDevices!;
+
+      // Check if current device type is in the list or is larger than any in the list
+      if (devices.contains(type)) return true;
+
+      // Define device hierarchy (smaller to larger)
+      const deviceHierarchy = [
+        DeviceScreenType.watch,
+        DeviceScreenType.mobile,
+        DeviceScreenType.tablet,
+        DeviceScreenType.desktop,
+      ];
+
+      final currentIndex = deviceHierarchy.indexOf(type);
+
+      // Check if any specified device is smaller than current device
+      for (final specifiedDevice in devices) {
+        final specifiedIndex = deviceHierarchy.indexOf(specifiedDevice);
+        if (specifiedIndex <= currentIndex) {
+          return true;
+        }
+      }
+
+      return false;
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return LayoutBuilder(
@@ -66,55 +117,56 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
         List<DockingItem> visibleItems = [];
 
         widget.dockingTabs.forEach((child) {
-          // For now, we'll keep all tabs visible in the tabs widget
-          // The main filtering happens at the row/column level
-          Widget content = child.widget;
-          if (child.globalKey != null) {
-            content = KeyedSubtree(key: child.globalKey, child: content);
-          }
-          List<TabButton>? buttons;
-          if (child.buttons != null && child.buttons!.isNotEmpty) {
-            buttons = [];
-            buttons.addAll(child.buttons!);
-          }
-          final bool maximizable =
-              child.maximizable != null
-                  ? child.maximizable!
-                  : widget.maximizableTab;
-          if (maximizable) {
-            buttons ??= [];
-            DockingThemeData data = DockingTheme.of(context);
-            if (widget.layout.maximizedArea != null &&
-                widget.layout.maximizedArea == child) {
-              buttons.add(
-                TabButton(
-                  icon: data.restoreIcon,
-                  onPressed: () => widget.layout.restore(),
-                ),
-              );
-            } else {
-              buttons.add(
-                TabButton(
-                  icon: data.maximizeIcon,
-                  onPressed: () => widget.layout.maximizeDockingItem(child),
-                ),
-              );
+          // 检查当前标签页是否可见
+          if (_visibleForWidth(constraints.maxWidth, child)) {
+            Widget content = child.widget;
+            if (child.globalKey != null) {
+              content = KeyedSubtree(key: child.globalKey, child: content);
             }
+            List<TabButton>? buttons;
+            if (child.buttons != null && child.buttons!.isNotEmpty) {
+              buttons = [];
+              buttons.addAll(child.buttons!);
+            }
+            final bool maximizable =
+                child.maximizable != null
+                    ? child.maximizable!
+                    : widget.maximizableTab;
+            if (maximizable) {
+              buttons ??= [];
+              DockingThemeData data = DockingTheme.of(context);
+              if (widget.layout.maximizedArea != null &&
+                  widget.layout.maximizedArea == child) {
+                buttons.add(
+                  TabButton(
+                    icon: data.restoreIcon,
+                    onPressed: () => widget.layout.restore(),
+                  ),
+                );
+              } else {
+                buttons.add(
+                  TabButton(
+                    icon: data.maximizeIcon,
+                    onPressed: () => widget.layout.maximizeDockingItem(child),
+                  ),
+                );
+              }
+            }
+            tabs.add(
+              TabData(
+                value: child,
+                text: child.name != null ? child.name! : '',
+                content: content,
+                closable: child.closable,
+                keepAlive: child.globalKey != null,
+                leading: child.leading,
+                buttons: buttons,
+                draggable: widget.draggable,
+                menuBuilder: child.menuBuilder,
+              ),
+            );
+            visibleItems.add(child);
           }
-          tabs.add(
-            TabData(
-              value: child,
-              text: child.name != null ? child.name! : '',
-              content: content,
-              closable: child.closable,
-              keepAlive: child.globalKey != null,
-              leading: child.leading,
-              buttons: buttons,
-              draggable: widget.draggable,
-              menuBuilder: child.menuBuilder,
-            ),
-          );
-          visibleItems.add(child);
         });
 
         if (tabs.isEmpty) {
@@ -134,7 +186,7 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
             if (index != null) {
               widget.dockingTabs.selectedIndex = index;
               if (widget.onItemSelection != null) {
-                widget.onItemSelection!(widget.dockingTabs.childAt(index));
+                widget.onItemSelection!(visibleItems[index]);
               }
             }
           },
@@ -292,14 +344,17 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
   }
 
   bool _tabCloseInterceptor(int tabIndex) {
-    if (widget.itemCloseInterceptor != null) {
-      return widget.itemCloseInterceptor!(widget.dockingTabs.childAt(tabIndex));
-    }
-    return true;
+    // TabData.value 已经包含了对应的DockingItem
+    return widget.itemCloseInterceptor?.call(
+          // 这里我们需要从当前的tab获取DockingItem，但是TabData是在build中创建的
+          // 所以我们直接使用原来的逻辑，通过索引映射
+          widget.dockingTabs.childAt(tabIndex),
+        ) ??
+        true;
   }
 
   void _onTabClose(int tabIndex, TabData tabData) {
-    DockingItem dockingItem = widget.dockingTabs.childAt(tabIndex);
+    DockingItem dockingItem = tabData.value as DockingItem;
     widget.layout.removeItem(item: dockingItem);
     if (widget.onItemClose != null) {
       widget.onItemClose!(dockingItem);
