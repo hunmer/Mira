@@ -2,6 +2,7 @@ import 'package:flutter/widgets.dart';
 import 'package:mira/tabbed/tabbed_view/lib/src/tab_button.dart';
 import 'package:mira/tabbed/tabbed_view/lib/src/tab_leading_builder.dart';
 import 'package:mira/tabbed/tabbed_view/lib/src/tabbed_view_controller.dart';
+import 'package:mira/tabbed/tabbed_view/lib/src/tabbed_view_menu_builder.dart';
 
 /// The tab data.
 ///
@@ -38,12 +39,14 @@ class TabData extends ChangeNotifier with TabIndex {
     bool closable = true,
     this.draggable = true,
     this.keepAlive = false,
+    TabbedViewMenuBuilder? menuBuilder,
   }) : _value = value,
        _text = text,
        _leading = leading,
        _closable = closable,
        _content = content,
        _buttons = buttons,
+       _menuBuilder = menuBuilder,
        key = keepAlive ? GlobalKey() : UniqueKey();
 
   /// Identifies the content of the tab in the tree
@@ -77,6 +80,17 @@ class TabData extends ChangeNotifier with TabIndex {
   set leading(TabLeadingBuilder? leading) {
     if (_leading != leading) {
       _leading = leading;
+      notifyListeners();
+    }
+  }
+
+  TabbedViewMenuBuilder? _menuBuilder;
+
+  TabbedViewMenuBuilder? get menuBuilder => _menuBuilder;
+
+  set menuBuilder(TabbedViewMenuBuilder? builder) {
+    if (_menuBuilder != builder) {
+      _menuBuilder = builder;
       notifyListeners();
     }
   }

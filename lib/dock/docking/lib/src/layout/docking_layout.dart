@@ -258,6 +258,7 @@ class DockingItem extends DockingArea with DropArea {
     this.maximizable,
     bool maximized = false,
     this.leading,
+    this.menuBuilder,
     super.size,
     super.weight,
     super.minimalWeight,
@@ -275,6 +276,7 @@ class DockingItem extends DockingArea with DropArea {
 
   final GlobalKey? globalKey;
   TabLeadingBuilder? leading;
+  TabbedViewMenuBuilder? menuBuilder;
   bool _maximized;
 
   bool get maximized => _maximized;

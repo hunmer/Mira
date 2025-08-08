@@ -105,6 +105,7 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
           leading: child.leading,
           buttons: buttons,
           draggable: widget.draggable,
+          menuBuilder: child.menuBuilder,
         ),
       );
     });

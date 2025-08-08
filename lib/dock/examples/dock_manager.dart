@@ -5,6 +5,9 @@ import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'package:mira/dock/docking/lib/src/layout/layout_parser.dart';
 import 'dock_item_registry.dart';
 import 'dock_persistence.dart';
+import 'package:mira/tabbed/tabbed_view/lib/src/tab_button.dart';
+import 'package:mira/tabbed/tabbed_view/lib/src/tab_leading_builder.dart';
+import 'package:mira/tabbed/tabbed_view/lib/src/tabbed_view_menu_builder.dart';
 
 /// 增强版 DockManager，支持持久化
 class DockManager extends ChangeNotifier {
@@ -156,13 +159,21 @@ class DockManager extends ChangeNotifier {
     bool keepAlive = false,
     bool? maximizable,
     double? weight,
+    List<TabButton>? buttons,
+    TabLeadingBuilder? leading,
+    TabbedViewMenuBuilder? menuBuilder,
   }) {
     final widget = registry.build(type, values);
     if (widget == null) {
       throw ArgumentError('Unknown item type: $type');
     }
 
-    // 缓存数据
+    // 读取类型的默认 UI 配置
+    buttons = buttons ?? registry.defaultButtonsOf(type);
+    leading = leading ?? registry.defaultLeadingOf(type);
+    menuBuilder = menuBuilder ?? registry.defaultMenuOf(type);
+
+    // 缓存数据（函数/回调不做持久化，仅运行时缓存）
     _itemDataCache[id] = DockItemData(
       id: id,
       type: type,
@@ -172,6 +183,9 @@ class DockManager extends ChangeNotifier {
       keepAlive: keepAlive,
       maximizable: maximizable,
       weight: weight,
+      buttons: buttons,
+      leading: leading,
+      menuBuilder: menuBuilder,
     );
 
     // 添加到布局
@@ -184,6 +198,9 @@ class DockManager extends ChangeNotifier {
         keepAlive: keepAlive,
         maximizable: maximizable,
         weight: weight,
+        buttons: buttons,
+        leading: leading,
+        menuBuilder: menuBuilder,
       ),
       targetArea: targetArea,
       dropPosition: dropPosition,
@@ -207,6 +224,9 @@ class DockManager extends ChangeNotifier {
           keepAlive: item.globalKey != null,
           maximizable: item.maximizable,
           weight: item.weight,
+          buttons: cachedData.buttons,
+          leading: cachedData.leading,
+          menuBuilder: cachedData.menuBuilder,
         );
 
         // 重建 Widget
@@ -264,6 +284,9 @@ class DockManager extends ChangeNotifier {
           keepAlive: cachedData.keepAlive,
           maximizable: cachedData.maximizable,
           weight: cachedData.weight,
+          buttons: cachedData.buttons,
+          leading: cachedData.leading,
+          menuBuilder: cachedData.menuBuilder,
         );
       }
       layout.rebuild();
@@ -297,6 +320,9 @@ class _Builder with AreaBuilderMixin {
           maximizable: itemData.maximizable,
           maximized: maximized,
           weight: weight ?? itemData.weight,
+          buttons: itemData.buttons,
+          leading: itemData.leading,
+          menuBuilder: itemData.menuBuilder,
         );
       }
     }

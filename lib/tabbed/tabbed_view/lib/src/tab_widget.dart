@@ -92,17 +92,25 @@ class TabWidget extends StatelessWidget {
       cursor = SystemMouseCursors.click;
     }
 
+    // Wrap with GestureDetector to handle left/secondary clicks
     tabWidget = MouseRegion(
       cursor: cursor,
       onEnter: (event) => updateHighlightedIndex(index),
       onExit: (event) => updateHighlightedIndex(null),
-      child:
-          provider.draggingTabIndex == null
-              ? GestureDetector(
-                onTap: () => _onSelect(context, index),
-                child: tabWidget,
-              )
-              : tabWidget,
+      child: provider.draggingTabIndex == null
+          ? GestureDetector(
+              onTap: () => _onSelect(context, index),
+              onSecondaryTapDown: (details) {
+                if (tab.menuBuilder != null) {
+                  final items = tab.menuBuilder!(context);
+                  if (items.isNotEmpty) {
+                    provider.menuItemsUpdater(items);
+                  }
+                }
+              },
+              child: tabWidget,
+            )
+          : tabWidget,
     );
 
     if (tab.draggable) {
@@ -159,8 +167,7 @@ class TabWidget extends StatelessWidget {
 
         tabWidget = Opacity(
           child: tabWidget,
-          opacity:
-              provider.draggingTabIndex != index ? 1 : tabTheme.draggingOpacity,
+          opacity: provider.draggingTabIndex != index ? 1 : tabTheme.draggingOpacity,
         );
       }
     }
@@ -265,10 +272,7 @@ class TabWidget extends StatelessWidget {
               normalBackground: normalBackground,
               hoverBackground: hoverBackground,
               disabledBackground: disabledBackground,
-              iconSize:
-                  button.iconSize != null
-                      ? button.iconSize!
-                      : tabTheme.buttonIconSize,
+              iconSize: button.iconSize != null ? button.iconSize! : tabTheme.buttonIconSize,
               themePadding: tabTheme.buttonPadding,
             ),
             padding: padding,

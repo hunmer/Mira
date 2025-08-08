@@ -1,4 +1,7 @@
 import 'package:flutter/widgets.dart';
+import 'package:mira/tabbed/tabbed_view/lib/src/tab_button.dart';
+import 'package:mira/tabbed/tabbed_view/lib/src/tab_leading_builder.dart';
+import 'package:mira/tabbed/tabbed_view/lib/src/tabbed_view_menu_builder.dart';
 
 /// 组件构建器，根据 values 创建 Widget
 typedef DockItemBuilder = Widget Function(Map<String, dynamic> values);
@@ -23,6 +26,10 @@ class DockItemData {
   final bool keepAlive;
   final bool? maximizable;
   final double? weight;
+  // 新增：标签上的按钮/leading/菜单
+  final List<TabButton>? buttons;
+  final TabLeadingBuilder? leading;
+  final TabbedViewMenuBuilder? menuBuilder;
 
   DockItemData({
     required this.id,
@@ -33,6 +40,9 @@ class DockItemData {
     this.keepAlive = false,
     this.maximizable,
     this.weight,
+    this.buttons,
+    this.leading,
+    this.menuBuilder,
   });
 
   Map<String, dynamic> toJson() => {
@@ -44,6 +54,7 @@ class DockItemData {
     'keepAlive': keepAlive,
     if (maximizable != null) 'maximizable': maximizable,
     if (weight != null) 'weight': weight,
+    // 注意：函数类型（leading/menuBuilder）无法序列化，按钮也通常包含函数，默认不持久化
   };
 
   factory DockItemData.fromJson(Map<String, dynamic> json) {
@@ -69,6 +80,10 @@ class DockItemRegistry {
   final Map<String, DockItemBuilder> _builders = {};
   final Map<String, DockItemDataExtractor> _extractors = {};
   final Map<String, DockItemConfigBuilder> _configBuilders = {};
+  // 新增：每种类型的默认按钮/leading/菜单
+  final Map<String, List<TabButton>> _defaultButtons = {};
+  final Map<String, TabLeadingBuilder> _defaultLeading = {};
+  final Map<String, TabbedViewMenuBuilder> _defaultMenuBuilders = {};
 
   /// 注册组件类型
   void register(
@@ -76,6 +91,9 @@ class DockItemRegistry {
     required DockItemBuilder builder,
     DockItemDataExtractor? extractor,
     DockItemConfigBuilder? configBuilder,
+    List<TabButton>? defaultButtons,
+    TabLeadingBuilder? defaultLeading,
+    TabbedViewMenuBuilder? defaultMenuBuilder,
   }) {
     _builders[type] = builder;
     if (extractor != null) {
@@ -84,6 +102,15 @@ class DockItemRegistry {
     if (configBuilder != null) {
       _configBuilders[type] = configBuilder;
     }
+    if (defaultButtons != null) {
+      _defaultButtons[type] = List<TabButton>.from(defaultButtons);
+    }
+    if (defaultLeading != null) {
+      _defaultLeading[type] = defaultLeading;
+    }
+    if (defaultMenuBuilder != null) {
+      _defaultMenuBuilders[type] = defaultMenuBuilder;
+    }
   }
 
   /// 构建组件
@@ -91,6 +118,11 @@ class DockItemRegistry {
     final builder = _builders[type];
     return builder?.call(values);
   }
+
+  /// 默认配置：按钮/leading/menu
+  List<TabButton>? defaultButtonsOf(String type) => _defaultButtons[type];
+  TabLeadingBuilder? defaultLeadingOf(String type) => _defaultLeading[type];
+  TabbedViewMenuBuilder? defaultMenuOf(String type) => _defaultMenuBuilders[type];
 
   /// 提取组件数据
   Map<String, dynamic> extract(String type, Widget widget) {
