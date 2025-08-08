@@ -2,7 +2,6 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:fvp/fvp.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/widgets/icon_chip.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
@@ -259,15 +258,15 @@ class _LibraryItemState extends State<LibraryItem> {
     super.initState();
     // 使用throttleTime控制位置更新频率为50ms
     _positionSubscription = _positionSubject.stream
-        .throttleTime(const Duration(milliseconds: 50))
+        .throttleTime(const Duration(milliseconds: 500))
         .listen(_updateVideoPosition);
   }
 
   void _updateVideoPosition(double position) {
     if (_videoController != null && _videoController!.value.isInitialized) {
       final duration = _videoController!.value.duration;
-      _videoController!.fastSeekTo(duration * position);
-      _videoController!.play();
+      _videoController!.seekTo(duration * position);
+      // _videoController!.play();
     }
   }
 
@@ -275,7 +274,6 @@ class _LibraryItemState extends State<LibraryItem> {
     if (_videoController == null || !_videoController!.value.isInitialized) {
       return;
     }
-
     final renderBox =
         _mouseRegionKey.currentContext?.findRenderObject() as RenderBox?;
     if (renderBox == null) return;

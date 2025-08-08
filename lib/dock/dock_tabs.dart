@@ -211,13 +211,9 @@ class DockTabs {
           final tabId = entry.key;
           final config = tab.getDefaultDockingItemConfig();
 
-          final tabParser = DefaultDockLayoutParser(
-            dockTabsId: id,
-            tabId: entry.key,
-          );
           DockLayoutManager.registerParser(
             '${id}_${entry.key}_layout',
-            tabParser,
+            DefaultDockLayoutParser(dockTabsId: id, tabId: entry.key),
           );
 
           return DockingItem(
@@ -245,7 +241,6 @@ class DockTabs {
 
     final mainParser = DefaultDockLayoutParser(dockTabsId: id, tabId: '');
     DockLayoutManager.registerParser('${id}_layout', mainParser);
-
     // 创建一个新的布局实例来加载数据
     _globalLayout = DockingLayout(
       root:
@@ -253,31 +248,38 @@ class DockTabs {
               ? DockingTabs(tabItems)
               : DockManager.createDefaultHomePageDockItem(),
     );
-
-    // 加载布局
-    DockLayoutManager.loadLayout('${id}_layout', _globalLayout!);
+    if (tabItems.isNotEmpty) {
+      // 恢复布局
+      DockLayoutManager.loadLayout('${id}_layout', _globalLayout!);
+    }
     emitEvent(DockLayoutEvent(dockTabsId: id));
   }
 
-  /// 构建带事件监听的Tab内容
+  /// 构建子Tab内容
   Widget _buildTabContentWithEvents(DockTab tab) {
     final items = tab.getAllDockItems();
     final defaultConfig = tab.getDefaultDockingItemConfig();
-    // 创建TabData列表
-    final tabDataList =
-        items.map((item) {
-          final dockingItem = item.buildDockingItem(
-            defaultConfig: defaultConfig,
-          );
-          return TabData(
-            value: dockingItem,
-            text: dockingItem.name ?? 'Untitled',
-            content: dockingItem.widget,
-            closable: dockingItem.closable,
-          );
-        }).toList();
+    if (items.isEmpty) {
+      return DockManager.createDefaultHomePageDockItem().widget;
+    } else if (items.length == 1) {
+      return items.first.buildDockingItem(defaultConfig: defaultConfig).widget;
+    } else {
+      // 创建TabData列表
+      final tabDataList =
+          items.map((item) {
+            final dockingItem = item.buildDockingItem(
+              defaultConfig: defaultConfig,
+            );
+            return TabData(
+              value: dockingItem,
+              text: dockingItem.name ?? 'Untitled',
+              content: dockingItem.widget,
+              closable: dockingItem.closable,
+            );
+          }).toList();
 
-    return TabbedView(controller: TabbedViewController(tabDataList));
+      return TabbedView(controller: TabbedViewController(tabDataList));
+    }
   }
 
   /// 构建Tab区域的按钮
