@@ -12,6 +12,7 @@ import 'on_item_selection.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
 import 'package:mira/multi_split_view/lib/multi_split_view.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 /// The docking widget.
 class Docking extends StatefulWidget {
@@ -30,6 +31,7 @@ class Docking extends StatefulWidget {
     this.maximizableTabsArea = true,
     this.antiAliasingWorkaround = true,
     this.draggable = true,
+    this.breakpoints,
   });
 
   final DockingLayout? layout;
@@ -46,6 +48,10 @@ class Docking extends StatefulWidget {
   final bool maximizableTabsArea;
   final bool antiAliasingWorkaround;
   final bool draggable;
+
+  /// Optional responsive breakpoints. When set, DockingItems declare
+  /// where they should be visible via DockingItem.showAtDevices.
+  final ScreenBreakpoints? breakpoints;
 
   @override
   State<StatefulWidget> createState() => _DockingState();
@@ -106,22 +112,45 @@ class _DockingState extends State<Docking> {
     return Container();
   }
 
+  bool _visibleForWidth(double width, DockingItem item) {
+    if (widget.breakpoints == null) return true;
+    if (item.showAtDevices == null || item.showAtDevices!.isEmpty) return true;
+    final bp = widget.breakpoints!;
+    final DeviceScreenType type;
+    if (width >= bp.desktop) {
+      type = DeviceScreenType.desktop;
+    } else if (width >= bp.tablet) {
+      type = DeviceScreenType.tablet;
+    } else if (width >= bp.watch) {
+      type = DeviceScreenType.mobile;
+    } else {
+      type = DeviceScreenType.watch;
+    }
+    return item.showAtDevices!.contains(type);
+  }
+
   Widget _buildArea(BuildContext context, DockingArea area) {
     if (area is DockingItem) {
-      return DockingItemWidget(
-        key: area.key,
-        layout: widget.layout!,
-        dragOverPosition: _dragOverPosition,
-        draggable: widget.draggable,
-        item: area,
-        onItemSelection: widget.onItemSelection,
-        itemCloseInterceptor: widget.itemCloseInterceptor,
-        onTabMove: widget.onTabMove,
-        onTabLayoutChanged: widget.onTabLayoutChanged,
-        onItemClose: widget.onItemClose,
-        onItemPositionChanged: widget.onItemPositionChanged,
-        dockingButtonsBuilder: widget.dockingButtonsBuilder,
-        maximizable: widget.maximizableItem,
+      return LayoutBuilder(
+        builder: (context, constraints) {
+          final visible = _visibleForWidth(constraints.maxWidth, area);
+          if (!visible) return const SizedBox.shrink();
+          return DockingItemWidget(
+            key: area.key,
+            layout: widget.layout!,
+            dragOverPosition: _dragOverPosition,
+            draggable: widget.draggable,
+            item: area,
+            onItemSelection: widget.onItemSelection,
+            itemCloseInterceptor: widget.itemCloseInterceptor,
+            onTabMove: widget.onTabMove,
+            onTabLayoutChanged: widget.onTabLayoutChanged,
+            onItemClose: widget.onItemClose,
+            onItemPositionChanged: widget.onItemPositionChanged,
+            dockingButtonsBuilder: widget.dockingButtonsBuilder,
+            maximizable: widget.maximizableItem,
+          );
+        },
       );
     } else if (area is DockingRow) {
       return _row(context, area);
@@ -129,20 +158,27 @@ class _DockingState extends State<Docking> {
       return _column(context, area);
     } else if (area is DockingTabs) {
       if (area.childrenCount == 1) {
-        return DockingItemWidget(
-          key: area.key,
-          layout: widget.layout!,
-          dragOverPosition: _dragOverPosition,
-          draggable: widget.draggable,
-          item: area.childAt(0),
-          onItemSelection: widget.onItemSelection,
-          itemCloseInterceptor: widget.itemCloseInterceptor,
-          onTabMove: widget.onTabMove,
-          onTabLayoutChanged: widget.onTabLayoutChanged,
-          onItemClose: widget.onItemClose,
-          onItemPositionChanged: widget.onItemPositionChanged,
-          dockingButtonsBuilder: widget.dockingButtonsBuilder,
-          maximizable: widget.maximizableItem,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final DockingItem only = area.childAt(0);
+            final visible = _visibleForWidth(constraints.maxWidth, only);
+            if (!visible) return const SizedBox.shrink();
+            return DockingItemWidget(
+              key: area.key,
+              layout: widget.layout!,
+              dragOverPosition: _dragOverPosition,
+              draggable: widget.draggable,
+              item: only,
+              onItemSelection: widget.onItemSelection,
+              itemCloseInterceptor: widget.itemCloseInterceptor,
+              onTabMove: widget.onTabMove,
+              onTabLayoutChanged: widget.onTabLayoutChanged,
+              onItemClose: widget.onItemClose,
+              onItemPositionChanged: widget.onItemPositionChanged,
+              dockingButtonsBuilder: widget.dockingButtonsBuilder,
+              maximizable: widget.maximizableItem,
+            );
+          },
         );
       }
       return DockingTabsWidget(
@@ -176,6 +212,7 @@ class _DockingState extends State<Docking> {
       axis: Axis.horizontal,
       controller: row.controller,
       antiAliasingWorkaround: widget.antiAliasingWorkaround,
+      onWeightChange: _forceRebuild,
       children: children,
     );
   }
@@ -191,6 +228,7 @@ class _DockingState extends State<Docking> {
       axis: Axis.vertical,
       controller: column.controller,
       antiAliasingWorkaround: widget.antiAliasingWorkaround,
+      onWeightChange: _forceRebuild,
       children: children,
     );
   }

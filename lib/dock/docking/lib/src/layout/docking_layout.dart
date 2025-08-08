@@ -14,6 +14,7 @@ import 'package:flutter/widgets.dart';
 
 import 'package:mira/multi_split_view/lib/multi_split_view.dart';
 import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 
 mixin DropArea {}
 
@@ -263,6 +264,7 @@ class DockingItem extends DockingArea with DropArea {
     super.weight,
     super.minimalWeight,
     super.minimalSize,
+    this.showAtDevices,
   }) : buttons = buttons != null ? List.unmodifiable(buttons) : [],
        globalKey = keepAlive ? GlobalKey() : null,
        _maximized = maximized;
@@ -273,6 +275,10 @@ class DockingItem extends DockingArea with DropArea {
   bool closable;
   final bool? maximizable;
   List<TabButton>? buttons;
+
+  /// Limits where this item is visible. If null, visible on all devices.
+  /// Uses DeviceScreenType from responsive_builder.
+  final List<DeviceScreenType>? showAtDevices;
 
   final GlobalKey? globalKey;
   TabLeadingBuilder? leading;

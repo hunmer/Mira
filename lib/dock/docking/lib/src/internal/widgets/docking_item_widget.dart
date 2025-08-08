@@ -187,6 +187,7 @@ class DockingItemWidgetState extends State<DockingItemWidget>
             leading: dockingItem.leading,
             buttons: dockingItem.buttons,
             keepAlive: dockingItem.globalKey != null,
+            showAtDevices: dockingItem.showAtDevices,
           );
 
           // 添加到目标layout的目标item
