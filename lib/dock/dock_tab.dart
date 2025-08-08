@@ -1,6 +1,8 @@
 import 'dart:async';
+import 'package:collection/collection.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'package:rxdart/rxdart.dart';
 import 'dock_item.dart';
 import 'dock_events.dart';
@@ -13,6 +15,8 @@ class DockTab {
   String _displayName;
   final List<DockItem> _dockItems = [];
   late DockingLayout _layout;
+  // ignore: unused_field
+  late String? _activeTabId;
   final Map<String, dynamic> _defaultDockingItemConfig;
   final DockEventStreamController? _eventStreamController;
 
@@ -38,7 +42,7 @@ class DockTab {
     // 初始化rxdart防抖流
     _rebuildSubscription = _rebuildSubject
         .debounceTime(_rebuildDelay)
-        .listen((_) => _performRebuild());
+        .listen((_) => rebuild());
 
     // 然后如果有initData，尝试从JSON初始化
     if (initData != null) {
@@ -161,7 +165,7 @@ class DockTab {
   }
 
   /// 执行实际的布局重建
-  void _performRebuild() {
+  void rebuild() {
     try {
       // 多个item时，使用Tabs布局
       final dockingItems =
@@ -186,6 +190,55 @@ class DockTab {
         root: DockManager.createDefaultHomePageDockItem(),
       );
     }
+  }
+
+  Widget buildDockingWidget(BuildContext context) {
+    rebuild(); // 触发布局重建
+    final items = getAllDockItems();
+    final defaultConfig = getDefaultDockingItemConfig();
+    if (items.isEmpty) {
+      return DockManager.createDefaultHomePageDockItem().widget;
+    } else if (items.length == 1) {
+      return items.first.buildDockingItem(defaultConfig: defaultConfig).widget;
+    } else {
+      // 创建TabData列表
+      final tabDataList =
+          items.map((item) {
+            final dockingItem = item.buildDockingItem(
+              defaultConfig: defaultConfig,
+            );
+            return TabData(
+              value: dockingItem,
+              text: dockingItem.name ?? 'Untitled',
+              content: dockingItem.widget,
+              closable: dockingItem.closable,
+            );
+          }).toList();
+
+      return TabbedView(
+        controller: TabbedViewController(tabDataList),
+        onTabClose: _handleTabClose,
+        onTabSelection: _handleTabSelection,
+      );
+    }
+  }
+
+  void _handleTabClose(int index, TabData tabData) {
+    // 处理标签关闭逻辑
+    print('Tab closed: ${tabData.text}');
+  }
+
+  void _handleTabSelection(int? index) {
+    // 处理标签选择逻辑
+    print('Tab selected: $index');
+  }
+
+  void emitEvent(DockTabEvent event) {
+    _eventStreamController?.emit(event);
+  }
+
+  DockItem? findDockItemByDockingItem(DockingItem dockingItem) {
+    return _dockItems.firstWhereOrNull((item) => item.id == dockingItem.id);
   }
 
   /// 获取布局

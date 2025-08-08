@@ -24,6 +24,7 @@ class DockTabs {
   late final LibrariesPlugin? _plugin;
   final Map<String, DockTab> _dockTabs = {};
   DockingLayout? _globalLayout;
+  BuildContext? _context;
   String? _activeTabId;
   TabbedViewThemeData? _themeData;
   DefaultDockLayoutParser? mainParser;
@@ -219,7 +220,7 @@ class DockTabs {
           return DockingItem(
             name: tab.displayName,
             id: tabId,
-            widget: _buildTabContentWithEvents(tab),
+            widget: _buildTabContent(tab),
             // 应用默认配置
             closable: config['closable'] ?? true,
             buttons:
@@ -256,30 +257,8 @@ class DockTabs {
   }
 
   /// 构建子Tab内容
-  Widget _buildTabContentWithEvents(DockTab tab) {
-    final items = tab.getAllDockItems();
-    final defaultConfig = tab.getDefaultDockingItemConfig();
-    if (items.isEmpty) {
-      return DockManager.createDefaultHomePageDockItem().widget;
-    } else if (items.length == 1) {
-      return items.first.buildDockingItem(defaultConfig: defaultConfig).widget;
-    } else {
-      // 创建TabData列表
-      final tabDataList =
-          items.map((item) {
-            final dockingItem = item.buildDockingItem(
-              defaultConfig: defaultConfig,
-            );
-            return TabData(
-              value: dockingItem,
-              text: dockingItem.name ?? 'Untitled',
-              content: dockingItem.widget,
-              closable: dockingItem.closable,
-            );
-          }).toList();
-
-      return TabbedView(controller: TabbedViewController(tabDataList));
-    }
+  Widget _buildTabContent(DockTab tab) {
+    return tab.buildDockingWidget(_context!);
   }
 
   /// 构建Tab区域的按钮
@@ -357,6 +336,7 @@ class DockTabs {
 
   /// 构建带主题的Docking Widget
   Widget buildDockingWidget(BuildContext context) {
+    _context = context;
     rebuild(); // 触发布局重建
     Docking docking = Docking(
       layout: _globalLayout,
