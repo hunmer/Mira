@@ -1,6 +1,7 @@
 // ignore_for_file: constant_identifier_names
 
 import 'package:flutter/material.dart';
+import 'package:mira/examples/docking_test.dart';
 import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tabs_view.dart';
 import 'package:mira/screens/settings_screen/settings_screen.dart';
@@ -18,6 +19,7 @@ class AppRoutes extends NavigatorObserver {
   static const String libraries = '/libraries';
   static const String settings = '/settings';
   static const String LibraryTabs = '/LibraryTabs';
+  static const String dockingExample = '/dockingExample';
 
   static Route _createRoute(Widget page) {
     return PageRouteBuilder(
@@ -38,6 +40,8 @@ class AppRoutes extends NavigatorObserver {
         return _createRoute(const LibraryListView());
       case settings:
         return _createRoute(const SettingsScreen());
+      case dockingExample:
+        return _createRoute(DockingExample());
       default:
         return _createRoute(
           Scaffold(
@@ -51,7 +55,8 @@ class AppRoutes extends NavigatorObserver {
     libraries: (context) => const LibraryListView(),
     LibraryTabs: (context) => const LibraryTabsView(),
     settings: (context) => const SettingsScreen(),
+    dockingExample: (context) => DockingExample(),
   };
 
-  static String get initialRoute => LibraryTabs;
+  static String get initialRoute => dockingExample;
 }

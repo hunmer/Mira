@@ -251,7 +251,7 @@ class DockTabs {
     );
     if (tabItems.isNotEmpty) {
       // 恢复布局
-      DockLayoutManager.loadLayout('${id}_layout', _globalLayout!);
+      // DockLayoutManager.loadLayout('${id}_layout', _globalLayout!);
     }
     emitEvent(DockLayoutEvent(dockTabsId: id));
   }
