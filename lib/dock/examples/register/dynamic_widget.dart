@@ -21,17 +21,25 @@ class DynamicWidget extends StatefulWidget {
 class _DynamicWidgetState extends State<DynamicWidget> {
   late JsonWidgetData _data;
   late JsonWidgetRegistry _registry;
+  bool _initialized = false;
 
   @override
   void initState() {
     super.initState();
-    _initRegistry();
-    _buildData();
+    _registry = widget.registry ?? JsonWidgetRegistry.instance;
+  }
+
+  @override
+  void didChangeDependencies() {
+    super.didChangeDependencies();
+    if (!_initialized) {
+      _initRegistry();
+      _buildData();
+      _initialized = true;
+    }
   }
 
   void _initRegistry() {
-    _registry = widget.registry ?? JsonWidgetRegistry.instance;
-
     // 添加一些常用的变量
     _registry.setValue('theme', Theme.of(context));
     _registry.setValue('mediaQuery', MediaQuery.of(context));
@@ -87,6 +95,11 @@ class _DynamicWidgetState extends State<DynamicWidget> {
   void didUpdateWidget(DynamicWidget oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.jsonData != widget.jsonData) {
+      _buildData();
+    }
+    if (oldWidget.registry != widget.registry) {
+      _registry = widget.registry ?? JsonWidgetRegistry.instance;
+      _initRegistry();
       _buildData();
     }
   }

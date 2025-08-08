@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/examples/register/dynamic_widget.dart';
 import 'dock_item_config_base.dart';
-import 'dynamic_widget.dart';
 
 /// Dynamic Widget 配置对话框
 class DynamicWidgetConfig extends DockItemConfig {

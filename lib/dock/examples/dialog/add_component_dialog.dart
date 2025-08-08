@@ -73,8 +73,18 @@ class AddComponentDialogContent extends StatefulWidget {
 class _AddComponentDialogContentState extends State<AddComponentDialogContent> {
   DockingArea? _selectedArea;
   DropPosition? _selectedPosition;
-  String _selectedComponentType = 'counter';
+  String _selectedComponentType = '';
   int? _selectedDropIndex;
+
+  @override
+  void initState() {
+    super.initState();
+    // 初始化选择第一个已注册的组件类型
+    final registeredTypes = widget.manager.registry.registeredTypes;
+    if (registeredTypes.isNotEmpty) {
+      _selectedComponentType = registeredTypes.first;
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -93,26 +103,26 @@ class _AddComponentDialogContentState extends State<AddComponentDialogContent> {
               children: [
                 Text('选择组件类型', style: Theme.of(context).textTheme.titleMedium),
                 const SizedBox(height: 8),
-                Row(
-                  children: [
-                    Radio<String>(
-                      value: 'counter',
-                      groupValue: _selectedComponentType,
-                      onChanged: (value) {
-                        setState(() => _selectedComponentType = value!);
-                      },
-                    ),
-                    const Text('计数器'),
-                    const SizedBox(width: 16),
-                    Radio<String>(
-                      value: 'text',
-                      groupValue: _selectedComponentType,
-                      onChanged: (value) {
-                        setState(() => _selectedComponentType = value!);
-                      },
-                    ),
-                    const Text('文本组件'),
-                  ],
+                // 动态显示已注册的组件类型
+                Wrap(
+                  spacing: 8,
+                  runSpacing: 8,
+                  children:
+                      widget.manager.registry.registeredTypes.map((type) {
+                        return Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Radio<String>(
+                              value: type,
+                              groupValue: _selectedComponentType,
+                              onChanged: (value) {
+                                setState(() => _selectedComponentType = value!);
+                              },
+                            ),
+                            Text(_getComponentDisplayName(type)),
+                          ],
+                        );
+                      }).toList(),
                 ),
               ],
             ),
@@ -444,6 +454,28 @@ class _AddComponentDialogContentState extends State<AddComponentDialogContent> {
   void _addComponent() {
     if (!_canAdd()) return;
 
+    // 检查是否有配置对话框
+    final configDialog = widget.manager.registry.buildConfigDialog(
+      _selectedComponentType,
+      context,
+      (values) {
+        Navigator.of(context).pop(); // 关闭配置对话框
+        _addComponentWithValues(values);
+      },
+    );
+
+    if (configDialog != null) {
+      // 显示配置对话框
+      showDialog(context: context, builder: (context) => configDialog);
+    } else {
+      // 没有配置对话框，使用默认值
+      _addComponentWithValues(
+        _getComponentValues(DateTime.now().millisecondsSinceEpoch.toString()),
+      );
+    }
+  }
+
+  void _addComponentWithValues(Map<String, dynamic> values) {
     final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
     final area = _selectedArea!;
 
@@ -453,10 +485,10 @@ class _AddComponentDialogContentState extends State<AddComponentDialogContent> {
         widget.manager.addTypedItem(
           id: '${_selectedComponentType}_$timestamp',
           type: _selectedComponentType,
-          values: _getComponentValues(timestamp),
+          values: {...values, 'id': '${_selectedComponentType}_$timestamp'},
           targetArea: area as DropArea,
           dropIndex: _selectedDropIndex!,
-          name: _getComponentName(timestamp),
+          name: values['name'] ?? _getComponentName(timestamp),
           keepAlive: true,
         );
       } else if (_selectedPosition != null) {
@@ -464,10 +496,10 @@ class _AddComponentDialogContentState extends State<AddComponentDialogContent> {
         widget.manager.addTypedItem(
           id: '${_selectedComponentType}_$timestamp',
           type: _selectedComponentType,
-          values: _getComponentValues(timestamp),
+          values: {...values, 'id': '${_selectedComponentType}_$timestamp'},
           targetArea: area as DropArea,
           dropPosition: _selectedPosition!,
-          name: _getComponentName(timestamp),
+          name: values['name'] ?? _getComponentName(timestamp),
           keepAlive: true,
         );
       }
@@ -509,6 +541,21 @@ class _AddComponentDialogContentState extends State<AddComponentDialogContent> {
     if (area is DockingColumn) return Icons.view_agenda;
     if (area is DockingItem) return Icons.article;
     return Icons.rectangle;
+  }
+
+  // ========= 辅助方法 =========
+
+  String _getComponentDisplayName(String type) {
+    switch (type) {
+      case 'counter':
+        return '计数器';
+      case 'text':
+        return '文本组件';
+      case 'dynamic_widget':
+        return 'Dynamic Widget';
+      default:
+        return type.toUpperCase();
+    }
   }
 
   String _getAreaDisplayName(DockingArea area) {

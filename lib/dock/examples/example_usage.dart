@@ -6,20 +6,11 @@ import 'package:mira/multi_split_view/lib/multi_split_view.dart';
 import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'dock_manager.dart';
 import 'docking_persistence_logic.dart';
-import 'widgets/dynamic_widget.dart';
+import 'register/counter_widget.dart';
+import 'register/dynamic_widget.dart';
 import 'widgets/counter_config_dialog.dart';
 import 'widgets/text_config_dialog.dart';
 import 'widgets/dynamic_widget_config_dialog.dart';
-import '../debug_layout_preset_dialog.dart';
-import 'package:mira/dock/dock_theme.dart';
-import 'package:mira/dock/docking/lib/src/docking.dart';
-import 'package:mira/core/widgets/window_controls.dart';
-import 'package:mira/multi_split_view/lib/multi_split_view.dart';
-import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
-import 'dock_manager.dart';
-import 'docking_persistence_logic.dart';
-import 'register/counter_widget.dart';
-import 'register/dynamic_widget.dart';
 import '../debug_layout_preset_dialog.dart';
 
 // ========= 示例页面 =========
@@ -76,6 +67,8 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
               });
             },
           ),
+      configBuilder:
+          (context, onConfirm) => CounterConfigDialog(onConfirm: onConfirm),
     );
 
     manager.registry.register(
@@ -86,10 +79,18 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
             child: Center(
               child: Text(
                 values['text'] ?? 'No text',
-                style: TextStyle(fontSize: 18),
+                style: TextStyle(
+                  fontSize: values['fontSize']?.toDouble() ?? 18,
+                  fontWeight: _parseStringToFontWeight(
+                    values['fontWeight'] ?? 'normal',
+                  ),
+                  color: _parseStringToColor(values['color'] ?? '#000000'),
+                ),
               ),
             ),
           ),
+      configBuilder:
+          (context, onConfirm) => TextConfigDialog(onConfirm: onConfirm),
     );
 
     manager.registry.register(
@@ -97,7 +98,10 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
       builder: (values) {
         final jsonData =
             values['jsonData'] as Map<String, dynamic>? ??
-            DynamicWidgetPresets.welcomeCard;
+            {
+              'type': 'text',
+              'args': {'data': 'Dynamic Widget'},
+            };
         return DynamicWidget(
           jsonData: jsonData,
           onDataChanged: () {
@@ -105,7 +109,47 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
           },
         );
       },
+      configBuilder:
+          (context, onConfirm) =>
+              DynamicWidgetConfigDialog(onConfirm: onConfirm),
     );
+  }
+
+  // 辅助方法：将字符串解析为 FontWeight
+  FontWeight _parseStringToFontWeight(String fontWeightStr) {
+    switch (fontWeightStr) {
+      case 'bold':
+        return FontWeight.bold;
+      case 'w100':
+        return FontWeight.w100;
+      case 'w200':
+        return FontWeight.w200;
+      case 'w300':
+        return FontWeight.w300;
+      case 'w400':
+        return FontWeight.w400;
+      case 'w500':
+        return FontWeight.w500;
+      case 'w600':
+        return FontWeight.w600;
+      case 'w700':
+        return FontWeight.w700;
+      case 'w800':
+        return FontWeight.w800;
+      case 'w900':
+        return FontWeight.w900;
+      default:
+        return FontWeight.normal;
+    }
+  }
+
+  // 辅助方法：将字符串解析为 Color
+  Color _parseStringToColor(String colorStr) {
+    if (colorStr.startsWith('#')) {
+      final hexColor = colorStr.substring(1);
+      return Color(int.parse('FF$hexColor', radix: 16));
+    }
+    return Colors.black;
   }
 
   @override

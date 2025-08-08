@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:mira/dock/examples/register/counter_widget.dart';
 import 'package:mira/dock/examples/register/dynamic_widget.dart';
 import '../dock_manager.dart';
-import '../dock_item_registry.dart';
 import 'counter_config.dart';
 import 'text_config.dart';
-import 'dynamic_widget.dart';
 import 'dynamic_widget_config.dart';
 import 'dock_item_config_base.dart';
 
