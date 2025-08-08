@@ -126,7 +126,38 @@ class _DockingState extends State<Docking> {
     } else {
       type = DeviceScreenType.watch;
     }
-    return item.showAtDevices!.contains(type);
+
+    // Handle visibility mode
+    if (item.visibilityMode == DeviceVisibilityMode.exactDevices) {
+      // Only visible on exact specified devices
+      return item.showAtDevices!.contains(type);
+    } else {
+      // Visible on specified devices and larger devices
+      final devices = item.showAtDevices!;
+
+      // Check if current device type is in the list or is larger than any in the list
+      if (devices.contains(type)) return true;
+
+      // Define device hierarchy (smaller to larger)
+      const deviceHierarchy = [
+        DeviceScreenType.watch,
+        DeviceScreenType.mobile,
+        DeviceScreenType.tablet,
+        DeviceScreenType.desktop,
+      ];
+
+      final currentIndex = deviceHierarchy.indexOf(type);
+
+      // Check if any specified device is smaller than current device
+      for (final specifiedDevice in devices) {
+        final specifiedIndex = deviceHierarchy.indexOf(specifiedDevice);
+        if (specifiedIndex <= currentIndex) {
+          return true;
+        }
+      }
+
+      return false;
+    }
   }
 
   Widget _buildArea(BuildContext context, DockingArea area) {
@@ -202,34 +233,84 @@ class _DockingState extends State<Docking> {
   }
 
   Widget _row(BuildContext context, DockingRow row) {
-    List<Widget> children = [];
-    row.forEach((child) {
-      children.add(_buildArea(context, child));
-    });
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        List<Widget> children = [];
+        List<DockingArea> visibleAreas = [];
 
-    return MultiSplitView(
-      key: row.key,
-      axis: Axis.horizontal,
-      controller: row.controller,
-      antiAliasingWorkaround: widget.antiAliasingWorkaround,
-      onWeightChange: _forceRebuild,
-      children: children,
+        row.forEach((child) {
+          if (child is DockingItem) {
+            final visible = _visibleForWidth(constraints.maxWidth, child);
+            if (visible) {
+              children.add(_buildArea(context, child));
+              visibleAreas.add(child);
+            }
+          } else {
+            children.add(_buildArea(context, child));
+            visibleAreas.add(child);
+          }
+        });
+
+        if (children.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Update controller areas to only include visible areas
+        if (visibleAreas.length != row.controller.areasLength) {
+          row.controller.areas =
+              visibleAreas.map((area) => area as Area).toList();
+        }
+
+        return MultiSplitView(
+          key: row.key,
+          axis: Axis.horizontal,
+          controller: row.controller,
+          antiAliasingWorkaround: widget.antiAliasingWorkaround,
+          onWeightChange: _forceRebuild,
+          children: children,
+        );
+      },
     );
   }
 
   Widget _column(BuildContext context, DockingColumn column) {
-    List<Widget> children = [];
-    column.forEach((child) {
-      children.add(_buildArea(context, child));
-    });
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        List<Widget> children = [];
+        List<DockingArea> visibleAreas = [];
 
-    return MultiSplitView(
-      key: column.key,
-      axis: Axis.vertical,
-      controller: column.controller,
-      antiAliasingWorkaround: widget.antiAliasingWorkaround,
-      onWeightChange: _forceRebuild,
-      children: children,
+        column.forEach((child) {
+          if (child is DockingItem) {
+            final visible = _visibleForWidth(constraints.maxWidth, child);
+            if (visible) {
+              children.add(_buildArea(context, child));
+              visibleAreas.add(child);
+            }
+          } else {
+            children.add(_buildArea(context, child));
+            visibleAreas.add(child);
+          }
+        });
+
+        if (children.isEmpty) {
+          return const SizedBox.shrink();
+        }
+
+        // Update controller areas to only include visible areas
+        if (visibleAreas.length != column.controller.areasLength) {
+          column.controller.areas =
+              visibleAreas.map((area) => area as Area).toList();
+        }
+
+        return MultiSplitView(
+          key: column.key,
+          axis: Axis.vertical,
+          controller: column.controller,
+          antiAliasingWorkaround: widget.antiAliasingWorkaround,
+          onWeightChange: _forceRebuild,
+          children: children,
+        );
+      },
     );
   }
 

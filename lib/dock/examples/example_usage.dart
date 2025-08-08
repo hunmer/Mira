@@ -196,33 +196,43 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
     final demos = [
       (
         id: 'demo_desktop_$ts',
-        name: 'Desktop Only',
+        name: 'Desktop Only (Exact)',
         devices: [DeviceScreenType.desktop],
         color: Colors.blue,
+        visibilityMode: DeviceVisibilityMode.exactDevices,
+        weight: 0.3,
       ),
       (
         id: 'demo_tablet_$ts',
-        name: 'Tablet Only',
+        name: 'Tablet+ (Larger)',
         devices: [DeviceScreenType.tablet],
         color: Colors.green,
+        visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
+        weight: 0.25,
       ),
       (
         id: 'demo_mobile_$ts',
-        name: 'Mobile Only',
+        name: 'Mobile Only (Exact)',
         devices: [DeviceScreenType.mobile],
         color: Colors.orange,
+        visibilityMode: DeviceVisibilityMode.exactDevices,
+        weight: 0.2,
+      ),
+      (
+        id: 'demo_mobile_plus_$ts',
+        name: 'Mobile+ (Larger)',
+        devices: [DeviceScreenType.mobile],
+        color: Colors.red,
+        visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
+        weight: 0.15,
       ),
       (
         id: 'demo_watch_$ts',
-        name: 'Watch Only',
+        name: 'Watch Only (Exact)',
         devices: [DeviceScreenType.watch],
         color: Colors.purple,
-      ),
-      (
-        id: 'demo_desktop_tablet_$ts',
-        name: 'Desktop + Tablet',
-        devices: [DeviceScreenType.desktop, DeviceScreenType.tablet],
-        color: Colors.indigo,
+        visibilityMode: DeviceVisibilityMode.exactDevices,
+        weight: 0.1,
       ),
     ];
 
@@ -231,8 +241,15 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
         newItem: DockingItem(
           id: d.id,
           name: d.name,
-          widget: _buildDeviceDemoBox(d.name, d.devices, d.color),
+          weight: d.weight,
+          widget: _buildDeviceDemoBox(
+            d.name,
+            d.devices,
+            d.color,
+            d.visibilityMode,
+          ),
           showAtDevices: d.devices,
+          visibilityMode: d.visibilityMode,
           closable: true,
           keepAlive: true,
           maximizable: true,
@@ -267,8 +284,13 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
     String title,
     List<DeviceScreenType> devices,
     Color color,
+    DeviceVisibilityMode visibilityMode,
   ) {
     final deviceText = devices.map((e) => e.name).join(' / ');
+    final modeText =
+        visibilityMode == DeviceVisibilityMode.exactDevices
+            ? 'exact devices'
+            : 'specified and larger';
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -276,21 +298,41 @@ class _DockingPersistenceDemoState extends State<DockingPersistenceDemo> {
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Row(
+      child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(Icons.devices, color: color),
-          const SizedBox(width: 8),
-          Flexible(
-            child: Text(
-              '$title\n(showAtDevices: $deviceText)',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.3,
-                color: color.withOpacity(0.9),
-                fontWeight: FontWeight.w600,
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.devices, color: color),
+              const SizedBox(width: 8),
+              Flexible(
+                child: Text(
+                  title,
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: color.withOpacity(0.9),
+                  ),
+                ),
               ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            'Devices: $deviceText',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 12, color: color.withOpacity(0.7)),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Mode: $modeText',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 12,
+              fontStyle: FontStyle.italic,
+              color: color.withOpacity(0.7),
             ),
           ),
         ],

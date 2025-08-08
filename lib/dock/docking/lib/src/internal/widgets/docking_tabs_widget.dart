@@ -60,105 +60,119 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
 
   @override
   Widget build(BuildContext context) {
-    List<TabData> tabs = [];
-    widget.dockingTabs.forEach((child) {
-      Widget content = child.widget;
-      if (child.globalKey != null) {
-        content = KeyedSubtree(key: child.globalKey, child: content);
-      }
-      List<TabButton>? buttons;
-      if (child.buttons != null && child.buttons!.isNotEmpty) {
-        buttons = [];
-        buttons.addAll(child.buttons!);
-      }
-      final bool maximizable =
-          child.maximizable != null
-              ? child.maximizable!
-              : widget.maximizableTab;
-      if (maximizable) {
-        buttons ??= [];
-        DockingThemeData data = DockingTheme.of(context);
-        if (widget.layout.maximizedArea != null &&
-            widget.layout.maximizedArea == child) {
-          buttons.add(
-            TabButton(
-              icon: data.restoreIcon,
-              onPressed: () => widget.layout.restore(),
-            ),
-          );
-        } else {
-          buttons.add(
-            TabButton(
-              icon: data.maximizeIcon,
-              onPressed: () => widget.layout.maximizeDockingItem(child),
-            ),
-          );
-        }
-      }
-      tabs.add(
-        TabData(
-          value: child,
-          text: child.name != null ? child.name! : '',
-          content: content,
-          closable: child.closable,
-          keepAlive: child.globalKey != null,
-          leading: child.leading,
-          buttons: buttons,
-          draggable: widget.draggable,
-          menuBuilder: child.menuBuilder,
-        ),
-      );
-    });
-    TabbedViewController controller = TabbedViewController(tabs);
-    controller.selectedIndex = math.min(
-      widget.dockingTabs.selectedIndex,
-      tabs.length - 1,
-    );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        List<TabData> tabs = [];
+        List<DockingItem> visibleItems = [];
 
-    Widget tabbedView = TabbedView(
-      controller: controller,
-      tabsAreaButtonsBuilder: _tabsAreaButtonsBuilder,
-      onTabSelection: (int? index) {
-        if (index != null) {
-          widget.dockingTabs.selectedIndex = index;
-          if (widget.onItemSelection != null) {
-            widget.onItemSelection!(widget.dockingTabs.childAt(index));
+        widget.dockingTabs.forEach((child) {
+          // For now, we'll keep all tabs visible in the tabs widget
+          // The main filtering happens at the row/column level
+          Widget content = child.widget;
+          if (child.globalKey != null) {
+            content = KeyedSubtree(key: child.globalKey, child: content);
           }
+          List<TabButton>? buttons;
+          if (child.buttons != null && child.buttons!.isNotEmpty) {
+            buttons = [];
+            buttons.addAll(child.buttons!);
+          }
+          final bool maximizable =
+              child.maximizable != null
+                  ? child.maximizable!
+                  : widget.maximizableTab;
+          if (maximizable) {
+            buttons ??= [];
+            DockingThemeData data = DockingTheme.of(context);
+            if (widget.layout.maximizedArea != null &&
+                widget.layout.maximizedArea == child) {
+              buttons.add(
+                TabButton(
+                  icon: data.restoreIcon,
+                  onPressed: () => widget.layout.restore(),
+                ),
+              );
+            } else {
+              buttons.add(
+                TabButton(
+                  icon: data.maximizeIcon,
+                  onPressed: () => widget.layout.maximizeDockingItem(child),
+                ),
+              );
+            }
+          }
+          tabs.add(
+            TabData(
+              value: child,
+              text: child.name != null ? child.name! : '',
+              content: content,
+              closable: child.closable,
+              keepAlive: child.globalKey != null,
+              leading: child.leading,
+              buttons: buttons,
+              draggable: widget.draggable,
+              menuBuilder: child.menuBuilder,
+            ),
+          );
+          visibleItems.add(child);
+        });
+
+        if (tabs.isEmpty) {
+          return const SizedBox.shrink();
         }
-      },
-      tabCloseInterceptor: _tabCloseInterceptor,
-      onDraggableBuild:
-          widget.draggable
-              ? (
-                TabbedViewController controller,
-                int tabIndex,
-                TabData tabData,
-              ) {
-                return buildDraggableConfig(
-                  dockingDrag: widget.dragOverPosition,
-                  tabData: tabData,
-                  sourceLayout: widget.layout,
-                );
+
+        TabbedViewController controller = TabbedViewController(tabs);
+        controller.selectedIndex = math.min(
+          widget.dockingTabs.selectedIndex,
+          tabs.length - 1,
+        );
+
+        Widget tabbedView = TabbedView(
+          controller: controller,
+          tabsAreaButtonsBuilder: _tabsAreaButtonsBuilder,
+          onTabSelection: (int? index) {
+            if (index != null) {
+              widget.dockingTabs.selectedIndex = index;
+              if (widget.onItemSelection != null) {
+                widget.onItemSelection!(widget.dockingTabs.childAt(index));
               }
-              : null,
-      onTabClose: _onTabClose,
-      contentBuilder:
-          (context, tabIndex) => TabsContentWrapper(
-            listener: _updateActiveDropPosition,
-            layout: widget.layout,
-            dockingTabs: widget.dockingTabs,
-            onItemPositionChanged: widget.onItemPositionChanged,
-            child: controller.tabs[tabIndex].content!,
-          ),
-      onBeforeDropAccept: widget.draggable ? _onBeforeDropAccept : null,
+            }
+          },
+          tabCloseInterceptor: _tabCloseInterceptor,
+          onDraggableBuild:
+              widget.draggable
+                  ? (
+                    TabbedViewController controller,
+                    int tabIndex,
+                    TabData tabData,
+                  ) {
+                    return buildDraggableConfig(
+                      dockingDrag: widget.dragOverPosition,
+                      tabData: tabData,
+                      sourceLayout: widget.layout,
+                    );
+                  }
+                  : null,
+          onTabClose: _onTabClose,
+          contentBuilder:
+              (context, tabIndex) => TabsContentWrapper(
+                listener: _updateActiveDropPosition,
+                layout: widget.layout,
+                dockingTabs: widget.dockingTabs,
+                onItemPositionChanged: widget.onItemPositionChanged,
+                child: controller.tabs[tabIndex].content!,
+              ),
+          onBeforeDropAccept: widget.draggable ? _onBeforeDropAccept : null,
+        );
+        if (widget.draggable && widget.dragOverPosition.enable) {
+          return DropFeedbackWidget(
+            dropPosition: _activeDropPosition,
+            child: tabbedView,
+          );
+        }
+        return tabbedView;
+      },
     );
-    if (widget.draggable && widget.dragOverPosition.enable) {
-      return DropFeedbackWidget(
-        dropPosition: _activeDropPosition,
-        child: tabbedView,
-      );
-    }
-    return tabbedView;
   }
 
   void _updateActiveDropPosition(DropPosition? dropPosition) {
@@ -196,6 +210,8 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
           leading: dockingItem.leading,
           buttons: dockingItem.buttons,
           keepAlive: dockingItem.globalKey != null,
+          showAtDevices: dockingItem.showAtDevices,
+          visibilityMode: dockingItem.visibilityMode,
         );
 
         // 添加到目标layout

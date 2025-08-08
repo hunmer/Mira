@@ -16,6 +16,15 @@ import 'package:mira/multi_split_view/lib/multi_split_view.dart';
 import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 
+/// Defines how device visibility is handled for DockingItems.
+enum DeviceVisibilityMode {
+  /// Only visible on the exact specified devices
+  exactDevices,
+
+  /// Visible on specified devices and larger devices
+  specifiedAndLarger,
+}
+
 mixin DropArea {}
 
 /// Represents any area of the layout.
@@ -265,6 +274,7 @@ class DockingItem extends DockingArea with DropArea {
     super.minimalWeight,
     super.minimalSize,
     this.showAtDevices,
+    this.visibilityMode = DeviceVisibilityMode.exactDevices,
   }) : buttons = buttons != null ? List.unmodifiable(buttons) : [],
        globalKey = keepAlive ? GlobalKey() : null,
        _maximized = maximized;
@@ -279,6 +289,11 @@ class DockingItem extends DockingArea with DropArea {
   /// Limits where this item is visible. If null, visible on all devices.
   /// Uses DeviceScreenType from responsive_builder.
   final List<DeviceScreenType>? showAtDevices;
+
+  /// Defines how device visibility is handled.
+  /// - exactDevices: Only visible on the exact specified devices
+  /// - specifiedAndLarger: Visible on specified devices and larger devices
+  final DeviceVisibilityMode visibilityMode;
 
   final GlobalKey? globalKey;
   TabLeadingBuilder? leading;
