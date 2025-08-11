@@ -5,6 +5,8 @@ import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/utils/utils.dart';
 import 'package:mira/dock/dock_theme.dart';
+import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:mira/dock/examples/dock_insert_mode.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
@@ -46,20 +48,13 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
   }
 
   Future<void> _initDocking() async {
-    // Create manager with a stable id for persistence
     _dockManager = DockManager(id: 'libraries_main_layout', autoSave: true);
     _dockLogic = DockingPersistenceLogic(
       manager: _dockManager,
       context: context,
     );
-
-    // Set global DockManager for LibraryTabManager compatibility
     LibraryTabManager.setGlobalDockManager(_dockManager);
-
-    // Register available components
     DockItemRegistrar.registerAllComponents(_dockManager);
-
-    // Try restore previous layout, otherwise create default
     final restored = await _dockManager.restoreFromFile();
     if (!restored) {
       _dockLogic.createDefaultLayout();
@@ -141,6 +136,16 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             },
           ),
           IconButton(
+            icon: const Icon(Icons.add_location_alt),
+            tooltip: '选择位置打开素材库',
+            onPressed: () {
+              _plugin.libraryUIController.openLibrary(
+                context,
+                insertMode: DockInsertMode.choose,
+              );
+            },
+          ),
+          IconButton(
             icon: const Icon(Icons.storage),
             tooltip: '布局存储管理器',
             onPressed: () {
@@ -162,6 +167,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
             onPressed: () {
               _dockLogic.clearLayout();
               _dockLogic.createDefaultLayout();
+              // _dockLogic.createTest();
             },
           ),
           // Windows/Linux 的窗口控制按钮在右侧
@@ -188,7 +194,6 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                           : const SizedBox.shrink();
                     },
                   ),
-                  // Added: Docking main interface
                   Expanded(
                     child: TabbedViewTheme(
                       data: DockTheme.createCustomThemeData(context),
@@ -203,11 +208,17 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                           child: Docking(
                             layout: _dockManager.layout,
                             draggable: true,
+                            autoBreakpoints: true,
                             breakpoints: const ScreenBreakpoints(
                               desktop: 800,
                               tablet: 600,
                               watch: 200,
                             ),
+                            defaultLayout: () {
+                              return DockingLayout(
+                                root: _dockLogic.getDefaultLayout(),
+                              );
+                            },
                           ),
                         ),
                       ),

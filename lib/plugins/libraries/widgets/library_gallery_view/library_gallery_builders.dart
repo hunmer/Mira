@@ -6,6 +6,7 @@ import 'package:mira/dock/examples/dock_manager.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 import 'library_gallery_events.dart';
 import 'library_gallery_state.dart';
 
@@ -23,6 +24,65 @@ class LibraryGalleryBuilders {
   final Function(LibraryFile) onToggleSelected;
   late BuildContext context;
   final LibraryTabData tabData;
+  final items = [
+    {
+      'id': 'quick_actions',
+      'name': '',
+      'type': 'item',
+      'closable': true,
+      'maximizable': false,
+      'keepAlive': true,
+      'size': 60.0,
+      'showAtDevices': [DeviceScreenType.desktop],
+    },
+    {
+      'id': 'sidebar',
+      'name': '',
+      'type': 'item',
+      'closable': true,
+      'maximizable': false,
+      'keepAlive': true,
+      'weight': 0.2,
+      'minimalSize': 150.0,
+      'showAtDevices': [DeviceScreenType.tablet],
+    },
+    {
+      'id': 'main_content',
+      'name': '',
+      'type': 'item',
+      'closable': true,
+      'maximizable': true,
+      'keepAlive': true,
+      'weight': 0.6,
+      'minimalSize': 300.0,
+    },
+    {
+      'id': 'details',
+      'name': '',
+      'type': 'item',
+      'closable': true,
+      'maximizable': false,
+      'keepAlive': true,
+      'weight': 0.2,
+      'minimalSize': 150.0,
+      'showAtDevices': [DeviceScreenType.tablet],
+    },
+    {
+      'id': 'app_bar_actions',
+      'name': '',
+      'type': 'item',
+      'closable': true,
+      'maximizable': false,
+      'keepAlive': true,
+      'weight': 0.1,
+      'minimalSize': 40.0,
+      'showAtDevices': [DeviceScreenType.desktop],
+    },
+  ];
+
+  // 缓存 DockingLayout 以避免重复创建
+  DockingLayout? _cachedDockingLayout;
+  bool? _lastIsRecycleBin;
 
   LibraryGalleryBuilders({
     required this.state,
@@ -42,123 +102,51 @@ class LibraryGalleryBuilders {
   /// 构建响应式布局
   Widget build(BuildContext context, bool isRecycleBin) {
     this.context = context;
-    return _buildDockingLayout(context, {
-      'type': 'row',
-      'items': [
-        {
-          'id': 'quick_actions',
-          'name': 'Quick Actions',
-          'type': 'item',
-          'closable': true,
-          'maximizable': false,
-          'keepAlive': true,
-          'size': 60.0,
-        },
-        {
-          'id': 'sidebar',
-          'name': 'Sidebar',
-          'type': 'item',
-          'closable': true,
-          'maximizable': false,
-          'keepAlive': true,
-          'weight': 0.15,
-          'minimalSize': 150.0,
-        },
-        {
-          'id': 'main_content',
-          'name': 'Library Content',
-          'type': 'item',
-          'closable': true,
-          'maximizable': true,
-          'keepAlive': true,
-          'weight': 0.6,
-        },
-        {
-          'id': 'details',
-          'name': 'Details',
-          'type': 'item',
-          'closable': true,
-          'maximizable': false,
-          'keepAlive': true,
-          'weight': 0.2,
-        },
-        {
-          'id': 'app_bar_actions',
-          'name': 'Actions',
-          'type': 'item',
-          'closable': true,
-          'maximizable': false,
-          'keepAlive': true,
-          'size': 60.0,
-        },
-      ],
-    }, isRecycleBin);
-  }
 
-  /// 构建 Docking 布局
-  Widget _buildDockingLayout(
-    BuildContext context,
-    Map<String, dynamic> layoutData,
-    bool isRecycleBin,
-  ) {
-    final dockingLayout = DockingLayout(
-      root: _buildAreaFromData(layoutData, isRecycleBin),
-    );
+    // 检查是否需要重新创建 DockingLayout
+    if (_cachedDockingLayout == null || _lastIsRecycleBin != isRecycleBin) {
+      _cachedDockingLayout = _createDockingLayout(isRecycleBin);
+      _lastIsRecycleBin = isRecycleBin;
+    }
 
     return Docking(
-      layout: dockingLayout,
-      onItemSelection: (DockingItem item) {
-        // 处理项目选择
-        print('Selected docking item: ${item.name}');
-      },
-      onItemClose: (DockingItem item) {
-        // 处理项目关闭
-        print('Closed docking item: ${item.name}');
-      },
+      layout: _cachedDockingLayout!,
+      autoBreakpoints: true,
+      breakpoints: const ScreenBreakpoints(
+        desktop: 800,
+        tablet: 600,
+        watch: 200,
+      ),
+    );
+  }
+
+  /// 创建 DockingLayout（只在必要时调用）
+  DockingLayout _createDockingLayout(bool isRecycleBin) {
+    return DockingLayout(
+      root: _buildAreaFromData({'type': 'row', 'items': items}, isRecycleBin),
     );
   }
 
   /// 从数据构建 Docking 区域
   DockingArea _buildAreaFromData(Map<String, dynamic> data, bool isRecycleBin) {
     final type = data['type'] as String;
-
+    final items =
+        data.containsKey('items') ? data['items'] as List<dynamic> : [];
+    final areas =
+        items
+            .map(
+              (item) => _buildAreaFromData(
+                item as Map<String, dynamic>,
+                isRecycleBin,
+              ),
+            )
+            .toList();
     if (type == 'row') {
-      final items = data['items'] as List<dynamic>;
-      final areas =
-          items
-              .map(
-                (item) => _buildAreaFromData(
-                  item as Map<String, dynamic>,
-                  isRecycleBin,
-                ),
-              )
-              .toList();
       return DockingRow(areas);
     } else if (type == 'column') {
-      final items = data['items'] as List<dynamic>;
-      final areas =
-          items
-              .map(
-                (item) => _buildAreaFromData(
-                  item as Map<String, dynamic>,
-                  isRecycleBin,
-                ),
-              )
-              .toList();
       return DockingColumn(areas);
     } else if (type == 'tabs') {
-      final items = data['items'] as List<dynamic>;
-      final dockingItems =
-          items
-              .map(
-                (item) => _buildAreaFromData(
-                  item as Map<String, dynamic>,
-                  isRecycleBin,
-                ),
-              )
-              .whereType<DockingItem>()
-              .toList();
-      return DockingTabs(dockingItems);
+      return DockingTabs(areas.whereType<DockingItem>().toList());
     } else {
       return _buildDockingItem(data, isRecycleBin);
     }
@@ -174,7 +162,7 @@ class LibraryGalleryBuilders {
     final weight = data['weight'] as double?;
     final size = data['size'] as double?;
     final minimalSize = data['minimalSize'] as double?;
-
+    final showAtDevices = data['showAtDevices'] as List<DeviceScreenType>?;
     return DockingItem(
       id: id,
       name: name,
@@ -184,6 +172,8 @@ class LibraryGalleryBuilders {
       weight: weight,
       size: size,
       minimalSize: minimalSize,
+      visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
+      showAtDevices: showAtDevices,
       widget: _buildItemContent(id, isRecycleBin),
     );
   }

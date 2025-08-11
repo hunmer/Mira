@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/docking.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
-import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
-import 'package:mira/dock/examples/registerdWidgets/dynamic_widget.dart';
+import 'package:mira/dock/examples/dock_insert_mode.dart';
+import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
+import 'package:mira/plugins/libraries/widgets/library_list_view.dart';
 import 'package:responsive_builder/responsive_builder.dart';
+import 'package:uuid/uuid.dart';
 import 'dock_manager.dart';
 import 'dialog/add_component_dialog.dart';
 import 'dialog/multi_tab_dialog.dart';
@@ -57,132 +59,47 @@ class DockingPersistenceLogic {
     );
   }
 
-  /// 添加计数器组件
-  void addCounter() {
-    final root = manager.layout.root;
-    if (root is DropArea) {
-      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      manager.addTypedItem(
-        id: 'counter_$timestamp',
-        type: 'counter',
-        values: {'count': 0, 'id': 'counter_$timestamp'},
-        targetArea: root as DropArea,
-        dropPosition: DropPosition.right,
-        name: 'Counter ${DateTime.now().millisecond}',
-        keepAlive: true,
-      );
-      showSnackBar('已添加计数器组件');
-    } else {
-      showSnackBar('无法添加：没有可用的放置区域');
-    }
-  }
-
-  /// 添加文本组件
-  void addText() {
-    final root = manager.layout.root;
-    if (root is DropArea) {
-      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      manager.addTypedItem(
-        id: 'text_$timestamp',
-        type: 'text',
-        values: {'text': 'Text created at ${DateTime.now()}'},
-        targetArea: root as DropArea,
-        dropPosition: DropPosition.bottom,
-        name: 'Text ${DateTime.now().millisecond}',
-        keepAlive: true,
-      );
-      showSnackBar('已添加文本组件');
-    } else {
-      showSnackBar('无法添加：没有可用的放置区域');
-    }
-  }
-
-  /// 添加通用文本组件（主添加按钮使用）
-  void addGenericText() {
-    final root = manager.layout.root;
-    if (root is DropArea) {
-      final timestamp = DateTime.now().millisecondsSinceEpoch.toString();
-      manager.addTypedItem(
-        id: 'text_$timestamp',
-        type: 'text',
-        values: {'text': 'Created at ${DateTime.now()}'},
-        targetArea: root as DropArea,
-        dropPosition: DropPosition.right,
-        name: 'Text $timestamp',
-      );
-    }
-  }
-
   /// 保存布局
   Future<void> saveLayout() async {
     await manager.saveToFile();
-    showSnackBar('Layout saved');
   }
 
   /// 恢复布局
   Future<void> restoreLayout() async {
     final restored = await manager.restoreFromFile();
-    showSnackBar(restored ? 'Layout restored' : 'No saved layout');
   }
 
   /// 清除布局
   Future<void> clearLayout() async {
     manager.setRoot(null);
-    showSnackBar('Layout cleared');
   }
 
   /// 创建默认布局
   void createDefaultLayout() {
-    final widget = DynamicWidget(
-      jsonData: {
-        "type": "scaffold",
-        "args": {
-          "appBar": {
-            "type": "app_bar",
-            "args": {
-              "title": {
-                "type": "text",
-                "args": {"text": "Rich Text"},
-              },
-            },
-          },
-          "body": {
-            "type": "center",
-            "args": {
-              "child": {
-                "type": "rich_text",
-                "args": {
-                  "text": {
-                    "children": [
-                      {"text": "Hello "},
-                      {
-                        "style": {"fontSize": 20.0, "fontWeight": "bold"},
-                        "text": "RICH TEXT",
-                      },
-                      {"text": " World!"},
-                    ],
-                    "style": {"color": "#000000", "fontSize": 12.0},
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
-    );
+    manager.setRoot(getDefaultLayout() as DockingArea);
+  }
 
-    manager.setRoot(
-      DockingTabs([
-        DockingItem(
-          id: 'default_item',
-          name: 'Default Item',
-          widget: widget,
-          closable: true,
-          maximizable: false,
-          keepAlive: false,
+  DockingTabs getDefaultLayout() {
+    return DockingTabs([
+      DockingItem(
+        id: 'home',
+        name: '选择素材库',
+        widget: LibraryListView(
+          onSelected: (library) {
+            LibraryDockItemRegistrar.addTab(
+              library,
+              tabId: Uuid().v4(),
+              insertMode: DockInsertMode.auto,
+              context: context,
+            );
+            manager.removeItemById('home');
+          },
         ),
-      ]),
-    );
+        closable: false,
+        maximizable: false,
+        keepAlive: false,
+      ),
+    ]);
   }
 
   void createTest() {

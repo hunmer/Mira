@@ -33,6 +33,7 @@ class Docking extends StatefulWidget {
     this.draggable = true,
     this.breakpoints,
     this.autoBreakpoints = false,
+    this.defaultLayout,
   });
 
   final DockingLayout? layout;
@@ -59,6 +60,10 @@ class Docking extends StatefulWidget {
   /// width. This makes nested Docking widgets responsive to their container
   /// size rather than the whole screen.
   final bool autoBreakpoints;
+
+  /// Callback function to create default layout when all docking items are closed.
+  /// Returns a DockingLayout with default items.
+  final DockingLayout Function()? defaultLayout;
 
   @override
   State<StatefulWidget> createState() => _DockingState();
@@ -93,7 +98,19 @@ class _DockingState extends State<Docking> {
 
   @override
   Widget build(BuildContext context) {
-    if (widget.layout == null) return Container();
+    DockingLayout? currentLayout = widget.layout;
+
+    // 检查是否所有dockingitem都被关闭了
+    if (currentLayout != null && !_hasAnyVisibleItems(currentLayout)) {
+      if (widget.defaultLayout != null) {
+        currentLayout = widget.defaultLayout!();
+      }
+    }
+
+    // 如果currentLayout为null，使用一个默认的空布局
+    if (currentLayout == null) {
+      currentLayout = DockingLayout(); // 这会触发DockingLayout的默认创建
+    }
 
     // Compute a single device type for the whole Docking instance
     return LayoutBuilder(
@@ -103,7 +120,7 @@ class _DockingState extends State<Docking> {
                 ? _deviceTypeForWidth(constraints.maxWidth)
                 : _currentDeviceType(context);
 
-        final layout = widget.layout!;
+        final layout = currentLayout!;
         if (layout.maximizedArea != null) {
           // Keep other areas alive but offstage
           final List<DockingArea> areas = layout.layoutAreas();
@@ -172,6 +189,28 @@ class _DockingState extends State<Docking> {
     final currentIndex = deviceHierarchy.indexOf(type);
     for (final specified in item.showAtDevices!) {
       if (deviceHierarchy.indexOf(specified) <= currentIndex) return true;
+    }
+    return false;
+  }
+
+  /// 检查布局中是否有任何可见的DockingItem
+  bool _hasAnyVisibleItems(DockingLayout layout) {
+    if (layout.root == null) return false;
+    return _hasVisibleItems(layout.root!);
+  }
+
+  /// 递归检查区域中是否有可见的DockingItem
+  bool _hasVisibleItems(DockingArea area) {
+    if (area is DockingItem) {
+      return true; // 有DockingItem就返回true
+    } else if (area is DockingTabs) {
+      return area.childrenCount > 0; // 有子项就返回true
+    } else if (area is DockingParentArea) {
+      for (int i = 0; i < area.childrenCount; i++) {
+        if (_hasVisibleItems(area.childAt(i))) {
+          return true;
+        }
+      }
     }
     return false;
   }

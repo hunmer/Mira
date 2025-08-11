@@ -167,7 +167,8 @@ class LibraryDataWebSocket implements LibraryDataInterface {
   Future<void> checkConnection() async {
     // 发送给服务端，需要保证library已经加载
     // 服务端会返回connected消息并且被客户端获取，所有这里不需要获取结果
-    // if (!isConnecting) { // 热重载不会重置isConnecting=false
+    // if (!isConnecting) {
+    // TODO:热重载没有重置isConnecting=false
     print('尝试连接');
     _fieldsData = await loadFields();
     await _sendRequest(

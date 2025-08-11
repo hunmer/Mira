@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
-import 'package:responsive_builder/responsive_builder.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/file.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
@@ -36,6 +35,24 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
   late final Library library;
   late final String tabId;
   late final String itemId;
+
+  // 缓存 Future 以避免重复加载
+  Future<dynamic>? _loadLibraryFuture;
+  bool _isLibraryLoaded = false;
+
+  /// 初始化或重新加载库数据
+  Future<dynamic> _initializeLibrary() {
+    _loadLibraryFuture ??= plugin.libraryController.loadLibraryInst(library);
+    return _loadLibraryFuture!;
+  }
+
+  /// 重新加载库数据
+  void _reloadLibrary() {
+    setState(() {
+      _isLibraryLoaded = false;
+      _loadLibraryFuture = null; // 清除缓存的 Future
+    });
+  }
 
   @override
   void initState() {
@@ -135,8 +152,13 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
 
   @override
   Widget build(BuildContext context) {
+    // 如果已经加载过，直接返回内容，避免重复加载
+    if (_isLibraryLoaded) {
+      return _buildContent();
+    }
+
     return FutureBuilder<dynamic>(
-      future: plugin.libraryController.loadLibraryInst(library),
+      future: _initializeLibrary(), // 使用初始化方法
       builder: (context, snapshot) {
         switch (snapshot.connectionState) {
           case ConnectionState.none:
@@ -145,8 +167,31 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
           case ConnectionState.active:
           case ConnectionState.done:
             if (snapshot.hasError) {
-              return Text('加载数据出错: ${snapshot.error}');
+              return Scaffold(
+                body: Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Icon(Icons.error, size: 64, color: Colors.red),
+                      SizedBox(height: 16),
+                      Text(
+                        '加载数据出错',
+                        style: Theme.of(context).textTheme.headlineSmall,
+                      ),
+                      SizedBox(height: 8),
+                      Text('${snapshot.error}'),
+                      SizedBox(height: 16),
+                      ElevatedButton(
+                        onPressed: _reloadLibrary,
+                        child: Text('重试'),
+                      ),
+                    ],
+                  ),
+                ),
+              );
             }
+            // 标记为已加载
+            _isLibraryLoaded = true;
             return _buildContent();
         }
       },
@@ -199,8 +244,41 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
         decoration: BoxDecoration(
           color: Theme.of(context).scaffoldBackgroundColor,
         ),
-        child: _builders.build(context, isRecycleBin),
+        child: _CachedDockingWidget(
+          builders: _builders,
+          isRecycleBin: isRecycleBin,
+        ),
       ),
     );
+  }
+}
+
+/// 缓存的 Docking Widget，避免不必要的重建
+class _CachedDockingWidget extends StatefulWidget {
+  final LibraryGalleryBuilders builders;
+  final bool isRecycleBin;
+
+  const _CachedDockingWidget({
+    required this.builders,
+    required this.isRecycleBin,
+  });
+
+  @override
+  State<_CachedDockingWidget> createState() => _CachedDockingWidgetState();
+}
+
+class _CachedDockingWidgetState extends State<_CachedDockingWidget> {
+  Widget? _cachedWidget;
+  bool? _lastIsRecycleBin;
+
+  @override
+  Widget build(BuildContext context) {
+    // 只有当 isRecycleBin 状态改变时才重建
+    if (_cachedWidget == null || _lastIsRecycleBin != widget.isRecycleBin) {
+      _cachedWidget = widget.builders.build(context, widget.isRecycleBin);
+      _lastIsRecycleBin = widget.isRecycleBin;
+    }
+
+    return _cachedWidget!;
   }
 }

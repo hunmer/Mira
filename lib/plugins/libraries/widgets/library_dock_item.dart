@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/examples/dock_manager.dart';
+import 'package:mira/dock/examples/dock_insert_mode.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
@@ -64,12 +65,14 @@ class LibraryDockItemRegistrar {
   }
 
   /// 通过新的 DockManager API 添加一个库标签页
-  static bool addTab(
+  static Future<bool> addTab(
     Library library, {
     String title = '',
     bool isRecycleBin = false,
     required String tabId,
-  }) {
+    DockInsertMode insertMode = DockInsertMode.auto,
+    BuildContext? context,
+  }) async {
     final manager = DockManager.getInstance()!;
     final tabData = LibraryTabData(
       tabId: tabId,
@@ -100,38 +103,17 @@ class LibraryDockItemRegistrar {
       'id': tabData.itemId, // 供 registry 默认按钮使用
     };
 
-    // 选择一个可投放区域（优先 Tabs 或 Item，否则 root）
-    DockingArea? targetArea;
-    for (final area in manager.layout.layoutAreas()) {
-      if (area is DockingTabs) {
-        targetArea = area;
-        break;
-      }
-    }
-    targetArea ??=
-        manager.layout.layoutAreas().firstWhere(
-              (a) => a is DockingItem,
-              orElse: () => manager.layout.root!,
-            )
-            as DockingArea?;
-
-    if (targetArea is! DropArea) {
-      return false;
-    }
-
     // 添加到布局
     manager.addTypedItem(
       id: tabData.itemId,
       type: type,
       values: values,
-      targetArea: targetArea as DropArea,
-      // 如果是 Tabs，插入到索引 0；否则靠右放置
-      dropIndex: targetArea is DockingTabs ? 0 : null,
-      dropPosition: targetArea is DockingTabs ? null : DropPosition.right,
       name: tabData.title.isNotEmpty ? tabData.title : tabData.library.name,
       keepAlive: true,
       closable: true,
       maximizable: true,
+      insertMode: insertMode,
+      context: context,
     );
 
     return true;

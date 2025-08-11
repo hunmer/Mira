@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:mira/dock/examples/dock_insert_mode.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/models/folder.dart';
 import 'package:mira/plugins/libraries/models/library.dart';
@@ -72,14 +73,22 @@ class LibraryUIController {
     return result.map((item) => LibraryTag.fromMap(item.toMap())).toList();
   }
 
-  Future<void> openLibrary(BuildContext context) async {
+  Future<void> openLibrary(
+    BuildContext context, {
+    DockInsertMode insertMode = DockInsertMode.auto,
+  }) async {
     final libraries = _plugin.dataController.libraries;
     final itemCount = libraries.length;
     if (itemCount == 1) {
-      LibraryDockItemRegistrar.addTab(libraries.first, tabId: Uuid().v4());
+      await LibraryDockItemRegistrar.addTab(
+        libraries.first,
+        tabId: Uuid().v4(),
+        insertMode: insertMode,
+        context: context,
+      );
       return;
     }
-    final selectedLibrary = await showDialog<Library>(
+    await showDialog<Library>(
       context: context,
       builder:
           (context) => AlertDialog(
@@ -88,14 +97,16 @@ class LibraryUIController {
               width: double.maxFinite,
               child: LibraryListView(
                 onSelected: (library) {
-                  Navigator.pop(context, library);
+                  LibraryDockItemRegistrar.addTab(
+                    library,
+                    tabId: Uuid().v4(),
+                    insertMode: insertMode,
+                    context: context,
+                  );
                 },
               ),
             ),
           ),
     );
-    if (selectedLibrary != null) {
-      LibraryDockItemRegistrar.addTab(selectedLibrary, tabId: Uuid().v4());
-    }
   }
 }

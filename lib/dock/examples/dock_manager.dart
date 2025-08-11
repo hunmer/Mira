@@ -1,8 +1,12 @@
+import 'package:collection/collection.dart';
 import 'package:flutter/widgets.dart';
+import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/area_builder.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'package:mira/dock/docking/lib/src/layout/layout_parser.dart';
+import 'package:mira/dock/examples/dock_insert_mode.dart';
+import 'package:mira/dock/examples/dialog/insert_location_dialog.dart';
 import 'dock_item_registry.dart';
 import 'dock_persistence.dart';
 import 'package:mira/tabbed/tabbed_view/lib/src/tab_button.dart';
@@ -155,7 +159,7 @@ class DockManager extends ChangeNotifier {
     required String id,
     required String type,
     required Map<String, dynamic> values,
-    required DropArea targetArea,
+    DropArea? targetArea,
     DropPosition? dropPosition,
     int? dropIndex,
     String? name,
@@ -166,12 +170,43 @@ class DockManager extends ChangeNotifier {
     List<TabButton>? buttons,
     TabLeadingBuilder? leading,
     TabbedViewMenuBuilder? menuBuilder,
-  }) {
+    DockInsertMode insertMode = DockInsertMode.auto,
+    BuildContext? context,
+  }) async {
     final widget = registry.build(type, values);
     if (widget == null) {
       throw ArgumentError('Unknown item type: $type');
     }
 
+    // 根据插入模式决定目标区域
+    DropPosition? finalDropPosition = dropPosition;
+    int? finalDropIndex = dropIndex;
+
+    if (insertMode == DockInsertMode.choose && context != null) {
+      final result = await showInsertLocationDialog(context, layout);
+      if (result == null) {
+        // 用户取消了选择
+        return;
+      }
+
+      if (result.targetArea is! DropArea) {
+        throw ArgumentError('Selected area is not a valid drop target');
+      }
+      targetArea = result.targetArea as DropArea;
+      finalDropPosition = result.dropPosition;
+      finalDropIndex = result.dropIndex;
+    } else if (targetArea == null) {
+      // 选择一个可投放区域（优先 Tabs 或 Item，否则 root）
+      for (final area in layout.layoutAreas()) {
+        if (area is DockingTabs) {
+          targetArea = area;
+          break;
+        }
+      }
+      targetArea ??=
+          layout.layoutAreas().firstWhereOrNull((a) => a is DockingItem)
+              as DropArea?;
+    }
     // 读取类型的默认 UI 配置
     buttons = buttons ?? registry.defaultButtonsOf(type);
     leading = leading ?? registry.defaultLeadingOf(type);
@@ -192,6 +227,48 @@ class DockManager extends ChangeNotifier {
       menuBuilder: menuBuilder,
     );
 
+    if (targetArea == null) {
+      if (layout.root == null) {
+        // 创建根区域 - 创建一个默认的DockingTabs作为根区域
+        _createDefaultRootLayout();
+      }
+      // 安全地查找可投放的区域
+      if (layout.root is DropArea) {
+        targetArea = layout.root! as DropArea;
+      } else {
+        // 如果根区域不是DropArea，查找第一个可投放的区域
+        targetArea =
+            layout.layoutAreas().firstWhereOrNull((area) => area is DropArea)
+                as DropArea?;
+        if (targetArea == null) {
+          throw Exception('No valid DropArea found to add docking item');
+        }
+      }
+    }
+
+    // 检查是否需要替换占位符布局
+    final isPlaceholderLayout = _isDefaultPlaceholderLayout();
+
+    if (isPlaceholderLayout && targetArea == layout.root) {
+      // 如果目标是占位符布局，直接用新项目替换整个 root
+      final newItem = DockingItem(
+        id: id,
+        name: name,
+        widget: widget,
+        closable: closable,
+        keepAlive: keepAlive,
+        maximizable: maximizable,
+        weight: weight,
+        buttons: buttons,
+        leading: leading,
+        menuBuilder: menuBuilder,
+      );
+
+      // 直接设置新的根布局
+      layout.root = DockingTabs([newItem]);
+      return;
+    }
+
     // 添加到布局
     layout.addItemOn(
       newItem: DockingItem(
@@ -207,8 +284,10 @@ class DockManager extends ChangeNotifier {
         menuBuilder: menuBuilder,
       ),
       targetArea: targetArea,
-      dropPosition: dropPosition,
-      dropIndex: dropIndex,
+      dropPosition:
+          finalDropPosition ??
+          (targetArea is DockingTabs ? null : DropPosition.right),
+      dropIndex: finalDropIndex ?? (targetArea is DockingTabs ? 0 : null),
     );
   }
 
@@ -311,6 +390,38 @@ class DockManager extends ChangeNotifier {
 
   /// 获取item数据缓存（用于兼容性访问）
   Map<String, DockItemData> get itemDataCache => _itemDataCache;
+
+  // ========= 默认布局管理辅助方法 =========
+
+  /// 创建默认的根布局
+  void _createDefaultRootLayout() {
+    final defaultRoot = DockingTabs([
+      DockingItem(
+        id: '_placeholder_item',
+        name: 'Empty',
+        widget: Container(
+          child: Center(
+            child: Text(
+              'No items in layout',
+              style: TextStyle(color: Colors.grey),
+            ),
+          ),
+        ),
+        closable: false,
+      ),
+    ]);
+    layout.root = defaultRoot;
+  }
+
+  /// 检查当前是否是默认占位符布局
+  bool _isDefaultPlaceholderLayout() {
+    if (layout.root is DockingTabs) {
+      final tabs = layout.root as DockingTabs;
+      return tabs.childrenCount == 1 &&
+          tabs.childAt(0).id == '_placeholder_item';
+    }
+    return false;
+  }
 
   void removeAllItems() {
     // 清空缓存
