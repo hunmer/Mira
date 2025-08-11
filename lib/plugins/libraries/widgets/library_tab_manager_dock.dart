@@ -62,11 +62,9 @@ class LibraryTabManager {
       return null;
     }
 
-    // 从item的values中获取_tabDataJson
     final itemData = _globalDockManager!.itemDataCache[tabId];
     if (itemData != null) {
-      final tabDataJson =
-          itemData.values['_tabDataJson'] as Map<String, dynamic>?;
+      final tabDataJson = itemData.values as Map<String, dynamic>?;
       if (tabDataJson != null) {
         return LibraryTabData.fromMap(tabDataJson);
       }
@@ -100,15 +98,14 @@ class LibraryTabManager {
       storedData[key] = value;
 
       // 更新values
-      final newValues = Map<String, dynamic>.from(itemData.values);
+      var newValues = Map<String, dynamic>.from(itemData.values);
       newValues['stored'] = storedData;
 
-      // 如果是LibraryTabData，同时更新_tabDataJson
-      final tabDataJson = newValues['_tabDataJson'] as Map<String, dynamic>?;
+      final tabDataJson = newValues as Map<String, dynamic>?;
       if (tabDataJson != null) {
         final tabData = LibraryTabData.fromMap(tabDataJson);
         tabData.stored[key] = value;
-        newValues['_tabDataJson'] = tabData.toJson();
+        newValues = tabData.toJson();
       }
 
       // 通过DockManager更新item values

@@ -26,7 +26,7 @@ class LibraryTabData {
       tabId: map['tabId'] as String,
       library: Library.fromMap(map['library']),
       isRecycleBin: map['isRecycleBin'] as bool? ?? false,
-      createDate: DateTime.parse(map['create_date'] as String),
+      createDate: DateTime.parse(map['createDate'] as String),
       stored: Map<String, dynamic>.from(map['stored'] as Map),
     );
   }
@@ -37,7 +37,7 @@ class LibraryTabData {
       'tabId': tabId,
       'library': library.toJson(),
       'isRecycleBin': isRecycleBin,
-      'create_date': createDate.toIso8601String(),
+      'createDate': createDate.toIso8601String(),
       'stored': convertSetsToLists(stored),
     };
   }

@@ -19,7 +19,7 @@ class LibraryDockItemRegistrar {
       'library_tab',
       builder: (values) {
         // 期望 values 内包含 LibraryTabData 的序列化数据
-        final tabDataJson = values['_tabDataJson'] as Map<String, dynamic>?;
+        final tabDataJson = values as Map<String, dynamic>?;
         LibraryTabData? tabData;
         if (tabDataJson != null) {
           tabData = LibraryTabData.fromMap(tabDataJson);
@@ -53,7 +53,7 @@ class LibraryDockItemRegistrar {
           );
         }
 
-        // 初始化 dock values（和旧实现保持一致键名）
+        // 初始化 dock values
         final initialValues = LibraryGalleryEvents.initializeValues(
           tabData,
           null,
@@ -90,7 +90,6 @@ class LibraryDockItemRegistrar {
 
     // 将 tabData 打包为 values
     final values = <String, dynamic>{
-      '_tabDataJson': tabData.toJson(),
       'tabId': tabData.tabId,
       'title': tabData.title,
       'isRecycleBin': tabData.isRecycleBin,

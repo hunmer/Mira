@@ -360,7 +360,6 @@ class LibraryGalleryEvents {
     // 监听需要更新状态变化
     values['needUpdate']?.addListener(() {
       tabData.needUpdate = values['needUpdate']!.value;
-      values['_tabDataJson']?.value = tabData.toJson();
     });
   }
 
@@ -438,9 +437,6 @@ class LibraryGalleryEvents {
     );
     values['needUpdate'] = ValueNotifier(tabData.needUpdate);
 
-    // 存储LibraryTabData的完整信息以便恢复
-    values['_tabDataJson'] = ValueNotifier(tabData.toJson());
-
     return values;
   }
 
@@ -457,7 +453,6 @@ class LibraryGalleryEvents {
     Map<String, ValueNotifier<dynamic>> values,
   ) {
     tabData.stored[key] = value;
-    values['_tabDataJson']?.value = tabData.toJson();
   }
 
   /// 处理外部值更新（比如从UI组件直接更新dock values）
