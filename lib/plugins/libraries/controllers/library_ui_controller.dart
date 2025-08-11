@@ -76,7 +76,7 @@ class LibraryUIController {
     final libraries = _plugin.dataController.libraries;
     final itemCount = libraries.length;
     if (itemCount == 1) {
-      LibraryDockItem.addTab(libraries.first, dockTabId: Uuid().v4());
+      LibraryDockItemRegistrar.addTab(libraries.first, tabId: Uuid().v4());
       return;
     }
     final selectedLibrary = await showDialog<Library>(
@@ -95,7 +95,7 @@ class LibraryUIController {
           ),
     );
     if (selectedLibrary != null) {
-      LibraryDockItem.addTab(selectedLibrary, dockTabId: Uuid().v4());
+      LibraryDockItemRegistrar.addTab(selectedLibrary, tabId: Uuid().v4());
     }
   }
 }

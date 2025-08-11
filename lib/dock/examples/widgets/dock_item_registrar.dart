@@ -2,6 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:mira/dock/examples/registerdWidgets/dynamic_widget.dart';
 import 'package:mira/plugins/docking/widgets/docking_dock_item.dart';
 import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
+import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/app_bar_actions_panel.dart';
+import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/details_panel.dart';
+import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/library_gallery_panel_registrar.dart';
+import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/main_content_panel.dart';
+import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/quick_actions_panel.dart';
+import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/sidebar_panel.dart'
+    show SidebarPanelRegistrar;
 import '../dock_manager.dart';
 import '../registerdWidgets/counter_config.dart';
 import '../registerdWidgets/text_config.dart';
@@ -14,6 +21,11 @@ class DockItemRegistrar {
   static void registerAllComponents(DockManager manager) {
     DockingDockItemRegistrar.register(manager);
     LibraryDockItemRegistrar.register(manager);
+    QuickActionsPanelRegistrar.register(manager);
+    SidebarPanelRegistrar.register(manager);
+    MainContentPanelRegistrar.register(manager);
+    DetailsPanelRegistrar.register(manager);
+    AppBarActionsPanelRegistrar.register(manager);
 
     // 注册动态组件
     manager.registry.register(

@@ -51,14 +51,8 @@ class _DynamicWidgetState extends State<DynamicWidget> {
 
   void _buildData() {
     try {
-      print('Building DynamicWidget with JSON: ${widget.jsonData}');
-      print('Registry instance: $_registry');
-
       _data = JsonWidgetData.fromDynamic(widget.jsonData, registry: _registry);
-      print('Successfully built JsonWidgetData: $_data');
     } catch (e) {
-      print('Error building JsonWidgetData: $e');
-      print('Stack trace: ${StackTrace.current}');
       // 如果 JSON 解析失败，创建一个简单的错误显示
       _data = JsonWidgetData.fromDynamic({
         'type': 'text',
@@ -82,9 +76,7 @@ class _DynamicWidgetState extends State<DynamicWidget> {
 
   @override
   Widget build(BuildContext context) {
-    print('Building widget from JsonWidgetData: $_data');
     final builtWidget = _data.build(context: context, registry: _registry);
-    print('Built widget result: $builtWidget');
     return builtWidget;
   }
 }

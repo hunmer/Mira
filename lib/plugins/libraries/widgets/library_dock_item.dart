@@ -65,15 +65,14 @@ class LibraryDockItemRegistrar {
 
   /// 通过新的 DockManager API 添加一个库标签页
   static bool addTab(
-    DockManager manager,
     Library library, {
     String title = '',
     bool isRecycleBin = false,
-    String dockTabsId = 'main',
-    required String dockTabId,
+    required String tabId,
   }) {
+    final manager = DockManager.getInstance()!;
     final tabData = LibraryTabData(
-      tabId: dockTabId,
+      tabId: tabId,
       itemId: const Uuid().v4(),
       library: library,
       title: title,
@@ -136,30 +135,5 @@ class LibraryDockItemRegistrar {
     );
 
     return true;
-  }
-}
-
-/// 兼容旧引用：保留类名但提示使用新接口
-class LibraryDockItem {
-  static void ensureRegistered(DockManager manager) {
-    LibraryDockItemRegistrar.register(manager);
-  }
-
-  static bool addTab(
-    Library library, {
-    String title = '',
-    bool isRecycleBin = false,
-    String dockTabsId = 'main',
-    required String dockTabId,
-  }) {
-    LibraryDockItemRegistrar.addTab(
-      DockManager.getInstance()!,
-      library,
-      title: title,
-      isRecycleBin: isRecycleBin,
-      dockTabsId: dockTabsId,
-      dockTabId: dockTabId,
-    );
-    return false;
   }
 }

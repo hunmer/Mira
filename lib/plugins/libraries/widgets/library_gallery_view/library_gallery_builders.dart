@@ -1,23 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_data.dart';
-import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
-import 'package:responsive_builder/responsive_builder.dart';
-import 'package:multi_value_listenable_builder/multi_value_listenable_builder.dart';
-import 'package:number_pagination/number_pagination.dart';
-import 'package:mira/plugins/libraries/libraries_plugin.dart';
-import 'package:mira/plugins/libraries/models/file.dart';
-import 'package:mira/plugins/libraries/models/folder.dart';
-import 'package:mira/plugins/libraries/models/library.dart';
-import 'package:mira/plugins/libraries/models/tag.dart';
-import 'package:mira/plugins/libraries/widgets/library_file_information_view.dart';
-import 'package:mira/plugins/libraries/widgets/library_gallery/library_gallery_app_bar.dart';
-import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
-import 'package:mira/plugins/libraries/widgets/selected_files_page.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/docking.dart';
+import 'package:mira/dock/examples/dock_manager.dart';
+import 'package:mira/plugins/libraries/libraries_plugin.dart';
+import 'package:mira/plugins/libraries/models/file.dart';
+import 'package:mira/plugins/libraries/models/library.dart';
 import 'library_gallery_events.dart';
 import 'library_gallery_state.dart';
-import 'drag_select_view.dart';
 
 /// 图库视图的UI构建器类
 class LibraryGalleryBuilders {
@@ -170,7 +160,6 @@ class LibraryGalleryBuilders {
               .toList();
       return DockingTabs(dockingItems);
     } else {
-      // type == 'item'
       return _buildDockingItem(data, isRecycleBin);
     }
   }
@@ -201,338 +190,67 @@ class LibraryGalleryBuilders {
 
   /// 构建项目内容
   Widget _buildItemContent(String itemId, bool isRecycleBin) {
+    final manager = DockManager.getInstance()!;
+    Widget? widget;
     switch (itemId) {
       case 'quick_actions':
-        return buildQuickActionsPanel();
+        widget = manager.registry.build('library_quick_actions', {
+          'plugin': plugin,
+          'library': library.toMap(),
+          'events': events,
+          'parentContext': context,
+        });
+        break;
 
       case 'sidebar':
-        return buildSidebarSection();
+        widget = manager.registry.build('library_sidebar', {
+          'plugin': plugin,
+          'library': library.toMap(),
+          'tabId': tabId,
+          'itemId': itemId,
+          'tags': state.tags,
+          'folders': state.folders,
+          'filterOptionsNotifier': state.filterOptionsNotifier,
+        });
+        break;
 
       case 'main_content':
-        return buildMainContent(isRecycleBin);
+        widget = manager.registry.build('library_main_content', {
+          'plugin': plugin,
+          'library': library.toMap(),
+          'state': state,
+          'events': events,
+          'isRecycleBin': isRecycleBin,
+          'onFileOpen': onFileOpen,
+          'onFileSelected': onFileSelected,
+          'onToggleSelected': onToggleSelected,
+        });
+        break;
 
       case 'details':
-        return buildMoreDetailsPage();
+        widget = manager.registry.build('library_details', {
+          'plugin': plugin,
+          'library': library.toMap(),
+          'state': state,
+        });
+        break;
 
       case 'app_bar_actions':
-        return buildAppBarActions();
+        widget = manager.registry.build('library_app_bar_actions', {
+          'plugin': plugin,
+          'library': library.toMap(),
+          'state': state,
+          'events': events,
+          'tabId': tabId,
+          'itemId': itemId,
+          'onShowDropDialog': onShowDropDialog,
+        });
+        break;
 
       default:
         return Center(child: Text('Unknown panel: $itemId'));
     }
-  }
 
-  /// 构建快速操作面板
-  Widget buildQuickActionsPanel() {
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      child: Column(
-        children: [
-          Tooltip(
-            message: '显示/隐藏侧边栏',
-            child: IconButton(
-              icon: Icon(Icons.menu),
-              onPressed: events.toggleSidebar,
-            ),
-          ),
-          Tooltip(
-            message: '文件夹列表',
-            child: IconButton(
-              icon: Icon(Icons.folder),
-              onPressed: () async {
-                final result = await plugin.libraryUIController
-                    .showFolderSelector(library, context);
-                if (result != null && result.isNotEmpty) {}
-              },
-            ),
-          ),
-          Tooltip(
-            message: '标签列表',
-            child: IconButton(
-              icon: Icon(Icons.label),
-              onPressed: () async {
-                final result = await plugin.libraryUIController.showTagSelector(
-                  library,
-                  context,
-                );
-                if (result != null && result.isNotEmpty) {}
-              },
-            ),
-          ),
-          Tooltip(
-            message: '收藏',
-            child: IconButton(icon: Icon(Icons.favorite), onPressed: () {}),
-          ),
-          Tooltip(
-            message: '回收站',
-            child: IconButton(icon: Icon(Icons.delete), onPressed: () {}),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// 构建应用栏操作
-  Widget buildAppBarActions() {
-    return Container(
-      color: Theme.of(context).colorScheme.surface,
-      child: LibraryGalleryAppBar(
-        title: library.name,
-        getItems: () => state.items.value,
-        getSelected: () => state.selectedFileIds.value,
-        isSelectionMode: state.isSelectionModeNotifier.value,
-        onToggleSelection:
-            (bool enable) => state.isSelectionModeNotifier.value = enable,
-        isRecycleBin: state.tabData.isRecycleBin,
-        onSelectionChanged: (Set<int> selected) {
-          state.selectedFileIds.value = selected;
-        },
-        filterOptions: Map<String, dynamic>.from(
-          state.filterOptionsNotifier.value,
-        ),
-        onFilterChanged: (Map<String, dynamic> filterOptions) {
-          if (filterOptions != null &&
-              state.filterOptionsNotifier.value != filterOptions) {
-            state.filterOptionsNotifier.value = filterOptions;
-            LibraryTabManager.updateFilter(tabId, itemId, filterOptions);
-          }
-        },
-        onUpload: onShowDropDialog ?? () {},
-        uploadProgress: state.uploadProgressNotifier.value,
-        displayFields: Set<String>.from(state.displayFieldsNotifier.value),
-        onDisplayFieldsChanged: (Set<String> fields) {
-          state.displayFieldsNotifier.value = fields;
-          LibraryTabManager.setValue(tabId, itemId, 'displayFields', fields);
-        },
-        imagesPerRow: state.imagesPerRowNotifier.value,
-        onImagesPerRowChanged: (count) {
-          state.imagesPerRowNotifier.value = count;
-          LibraryTabManager.setValue(tabId, itemId, 'imagesPerRow', count);
-        },
-        onRefresh: events.refresh,
-        sortOptions: state.sortOptionsNotifier.value,
-        onSortChanged: (sortOptions) {
-          if (sortOptions != null &&
-              state.sortOptionsNotifier.value != sortOptions) {
-            state.sortOptionsNotifier.value = sortOptions;
-            LibraryTabManager.setValue(
-              tabId,
-              itemId,
-              'sortOptions',
-              sortOptions,
-            );
-            events.loadFiles();
-          }
-        },
-        viewType: state.viewTypeNotifier.value,
-        onViewTypeChanged: (DragSelectViewType viewType) {
-          state.viewTypeNotifier.value = viewType;
-          LibraryTabManager.setValue(tabId, itemId, 'viewType', viewType.index);
-        },
-      ),
-    );
-  }
-
-  /// 构建侧边栏部分
-  Widget buildSidebarSection() {
-    return MultiValueListenableBuilder(
-      valueListenables: [
-        state.tags,
-        state.folders,
-        state.filterOptionsNotifier,
-      ],
-      builder: (context, values, _) {
-        final tags = values[0] as List<LibraryTag>;
-        final folders = values[1] as List<LibraryFolder>;
-        final filterOptions = values[2] as Map<String, dynamic>;
-
-        return Container(
-          color: Theme.of(context).colorScheme.surface,
-          child: LibrarySidebarView(
-            plugin: plugin,
-            library: library,
-            tabId: tabId,
-            itemId: itemId,
-            tags: tags,
-            tagsSelected: List<String>.from(filterOptions['tags'] ?? []),
-            folders: folders,
-            folderSelected:
-                filterOptions['folder'] is String
-                    ? [filterOptions['folder']]
-                    : [],
-          ),
-        );
-      },
-    );
-  }
-
-  /// 构建主内容区域
-  Widget buildMainContent(bool isRecycleBin) {
-    return ResponsiveBuilder(
-      builder: (context, sizingInformation) {
-        return Scaffold(
-          body: Column(
-            children: [
-              Expanded(
-                child: Stack(
-                  children: [
-                    buildGalleryBodyWithDragSelect(),
-                    ValueListenableBuilder(
-                      valueListenable: state.isItemsLoadingNotifier,
-                      builder: (context, isLoading, _) {
-                        return isLoading
-                            ? Center(child: CircularProgressIndicator())
-                            : SizedBox.shrink();
-                      },
-                    ),
-                  ],
-                ),
-              ),
-              buildPagination(),
-            ],
-          ),
-        );
-      },
-    );
-  }
-
-  Widget buildGalleryBodyWithDragSelect() {
-    return MultiValueListenableBuilder(
-      valueListenables: [
-        state.items,
-        state.isSelectionModeNotifier,
-        state.selectedFileIds,
-        state.displayFieldsNotifier,
-        state.imagesPerRowNotifier,
-        state.viewTypeNotifier,
-      ],
-      builder: (context, values, _) {
-        return GestureDetector(
-          // 双击清除所有选中
-          onDoubleTap: () {
-            state.selectedFileIds.value = {};
-            state.isSelectionModeNotifier.value = false;
-          },
-          child: DragSelectView(
-            plugin: plugin,
-            library: library,
-            viewType: values[5] as DragSelectViewType,
-            isRecycleBin: state.tabData.isRecycleBin,
-            displayFields: values[3] as Set<String>,
-            items: values[0] as List<LibraryFile>,
-            isSelectionMode: values[1] as bool,
-            selectedFileIds: values[2] as Set<int>,
-            onFileSelected: onFileSelected,
-            onToggleSelected: onToggleSelected,
-            onFileOpen: onFileOpen,
-            imagesPerRow: values[4] as int,
-            scrollController: state.scrollController,
-            onSelectionChanged: (selectedIds) {
-              WidgetsBinding.instance.addPostFrameCallback((_) {
-                state.selectedFileIds.value = selectedIds;
-              });
-            },
-          ),
-        );
-      },
-    );
-  }
-
-  /// 构建分页组件
-  Widget buildPagination() {
-    return ValueListenableBuilder<int>(
-      valueListenable: state.totalItemsNotifier,
-      builder: (context, totalItems, _) {
-        final paginationOptions = state.paginationOptionsNotifier.value;
-        final totalPages = (totalItems / paginationOptions['perPage']).ceil();
-
-        return Padding(
-          padding: const EdgeInsets.symmetric(vertical: 8.0),
-          child: NumberPagination(
-            currentPage: paginationOptions['page'],
-            totalPages: totalPages,
-            onPageChanged: events.toPage,
-            visiblePagesCount: MediaQuery.of(context).size.width ~/ 200 + 2,
-            buttonRadius: 10.0,
-            buttonElevation: 1.0,
-            controlButtonSize: Size(34, 34),
-            numberButtonSize: Size(34, 34),
-            selectedButtonColor: Theme.of(context).primaryColor,
-          ),
-        );
-      },
-    );
-  }
-
-  /// 构建详情页面
-  Widget buildMoreDetailsPage() {
-    return DefaultTabController(
-      length: 2,
-      child: Container(
-        color: Theme.of(context).colorScheme.surface,
-        child: Column(
-          children: [
-            TabBar(
-              tabs: [
-                Tooltip(
-                  message: '文件信息',
-                  child: Tab(icon: Icon(Icons.info_outline)),
-                ),
-                Tooltip(
-                  message: '选中文件列表',
-                  child: Tab(icon: Icon(Icons.list_alt)),
-                ),
-              ],
-            ),
-            Expanded(
-              child: TabBarView(
-                physics: const NeverScrollableScrollPhysics(),
-                children: [
-                  ValueListenableBuilder<LibraryFile?>(
-                    valueListenable: state.selectedFileNotifier,
-                    builder: (context, selectedFile, _) {
-                      return selectedFile != null
-                          ? LibraryFileInformationView(
-                            plugin: plugin,
-                            library: library,
-                            file: selectedFile,
-                          )
-                          : const Center(child: Text('请选择一个文件查看详情'));
-                    },
-                  ),
-                  ValueListenableBuilder<Set<int>>(
-                    valueListenable: state.selectedFileIds,
-                    builder: (context, selectedIds, _) {
-                      final selectedFiles =
-                          state.items.value
-                              .where((file) => selectedIds.contains(file.id))
-                              .toList();
-                      if (selectedFiles.isEmpty) {
-                        return const Center(child: Text('未选中文件'));
-                      }
-                      return Column(
-                        children: [
-                          Expanded(
-                            child: SelectedFilesPage(
-                              plugin: plugin,
-                              library: library,
-                              selectedFiles: selectedFiles,
-                              galleryState: state,
-                              onSelectionChanged: (selectedIds) {
-                                state.selectedFileIds.value = selectedIds;
-                              },
-                            ),
-                          ),
-                        ],
-                      );
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
+    return widget ?? Center(child: Text('Failed to build panel: $itemId'));
   }
 }
