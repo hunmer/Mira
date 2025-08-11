@@ -23,6 +23,7 @@ class DockTheme {
       // TabsArea 主题配置 - 标签区域
       tabsArea: TabsAreaThemeData(
         visible: true, // 显示标签区域
+        visibleOneTab: false, // 只有一个标签页时隐藏标签区域
         // color: backgroundColor, // 背景色
         border: Border(bottom: BorderSide(color: primaryColor, width: 3)), // 描边
         initialGap: 0.0, // 初始间距

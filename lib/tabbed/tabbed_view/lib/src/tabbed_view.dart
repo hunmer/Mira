@@ -124,14 +124,21 @@ class _TabbedViewState extends State<TabbedView> {
 
     final bool tabsAreaVisible =
         widget.tabsAreaVisible ?? theme.tabsArea.visible;
+
+    // Check if tabs area should be hidden when there's only one tab
+    bool shouldShowTabsArea = tabsAreaVisible;
+    if (theme.tabsArea.visibleOneTab) {
+      shouldShowTabsArea = provider.controller.tabs.length > 1;
+    }
+
     List<LayoutId> children = [];
-    if (tabsAreaVisible) {
+    if (shouldShowTabsArea) {
       Widget tabArea = TabsArea(provider: provider);
       children.add(LayoutId(id: 1, child: tabArea));
     }
     ContentArea contentArea = ContentArea(
       provider: provider,
-      tabsAreaVisible: tabsAreaVisible,
+      tabsAreaVisible: shouldShowTabsArea,
     );
     children.add(LayoutId(id: 2, child: contentArea));
     return CustomMultiChildLayout(

@@ -8,6 +8,7 @@ import 'package:mira/tabbed/tabbed_view/lib/src/theme/tabbed_view_theme_constant
 class TabsAreaThemeData {
   TabsAreaThemeData({
     this.visible = true,
+    this.visibleOneTab = true,
     this.color,
     this.border,
     this.initialGap = 0,
@@ -39,6 +40,12 @@ class TabsAreaThemeData {
                : menuIcon;
 
   bool visible;
+
+  /// Whether to show the tabs area when there is only one tab.
+  /// When set to false, if there is only one tab, the tabs area will be hidden
+  /// regardless of the [visible] setting.
+  /// Defaults to true.
+  bool visibleOneTab;
 
   Color? color;
   Border? border;
@@ -93,6 +100,7 @@ class TabsAreaThemeData {
       other is TabsAreaThemeData &&
           runtimeType == other.runtimeType &&
           visible == other.visible &&
+          visibleOneTab == other.visibleOneTab &&
           color == other.color &&
           border == other.border &&
           initialGap == other.initialGap &&
@@ -118,6 +126,7 @@ class TabsAreaThemeData {
   @override
   int get hashCode =>
       visible.hashCode ^
+      visibleOneTab.hashCode ^
       color.hashCode ^
       border.hashCode ^
       initialGap.hashCode ^
