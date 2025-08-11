@@ -36,6 +36,8 @@ class DockingTabsWidget extends StatefulWidget {
     required this.maximizableTabsArea,
     required this.draggable,
     this.breakpoints,
+    this.autoBreakpoints = false,
+    this.deviceType,
   });
 
   final DockingLayout layout;
@@ -52,6 +54,11 @@ class DockingTabsWidget extends StatefulWidget {
   final DragOverPosition dragOverPosition;
   final bool draggable;
   final ScreenBreakpoints? breakpoints;
+  final bool autoBreakpoints;
+
+  /// Precomputed device type from parent Docking. If provided, use it to
+  /// determine visibility consistently across the whole Docking subtree.
+  final DeviceScreenType? deviceType;
 
   @override
   State<StatefulWidget> createState() => DockingTabsWidgetState();
@@ -61,52 +68,46 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
     with DraggableConfigMixin {
   DropPosition? _activeDropPosition;
 
-  bool _visibleForWidth(double width, DockingItem item) {
-    if (widget.breakpoints == null) return true;
+  DeviceScreenType? _deviceTypeForWidth(double width) {
+    final bp = widget.breakpoints;
+    if (bp == null) return null;
+    if (width >= bp.desktop) return DeviceScreenType.desktop;
+    if (width >= bp.tablet) return DeviceScreenType.tablet;
+    if (width >= bp.watch) return DeviceScreenType.mobile;
+    return DeviceScreenType.watch;
+  }
+
+  bool _isVisibleForDevice(DockingItem item, DeviceScreenType? type) {
+    if (type == null) return true;
     if (item.showAtDevices == null || item.showAtDevices!.isEmpty) return true;
-    final bp = widget.breakpoints!;
-    final DeviceScreenType type;
-    if (width >= bp.desktop) {
-      type = DeviceScreenType.desktop;
-    } else if (width >= bp.tablet) {
-      type = DeviceScreenType.tablet;
-    } else if (width >= bp.watch) {
-      type = DeviceScreenType.mobile;
-    } else {
-      type = DeviceScreenType.watch;
-    }
 
-    // Handle visibility mode
     if (item.visibilityMode == DeviceVisibilityMode.exactDevices) {
-      // Only visible on exact specified devices
       return item.showAtDevices!.contains(type);
-    } else {
-      // Visible on specified devices and larger devices
-      final devices = item.showAtDevices!;
-
-      // Check if current device type is in the list or is larger than any in the list
-      if (devices.contains(type)) return true;
-
-      // Define device hierarchy (smaller to larger)
-      const deviceHierarchy = [
-        DeviceScreenType.watch,
-        DeviceScreenType.mobile,
-        DeviceScreenType.tablet,
-        DeviceScreenType.desktop,
-      ];
-
-      final currentIndex = deviceHierarchy.indexOf(type);
-
-      // Check if any specified device is smaller than current device
-      for (final specifiedDevice in devices) {
-        final specifiedIndex = deviceHierarchy.indexOf(specifiedDevice);
-        if (specifiedIndex <= currentIndex) {
-          return true;
-        }
-      }
-
-      return false;
     }
+
+    if (item.showAtDevices!.contains(type)) return true;
+    const deviceHierarchy = [
+      DeviceScreenType.watch,
+      DeviceScreenType.mobile,
+      DeviceScreenType.tablet,
+      DeviceScreenType.desktop,
+    ];
+    final currentIndex = deviceHierarchy.indexOf(type);
+    for (final specified in item.showAtDevices!) {
+      if (deviceHierarchy.indexOf(specified) <= currentIndex) return true;
+    }
+    return false;
+  }
+
+  bool _visibleForWidth(double width, DockingItem item) {
+    // Prefer the deviceType provided by parent. If null, compute based on
+    // autoBreakpoints setting.
+    final type =
+        widget.deviceType ??
+        (widget.autoBreakpoints
+            ? _deviceTypeForWidth(width)
+            : _deviceTypeForWidth(MediaQuery.of(context).size.width));
+    return _isVisibleForDevice(item, type);
   }
 
   @override

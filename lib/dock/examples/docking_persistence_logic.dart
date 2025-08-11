@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:mira/dock/docking/lib/src/docking.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
+import 'package:responsive_builder/responsive_builder.dart';
 import 'dock_manager.dart';
 import 'dialog/add_component_dialog.dart';
 import 'dialog/multi_tab_dialog.dart';
-import 'registerdWidgets/dynamic_widget.dart';
 
 /// Docking 持久化演示的业务逻辑
 class DockingPersistenceLogic {
@@ -131,64 +132,131 @@ class DockingPersistenceLogic {
 
   /// 创建默认布局
   void createDefaultLayout() {
-    // 直接构建 dynamic widget
-    final welcomeWidget = DynamicWidget(
-      jsonData: {
-        "type": "scaffold",
-        "args": {
-          "appBar": {
-            "type": "app_bar",
-            "args": {
-              "title": {
-                "type": "text",
-                "args": {"text": "Rich Text"},
-              },
-            },
-          },
-          "body": {
-            "type": "center",
-            "args": {
-              "child": {
-                "type": "rich_text",
-                "args": {
-                  "text": {
-                    "children": [
-                      {"text": "Hello "},
-                      {
-                        "style": {"fontSize": 20.0, "fontWeight": "bold"},
-                        "text": "RICH TEXT",
-                      },
-                      {"text": " World!"},
-                    ],
-                    "style": {"color": "#000000", "fontSize": 12.0},
-                  },
-                },
-              },
-            },
-          },
-        },
-      },
+    // final widget = DynamicWidget(
+    //   jsonData: {
+    //     "type": "scaffold",
+    //     "args": {
+    //       "appBar": {
+    //         "type": "app_bar",
+    //         "args": {
+    //           "title": {
+    //             "type": "text",
+    //             "args": {"text": "Rich Text"},
+    //           },
+    //         },
+    //       },
+    //       "body": {
+    //         "type": "center",
+    //         "args": {
+    //           "child": {
+    //             "type": "rich_text",
+    //             "args": {
+    //               "text": {
+    //                 "children": [
+    //                   {"text": "Hello "},
+    //                   {
+    //                     "style": {"fontSize": 20.0, "fontWeight": "bold"},
+    //                     "text": "RICH TEXT",
+    //                   },
+    //                   {"text": " World!"},
+    //                 ],
+    //                 "style": {"color": "#000000", "fontSize": 12.0},
+    //               },
+    //             },
+    //           },
+    //         },
+    //       },
+    //     },
+    //   },
+    // );
+
+    final widget1 = DockingLayout(
+      root: DockingRow([
+        DockingItem(
+          id: 'item1_left',
+          name: 'Item left',
+          showAtDevices: [DeviceScreenType.tablet],
+          visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
+          widget: Container(color: Colors.cyan),
+        ),
+        DockingItem(
+          id: 'item1_1',
+          name: 'Item 1-1',
+          widget: Container(color: Colors.red),
+        ),
+        DockingItem(
+          id: 'item1_2',
+          name: 'Item 1-2',
+          widget: Container(color: Colors.blue),
+        ),
+        DockingItem(
+          id: 'item1_right',
+          name: 'Item right',
+          showAtDevices: [DeviceScreenType.tablet],
+          visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
+          widget: Container(color: Colors.green),
+        ),
+      ], id: 'nested1'),
     );
 
-    final rootTabs = DockingTabs([
+    final widget2 = DockingLayout(
+      root: DockingRow([
+        DockingItem(
+          id: 'item2_left',
+          name: 'Item 2 left',
+          showAtDevices: [DeviceScreenType.tablet],
+          visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
+          widget: Container(color: Colors.purple),
+        ),
+        DockingItem(
+          id: 'item2_1',
+          name: 'Item 2-1',
+          widget: Container(color: Colors.green),
+        ),
+        DockingItem(
+          id: 'item2_2',
+          name: 'Item 2-2',
+          widget: Container(color: Colors.yellow),
+        ),
+        DockingItem(
+          id: 'item2_right',
+          name: 'Item 2 right',
+          showAtDevices: [DeviceScreenType.tablet],
+          visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
+          widget: Container(color: Colors.orange),
+        ),
+      ], id: 'nested2'),
+    );
+
+    final rootRow = DockingRow([
       DockingItem(
-        id: 'welcome',
-        name: 'Dynamic Welcome',
-        widget: welcomeWidget,
+        id: 'row1',
+        name: 'Row 1',
+        widget: Docking(
+          layout: widget1,
+          breakpoints: const ScreenBreakpoints(
+            desktop: 800,
+            tablet: 600,
+            watch: 200,
+          ),
+          autoBreakpoints: true,
+        ),
+      ),
+      DockingItem(
+        id: 'row2',
+        name: 'Row 2',
+        widget: Docking(
+          layout: widget2,
+          breakpoints: const ScreenBreakpoints(
+            desktop: 800,
+            tablet: 600,
+            watch: 200,
+          ),
+          autoBreakpoints: true,
+        ),
       ),
     ], id: 'root');
 
-    manager.setRoot(rootTabs);
-
-    // 添加一个计数器组件
-    manager.addTypedItem(
-      id: 'counter1',
-      type: 'counter',
-      values: {'count': 0, 'id': 'counter1'},
-      targetArea: rootTabs,
-      dropIndex: 1,
-      name: 'Counter 1',
-      keepAlive: true,
-    );
+    manager.setRoot(rootRow);
   }
 }
