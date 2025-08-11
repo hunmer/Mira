@@ -188,6 +188,8 @@ class DockingItemWidgetState extends State<DockingItemWidget>
             buttons: dockingItem.buttons,
             keepAlive: dockingItem.globalKey != null,
             showAtDevices: dockingItem.showAtDevices,
+            visibilityMode: dockingItem.visibilityMode,
+            parentId: dockingItem.parentId,
           );
 
           // 添加到目标layout的目标item
@@ -258,7 +260,16 @@ class DockingItemWidgetState extends State<DockingItemWidget>
   }
 
   void _onTabClose(int tabIndex, TabData tabData) {
+    // Close the current item
     widget.layout.removeItem(item: widget.item);
+
+    // Cascade close across all layouts: close all items whose parentId
+    // matches this item's id, regardless of where they were moved to.
+    final closeId = widget.item.id;
+    if (closeId != null) {
+      DockingLayout.removeItemsByParentId(closeId);
+    }
+
     if (widget.onItemClose != null) {
       widget.onItemClose!(widget.item);
     }

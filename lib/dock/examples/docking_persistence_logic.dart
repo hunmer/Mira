@@ -175,6 +175,7 @@ class DockingPersistenceLogic {
         DockingItem(
           id: 'item1_left',
           name: 'Item left',
+          parentId: 'row1',
           showAtDevices: [DeviceScreenType.tablet],
           visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
           widget: Container(color: Colors.cyan),
@@ -182,16 +183,19 @@ class DockingPersistenceLogic {
         DockingItem(
           id: 'item1_1',
           name: 'Item 1-1',
+          parentId: 'row1',
           widget: Container(color: Colors.red),
         ),
         DockingItem(
           id: 'item1_2',
           name: 'Item 1-2',
+          parentId: 'row1',
           widget: Container(color: Colors.blue),
         ),
         DockingItem(
           id: 'item1_right',
           name: 'Item right',
+          parentId: 'row1',
           showAtDevices: [DeviceScreenType.tablet],
           visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
           widget: Container(color: Colors.green),
@@ -204,6 +208,7 @@ class DockingPersistenceLogic {
         DockingItem(
           id: 'item2_left',
           name: 'Item 2 left',
+          parentId: 'row2',
           showAtDevices: [DeviceScreenType.tablet],
           visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
           widget: Container(color: Colors.purple),
@@ -211,16 +216,19 @@ class DockingPersistenceLogic {
         DockingItem(
           id: 'item2_1',
           name: 'Item 2-1',
+          parentId: 'row2',
           widget: Container(color: Colors.green),
         ),
         DockingItem(
           id: 'item2_2',
           name: 'Item 2-2',
+          parentId: 'row2',
           widget: Container(color: Colors.yellow),
         ),
         DockingItem(
           id: 'item2_right',
           name: 'Item 2 right',
+          parentId: 'row2',
           showAtDevices: [DeviceScreenType.tablet],
           visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
           widget: Container(color: Colors.orange),

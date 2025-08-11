@@ -40,7 +40,6 @@ abstract class DockingArea extends Area {
   final dynamic id;
 
   int _layoutId = -1;
-
   int get layoutId => _layoutId;
 
   /// The index in the layout.
@@ -58,11 +57,9 @@ abstract class DockingArea extends Area {
   DockingParentArea? get parent => _parent;
 
   bool _disposed = false;
-
   bool get disposed => _disposed;
 
   final Key _key = UniqueKey();
-
   Key get key => _key;
 
   /// Disposes.
@@ -124,7 +121,8 @@ abstract class DockingArea extends Area {
       throw StateError('Disposed area');
     }
     _parent = parentArea;
-    if (layoutId != -1 && layoutId != layoutId) {
+    // Fix: compare with current _layoutId, not the parameter
+    if (_layoutId != -1 && _layoutId != layoutId) {
       throw ArgumentError(
         'DockingParentArea already belongs to another layout',
       );
@@ -275,6 +273,7 @@ class DockingItem extends DockingArea with DropArea {
     super.minimalSize,
     this.showAtDevices,
     this.visibilityMode = DeviceVisibilityMode.exactDevices,
+    this.parentId,
   }) : buttons = buttons != null ? List.unmodifiable(buttons) : [],
        globalKey = keepAlive ? GlobalKey() : null,
        _maximized = maximized;
@@ -294,6 +293,10 @@ class DockingItem extends DockingArea with DropArea {
   /// - exactDevices: Only visible on the exact specified devices
   /// - specifiedAndLarger: Visible on specified devices and larger devices
   final DeviceVisibilityMode visibilityMode;
+
+  /// Optional parent id. When the item with this id is closed, this item will
+  /// be closed together (cascade close).
+  final dynamic parentId;
 
   final GlobalKey? globalKey;
   TabLeadingBuilder? leading;
@@ -505,21 +508,102 @@ class DockingTabs extends DockingParentArea with DropArea {
 /// [DockingRow] and [DockingTabs].
 /// The [root] is single and can be any [DockingArea].
 class DockingLayout extends ChangeNotifier {
-  /// Builds a [DockingLayout].
+  // Global registry and guard for cascading removals across layouts
+  static final Set<DockingLayout> _registry = <DockingLayout>{};
+  static final Set<dynamic> _cascadeInProgress = <dynamic>{};
+  static void _register(DockingLayout layout) => _registry.add(layout);
+
+  DockingArea? _root;
+  DockingArea? _maximizedArea;
+
+  int get id => hashCode;
+  DockingArea? get root => _root;
+  DockingArea? get maximizedArea => _maximizedArea;
+
   DockingLayout({DockingArea? root}) : _root = root {
     _reset();
+    DockingLayout._register(this);
   }
 
-  /// The id of this layout.
-  int get id => hashCode;
+  // Core helpers placed early
+  List<DockingArea> layoutAreas() {
+    final list = <DockingArea>[];
+    if (_root != null) {
+      _fetchAreas(list, _root!);
+    }
+    return list;
+  }
 
-  /// The protected root of this layout.
-  DockingArea? _root;
+  void _fetchAreas(List<DockingArea> areas, DockingArea area) {
+    areas.add(area);
+    if (area is DockingParentArea) {
+      for (final child in area._children) {
+        _fetchAreas(areas, child);
+      }
+    }
+  }
 
-  /// The root of this layout.
-  DockingArea? get root => _root;
+  void _rebuild(List<LayoutModifier> modifiers) {
+    final olderAreas = layoutAreas();
+    for (final modifier in modifiers) {
+      for (final area in layoutAreas()) {
+        if (area is DockingItem) {
+          area._resetLocationInLayout();
+        }
+      }
+      _root = modifier.newLayout(this);
+      _updateHierarchy();
+      for (final area in olderAreas) {
+        if (area is DockingParentArea) {
+          area._dispose();
+        } else if (area is DockingItem) {
+          if (area.index == -1) area._dispose();
+        }
+      }
+    }
+    _maximizedArea = null;
+    for (final area in layoutAreas()) {
+      if (area is DockingItem && area.maximized) {
+        _maximizedArea = area;
+      } else if (area is DockingTabs && area.maximized) {
+        _maximizedArea = area;
+      }
+    }
+    notifyListeners();
+  }
 
-  /// Loads a layout from String.
+  // Cascading removal by parentId across all registered layouts
+  static void removeItemsByParentId(dynamic parentId) {
+    if (parentId == null) return;
+    if (_cascadeInProgress.contains(parentId)) return;
+    _cascadeInProgress.add(parentId);
+    try {
+      bool removed;
+      do {
+        removed = false;
+        for (final layout in _registry) {
+          // Collect matches for this layout first
+          final toClose =
+              layout
+                  .layoutAreas()
+                  .whereType<DockingItem>()
+                  .where((item) => item.parentId == parentId)
+                  .toList();
+          if (toClose.isNotEmpty) {
+            // Remove via data-layer API so any nested cascades (grand-children) also trigger
+            for (final item in toClose) {
+              layout.removeItem(item: item);
+            }
+            removed = true;
+          }
+        }
+      } while (removed);
+    } finally {
+      _cascadeInProgress.remove(parentId);
+    }
+  }
+
+  // API
   void load({
     required String layout,
     required LayoutParser parser,
@@ -532,23 +616,21 @@ class DockingLayout extends ChangeNotifier {
     );
   }
 
-  /// Set a new root.
   set root(DockingArea? root) {
-    layoutAreas().forEach((area) => area._dispose());
+    for (final area in layoutAreas()) {
+      area._dispose();
+    }
     _root = root;
     _reset();
     notifyListeners();
   }
 
-  /// Notifies the UI to rebuild the layout.
-  void rebuild() {
-    notifyListeners();
-  }
+  void rebuild() => notifyListeners();
 
   void _reset() {
     _updateHierarchy();
     int maximizedCount = 0;
-    layoutAreas().forEach((area) {
+    for (final area in layoutAreas()) {
       if (area is DockingItem && area.maximized) {
         maximizedCount++;
         _maximizedArea = area;
@@ -556,28 +638,19 @@ class DockingLayout extends ChangeNotifier {
         maximizedCount++;
         _maximizedArea = area;
       }
-    });
+    }
     if (maximizedCount > 1) {
       throw ArgumentError('Multiple maximized areas.');
     }
   }
 
-  /// Holds a fast reference to the maximized area.
-  DockingArea? _maximizedArea;
-
-  /// Gets the maximized area in this layout.
-  DockingArea? get maximizedArea => _maximizedArea;
-
-  /// Converts layout's hierarchical structure to a debug String.
   String hierarchy({
     bool indexInfo = false,
     bool levelInfo = false,
     bool hasParentInfo = false,
     bool nameInfo = false,
   }) {
-    if (_root == null) {
-      return '';
-    }
+    if (_root == null) return '';
     return _root!.hierarchy(
       indexInfo: indexInfo,
       levelInfo: levelInfo,
@@ -586,56 +659,47 @@ class DockingLayout extends ChangeNotifier {
     );
   }
 
-  /// Updates recursively the information of parent,
-  /// index and layoutId in each [DockingArea].
   _updateHierarchy() {
     _root?._updateHierarchy(null, 1, id);
   }
 
-  /// Finds a [DockingTabs] that has a [DockingItem] with the given id.
   DockingTabs? findDockingTabsWithItem(dynamic itemId) {
-    DockingItem? item = findDockingItem(itemId);
+    final item = findDockingItem(itemId);
     if (item != null) {
-      DockingArea? parent = item.parent;
+      final parent = item.parent;
       return parent is DockingTabs ? parent : null;
     }
     return null;
   }
 
-  /// Finds a [DockingItem] given an id.
   DockingItem? findDockingItem(dynamic id) {
-    DockingArea? area = _findDockingArea(area: _root, id: id);
+    final area = _findDockingArea(area: _root, id: id);
     return area is DockingItem ? area : null;
   }
 
-  /// Finds a [DockingArea] given an id.
   DockingArea? findDockingArea(dynamic id) {
     return _findDockingArea(area: _root, id: id);
   }
 
-  /// Recursively finds a [DockingArea] given an id.
   DockingArea? _findDockingArea({DockingArea? area, dynamic id}) {
     if (area != null) {
       if (area.id == id) {
         return area;
       } else if (area is DockingParentArea) {
-        for (DockingArea child in area._children) {
-          DockingArea? item = _findDockingArea(area: child, id: id);
-          if (item != null) {
-            return item;
-          }
+        for (final child in area._children) {
+          final item = _findDockingArea(area: child, id: id);
+          if (item != null) return item;
         }
       }
     }
     return null;
   }
 
-  /// Maximize a [DockingItem].
   void maximizeDockingItem(DockingItem dockingItem) {
     if (dockingItem.layoutId != id) {
       throw ArgumentError('DockingItem does not belong to this layout.');
     }
-    if (dockingItem.maximized == false) {
+    if (!dockingItem.maximized) {
       _removesMaximizedStatus();
       dockingItem._maximized = true;
       _maximizedArea = dockingItem;
@@ -643,12 +707,11 @@ class DockingLayout extends ChangeNotifier {
     }
   }
 
-  /// Maximize a [DockingTabs].
   void maximizeDockingTabs(DockingTabs dockingTabs) {
     if (dockingTabs.layoutId != id) {
       throw ArgumentError('DockingTabs does not belong to this layout.');
     }
-    if (dockingTabs.maximized == false) {
+    if (!dockingTabs.maximized) {
       _removesMaximizedStatus();
       dockingTabs._maximized = true;
       _maximizedArea = dockingTabs;
@@ -656,32 +719,28 @@ class DockingLayout extends ChangeNotifier {
     }
   }
 
-  /// Removes maximized status from areas.
   void _removesMaximizedStatus() {
-    layoutAreas().forEach((area) {
+    for (final area in layoutAreas()) {
       if (area is DockingItem) {
         area._maximized = false;
       } else if (area is DockingTabs) {
         area._maximized = false;
       }
-    });
+    }
     _maximizedArea = null;
   }
 
-  /// Removes any maximize status.
   void restore() {
     _removesMaximizedStatus();
     notifyListeners();
   }
 
-  /// Moves a DockingItem in this layout.
   void moveItem({
     required DockingItem draggedItem,
     required DropArea targetArea,
     DropPosition? dropPosition,
     int? dropIndex,
   }) {
-    //TODO maximize test
     _rebuild([
       MoveItem(
         draggedItem: draggedItem,
@@ -692,28 +751,33 @@ class DockingLayout extends ChangeNotifier {
     ]);
   }
 
-  /// Removes multiple DockingItem by id from this layout.
   void removeItemByIds(List<dynamic> ids) {
-    List<LayoutModifier> modifiers = [];
-    for (dynamic id in ids) {
+    final modifiers = <LayoutModifier>[];
+    for (final id in ids) {
       modifiers.add(RemoveItemById(id: id));
     }
     _rebuild(modifiers);
+    for (final id in ids) {
+      if (id != null) {
+        DockingLayout.removeItemsByParentId(id);
+      }
+    }
   }
 
-  /// Removes a DockingItem from this layout.
   void removeItem({required DockingItem item}) {
     _rebuild([RemoveItem(itemToRemove: item)]);
+    final pid = item.id;
+    if (pid != null) {
+      DockingLayout.removeItemsByParentId(pid);
+    }
   }
 
-  /// Adds a DockingItem to this layout.
   void addItemOn({
     required DockingItem newItem,
     required DropArea targetArea,
     DropPosition? dropPosition,
     int? dropIndex,
   }) {
-    //TODO maximize test
     _rebuild([
       AddItem(
         newItem: newItem,
@@ -724,7 +788,6 @@ class DockingLayout extends ChangeNotifier {
     ]);
   }
 
-  /// Adds a DockingItem to the root of this layout.
   void addItemOnRoot({
     required DockingItem newItem,
     DropPosition? dropPosition,
@@ -734,7 +797,7 @@ class DockingLayout extends ChangeNotifier {
       throw StateError('Root is null');
     }
     if (root is DropArea) {
-      DropArea targetArea = root! as DropArea;
+      final targetArea = root! as DropArea;
       _rebuild([
         AddItem(
           newItem: newItem,
@@ -746,105 +809,8 @@ class DockingLayout extends ChangeNotifier {
     } else {
       throw StateError('Root is not a DropArea');
     }
-    //TODO maximize test
   }
 
-  /// Rebuilds this layout with modifiers.
-  void _rebuild(List<LayoutModifier> modifiers) {
-    List<DockingArea> olderAreas = layoutAreas();
-
-    for (LayoutModifier modifier in modifiers) {
-      layoutAreas().forEach((area) {
-        if (area is DockingItem) {
-          area._resetLocationInLayout();
-        }
-      });
-
-      _root = modifier.newLayout(this);
-      _updateHierarchy();
-
-      for (var area in olderAreas) {
-        if (area is DockingParentArea) {
-          area._dispose();
-        } else if (area is DockingItem) {
-          if (area.index == -1) {
-            area._dispose();
-          }
-        }
-      }
-    }
-    _maximizedArea = null;
-    layoutAreas().forEach((area) {
-      if (area is DockingItem && area.maximized) {
-        _maximizedArea = area;
-      } else if (area is DockingTabs && area.maximized) {
-        _maximizedArea = area;
-      }
-    });
-
-    notifyListeners();
-  }
-
-  /// Gets all [DockingArea] from this layout.
-  List<DockingArea> layoutAreas() {
-    List<DockingArea> list = [];
-    if (_root != null) {
-      _fetchAreas(list, _root!);
-    }
-    return list;
-  }
-
-  /// Gets recursively all [DockingArea] of that layout.
-  void _fetchAreas(List<DockingArea> areas, DockingArea area) {
-    areas.add(area);
-    if (area is DockingParentArea) {
-      for (DockingArea child in area._children) {
-        _fetchAreas(areas, child);
-      }
-    }
-  }
-
-  /// Converts a layout into a String to be stored.
-  ///
-  /// The String will have the following structure:
-  /// VERSION:AREAS_LENGTH:AREAS
-  ///
-  /// The VERSION group has a fixed value: V1
-  ///
-  /// The AREAS group separates each area with a comma and follows the
-  /// pattern: AREA_INDEX_1(AREA_CONFIGURATION),...,AREA_INDEX_N(AREA_CONFIGURATION)
-  /// Example: 1(AREA_CONFIGURATION),2(AREA_CONFIGURATION),3(AREA_CONFIGURATION)
-  ///
-  /// The AREA_CONFIGURATION group represents all area data given the class:
-  ///
-  /// * [DockingItem]
-  ///   * AREA_ACRONYM
-  ///   * ID_LENGTH
-  ///   * ID
-  ///   * WEIGHT
-  ///   * MAXIMIZED
-  /// * [DockingColumn]
-  ///   * AREA_ACRONYM
-  ///   * ID_LENGTH
-  ///   * ID
-  ///   * WEIGHT
-  ///   * CHILDREN_INDEXES
-  /// * [DockingRow]
-  ///   * AREA_ACRONYM
-  ///   * ID_LENGTH
-  ///   * ID
-  ///   * WEIGHT
-  ///   * CHILDREN_INDEXES
-  /// * [DockingTabs]
-  ///   * AREA_ACRONYM
-  ///   * ID_LENGTH
-  ///   * ID
-  ///   * WEIGHT
-  ///   * MAXIMIZED
-  ///   * CHILDREN_INDEXES
-  ///
-  /// Example:
-  /// V1:3:1(R;0;;;2,3),2(I;6;my_id1;0.5;F),3(I;6;my_id2;0.5;F)
   String stringify({required LayoutParser parser}) {
     final List<DockingArea> areas = layoutAreas();
     return LayoutStringify.stringify(parser: parser, areas: areas);

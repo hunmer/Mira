@@ -252,7 +252,7 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
     if (dockingItem.layoutId != widget.layout.id) {
       // 跨layout拖动：先创建副本添加到目标layout，然后标记拖动完成
       try {
-        // 创建新的DockingItem副本
+        // 创建新的DockingItem副本，保留 parentId
         DockingItem newItem = DockingItem(
           id: dockingItem.id,
           name: dockingItem.name,
@@ -265,6 +265,7 @@ class DockingTabsWidgetState extends State<DockingTabsWidget>
           keepAlive: dockingItem.globalKey != null,
           showAtDevices: dockingItem.showAtDevices,
           visibilityMode: dockingItem.visibilityMode,
+          parentId: dockingItem.parentId,
         );
 
         // 添加到目标layout
