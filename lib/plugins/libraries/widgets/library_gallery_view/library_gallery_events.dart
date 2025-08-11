@@ -308,6 +308,12 @@ class LibraryGalleryEvents {
     _loadFilesSubject.close();
     _loadFoldersTagsSubscription.cancel();
     _loadFoldersTagsSubject.close();
+
+    // 清理DockManager的tab事件监听器
+    final dockManager = LibraryTabManager.globalDockManager;
+    if (dockManager != null) {
+      dockManager.removeAllTabEventListeners(tabId);
+    }
   }
 
   // ===== Values 更新逻辑 =====
@@ -317,50 +323,97 @@ class LibraryGalleryEvents {
     // 首先同步初始值
     _syncValuesToState(values);
 
-    // 监听分页选项变化
-    values['paginationOptions']?.addListener(() {
-      state.paginationOptionsNotifier.value = Map<String, dynamic>.from(
-        values['paginationOptions']!.value,
-      );
-      _updateStoredValue(
-        'paginationOptions',
-        values['paginationOptions']!.value,
-      );
-    });
+    // ValueNotifier 的 addListener 已移除，改为使用广播系统进行通信
+    // 通过 DockManager 的广播功能来监听值的变化
 
-    // 监听排序选项变化
-    values['sortOptions']?.addListener(() {
-      state.sortOptionsNotifier.value = Map<String, dynamic>.from(
-        values['sortOptions']!.value,
-      );
-      _updateStoredValue('sortOptions', values['sortOptions']!.value);
-    });
+    // 从 LibraryTabManager 获取 DockManager 实例并添加监听器
+    final dockManager = LibraryTabManager.globalDockManager;
+    if (dockManager != null) {
+      // 监听分页选项变化
+      dockManager.addTabEventListener(tabId, 'paginationOptions_changed', (
+        EventArgs args,
+      ) {
+        if (args is MapEventArgs) {
+          final value = args.item['value'];
+          if (value != null) {
+            state.paginationOptionsNotifier.value = Map<String, dynamic>.from(
+              value,
+            );
+            loadFiles();
+          }
+        }
+      });
 
-    // 监听每行图片数变化
-    values['imagesPerRow']?.addListener(() {
-      _updateStoredValue('imagesPerRow', values['imagesPerRow']!.value);
-    });
+      // 监听排序选项变化
+      dockManager.addTabEventListener(tabId, 'sortOptions_changed', (
+        EventArgs args,
+      ) {
+        if (args is MapEventArgs) {
+          final value = args.item['value'];
+          if (value != null) {
+            state.sortOptionsNotifier.value = Map<String, dynamic>.from(value);
+            loadFiles();
+          }
+        }
+      });
 
-    // 监听过滤器变化
-    values['filter']?.addListener(() {
-      state.filterOptionsNotifier.value = Map<String, dynamic>.from(
-        values['filter']!.value,
-      );
-      _updateStoredValue('filter', values['filter']!.value);
-    });
+      // 监听过滤器变化
+      dockManager.addTabEventListener(tabId, 'filter_changed', (
+        EventArgs args,
+      ) {
+        if (args is MapEventArgs) {
+          final value = args.item['value'];
+          if (value != null) {
+            state.filterOptionsNotifier.value = Map<String, dynamic>.from(
+              value,
+            );
+            // 重置页面
+            state.paginationOptionsNotifier.value = {
+              ...state.paginationOptionsNotifier.value,
+              'page': 1,
+            };
+            loadFiles();
+          }
+        }
+      });
 
-    // 监听显示字段变化
-    values['displayFields']?.addListener(() {
-      state.displayFieldsNotifier.value = Set<String>.from(
-        values['displayFields']!.value,
-      );
-      _updateStoredValue('displayFields', values['displayFields']!.value);
-    });
+      // 监听显示字段变化
+      dockManager.addTabEventListener(tabId, 'displayFields_changed', (
+        EventArgs args,
+      ) {
+        if (args is MapEventArgs) {
+          final value = args.item['value'];
+          if (value != null) {
+            state.displayFieldsNotifier.value = Set<String>.from(value);
+          }
+        }
+      });
 
-    // 监听需要更新状态变化
-    values['needUpdate']?.addListener(() {
-      tabData.needUpdate = values['needUpdate']!.value;
-    });
+      // 监听每行图片数变化
+      dockManager.addTabEventListener(tabId, 'imagesPerRow_changed', (
+        EventArgs args,
+      ) {
+        if (args is MapEventArgs) {
+          final value = args.item['value'];
+          if (value != null) {
+            // 这里可以添加相应的处理逻辑
+            _updateStoredValue('imagesPerRow', value);
+          }
+        }
+      });
+
+      // 监听需要更新状态变化
+      dockManager.addTabEventListener(tabId, 'needUpdate_changed', (
+        EventArgs args,
+      ) {
+        if (args is MapEventArgs) {
+          final value = args.item['value'];
+          if (value != null) {
+            tabData.needUpdate = value;
+          }
+        }
+      });
+    }
   }
 
   /// 同步 dock values 到 state

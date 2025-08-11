@@ -13,6 +13,9 @@ class LibraryTabManager {
     _globalDockManager = manager;
   }
 
+  /// 获取全局DockManager实例
+  static DockManager? get globalDockManager => _globalDockManager;
+
   /// 获取存储值
   static dynamic getValue(String tabId, String key, dynamic defaultValue) {
     if (_globalDockManager == null) {
@@ -22,7 +25,7 @@ class LibraryTabManager {
     // 从item的values中获取存储的数据
     final itemData = _globalDockManager!.itemDataCache[tabId];
     if (itemData != null) {
-      final storedData = itemData.values['stored'] as Map<String, dynamic>?;
+      final storedData = itemData.values['stored'];
       return storedData?[key] ?? defaultValue;
     }
 
@@ -92,9 +95,7 @@ class LibraryTabManager {
     final itemData = _globalDockManager!.itemDataCache[tabId];
     if (itemData != null) {
       // 更新stored数据
-      final storedData = Map<String, dynamic>.from(
-        itemData.values['stored'] as Map<String, dynamic>? ?? {},
-      );
+      final storedData = Map<String, dynamic>.from(itemData.values['stored']);
       storedData[key] = value;
 
       // 更新values
@@ -110,6 +111,12 @@ class LibraryTabManager {
 
       // 通过DockManager更新item values
       _globalDockManager!.updateItemValues(tabId, newValues);
+
+      // 根据键名发布对应的广播
+      _globalDockManager!.broadcastTabEvent(tabId, '${key}_changed', {
+        'key': key,
+        'value': value,
+      });
     }
   }
 }

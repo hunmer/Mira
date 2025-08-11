@@ -7,6 +7,7 @@ import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'package:mira/dock/docking/lib/src/layout/layout_parser.dart';
 import 'package:mira/dock/examples/dock_insert_mode.dart';
 import 'package:mira/dock/examples/dialog/insert_location_dialog.dart';
+import 'package:mira/core/event/event.dart';
 import 'dock_item_registry.dart';
 import 'dock_persistence.dart';
 import 'package:mira/tabbed/tabbed_view/lib/src/tab_button.dart';
@@ -23,6 +24,9 @@ class DockManager extends ChangeNotifier {
 
   bool _autoSave = false;
   Map<String, DockItemData> _itemDataCache = {};
+
+  // 广播相关
+  final Map<String, Map<String, String>> _tabEventSubscriptions = {};
 
   DockManager({required this.id, DockingArea? root, bool autoSave = true})
     : layout = DockingLayout(root: root),
@@ -42,7 +46,99 @@ class DockManager extends ChangeNotifier {
   void dispose() {
     _instances.remove(id); // 移除实例注册
     layout.removeListener(_onLayoutChanged);
+
+    // 清理所有标签的事件订阅
+    for (final tabId in _tabEventSubscriptions.keys) {
+      removeAllTabEventListeners(tabId);
+    }
+    _tabEventSubscriptions.clear();
+
     super.dispose();
+  }
+
+  // ========= 广播功能 =========
+
+  /// 为指定标签添加事件监听器
+  /// [tabId] 标签ID
+  /// [eventType] 事件类型
+  /// [callback] 回调函数
+  /// 返回事件监听器的key，用于后续删除
+  String addTabEventListener(
+    String tabId,
+    String eventType,
+    void Function(EventArgs) callback,
+  ) {
+    // 确保该标签的订阅映射存在
+    _tabEventSubscriptions[tabId] ??= <String, String>{};
+
+    // 生成唯一的监听器key
+    final listenerKey = '${eventType}_${DateTime.now().millisecondsSinceEpoch}';
+
+    // 添加事件监听器
+    final subscriptionId = EventManager.instance.subscribe(eventType, (
+      EventArgs args,
+    ) {
+      // 检查事件是否与该标签相关
+      if (args is MapEventArgs) {
+        final eventTabId = args.item['tabId'];
+        if (eventTabId == tabId) {
+          callback(args);
+        }
+      } else {
+        // 对于非Map类型的事件，直接调用回调
+        callback(args);
+      }
+    });
+
+    _tabEventSubscriptions[tabId]![listenerKey] = subscriptionId;
+    return listenerKey;
+  }
+
+  /// 移除指定标签的事件监听器
+  /// [tabId] 标签ID
+  /// [listenerKey] 监听器key（由addTabEventListener返回）
+  void removeTabEventListener(String tabId, String listenerKey) {
+    final tabSubscriptions = _tabEventSubscriptions[tabId];
+    if (tabSubscriptions != null) {
+      final subscriptionId = tabSubscriptions[listenerKey];
+      if (subscriptionId != null) {
+        EventManager.instance.unsubscribeById(subscriptionId);
+        tabSubscriptions.remove(listenerKey);
+
+        // 如果该标签没有任何监听器了，清理映射
+        if (tabSubscriptions.isEmpty) {
+          _tabEventSubscriptions.remove(tabId);
+        }
+      }
+    }
+  }
+
+  /// 为指定标签广播事件
+  /// [tabId] 标签ID
+  /// [eventType] 事件类型
+  /// [data] 事件数据
+  void broadcastTabEvent(
+    String tabId,
+    String eventType,
+    Map<String, dynamic> data,
+  ) {
+    // 确保数据中包含tabId
+    final eventData = Map<String, dynamic>.from(data);
+    eventData['tabId'] = tabId;
+
+    EventManager.instance.broadcast(eventType, MapEventArgs(eventData));
+  }
+
+  /// 移除指定标签的所有事件监听器
+  /// [tabId] 标签ID
+  void removeAllTabEventListeners(String tabId) {
+    final tabSubscriptions = _tabEventSubscriptions[tabId];
+    if (tabSubscriptions != null) {
+      for (final subscriptionId in tabSubscriptions.values) {
+        EventManager.instance.unsubscribeById(subscriptionId);
+      }
+      _tabEventSubscriptions.remove(tabId);
+    }
   }
 
   // ========= 持久化相关 =========
