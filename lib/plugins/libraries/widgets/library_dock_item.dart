@@ -29,7 +29,6 @@ class LibraryDockItemRegistrar {
           if (libMap != null) {
             tabData = LibraryTabData(
               tabId: values['tabId'] as String? ?? const Uuid().v4(),
-              itemId: values['itemId'] as String? ?? const Uuid().v4(),
               library: Library.fromMap(libMap),
               title: (values['title'] as String?) ?? '',
               isRecycleBin: values['isRecycleBin'] as bool? ?? false,
@@ -76,7 +75,6 @@ class LibraryDockItemRegistrar {
     final manager = DockManager.getInstance()!;
     final tabData = LibraryTabData(
       tabId: tabId,
-      itemId: const Uuid().v4(),
       library: library,
       title: title,
       isRecycleBin: isRecycleBin,
@@ -94,18 +92,17 @@ class LibraryDockItemRegistrar {
     final values = <String, dynamic>{
       '_tabDataJson': tabData.toJson(),
       'tabId': tabData.tabId,
-      'itemId': tabData.itemId,
       'title': tabData.title,
       'isRecycleBin': tabData.isRecycleBin,
       'createDate': tabData.createDate.toIso8601String(),
       'library': library.toMap(),
       'stored': tabData.stored,
-      'id': tabData.itemId, // 供 registry 默认按钮使用
+      'id': tabData.tabId, // 供 registry 默认按钮使用
     };
 
     // 添加到布局
     manager.addTypedItem(
-      id: tabData.itemId,
+      id: tabData.tabId,
       type: type,
       values: values,
       name: tabData.title.isNotEmpty ? tabData.title : tabData.library.name,

@@ -207,7 +207,6 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       print('Creating default tabData for library: ${library.name}');
       final defaultTabData = LibraryTabData(
         tabId: widget.tabData!.tabId,
-        itemId: widget.tabData!.itemId,
         library: library,
         title: library.name,
         isRecycleBin: false,

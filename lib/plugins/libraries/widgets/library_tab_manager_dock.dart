@@ -14,18 +14,13 @@ class LibraryTabManager {
   }
 
   /// 获取存储值
-  static dynamic getValue(
-    String tabId,
-    String itemId,
-    String key,
-    dynamic defaultValue,
-  ) {
+  static dynamic getValue(String tabId, String key, dynamic defaultValue) {
     if (_globalDockManager == null) {
       return defaultValue;
     }
 
     // 从item的values中获取存储的数据
-    final itemData = _globalDockManager!.itemDataCache[itemId];
+    final itemData = _globalDockManager!.itemDataCache[tabId];
     if (itemData != null) {
       final storedData = itemData.values['stored'] as Map<String, dynamic>?;
       return storedData?[key] ?? defaultValue;
@@ -37,37 +32,38 @@ class LibraryTabManager {
   /// 更新过滤器
   static void updateFilter(
     String tabId,
-    String itemId,
     Map<String, dynamic> filter, {
     bool overwrite = true,
   }) {
-    _updateStoredValue(itemId, 'filter', {
-      ...getCurrentFilter(tabId, itemId),
+    _updateStoredValue(tabId, 'filter', {
+      ...getCurrentFilter(tabId),
       ...filter,
     });
 
     // 重置分页到第一页
-    _updateStoredValue(itemId, 'paginationOptions', {
+    _updateStoredValue(tabId, 'paginationOptions', {
       'page': 1,
       'perPage': 1000,
     });
   }
 
   /// 获取当前过滤器
-  static Map<String, dynamic> getCurrentFilter(String tabId, String itemId) {
-    return getValue(tabId, itemId, 'filter', <String, dynamic>{})
-            as Map<String, dynamic>? ??
-        <String, dynamic>{};
+  static Map<String, dynamic> getCurrentFilter(String tabId) {
+    final value = getValue(tabId, 'filter', <String, dynamic>{});
+    if (value is Map) {
+      return Map<String, dynamic>.from(value);
+    }
+    return <String, dynamic>{};
   }
 
   /// 获取tab数据 - 从dock系统中获取
-  static LibraryTabData? getTabData(String tabId, String itemId) {
+  static LibraryTabData? getTabData(String tabId) {
     if (_globalDockManager == null) {
       return null;
     }
 
     // 从item的values中获取_tabDataJson
-    final itemData = _globalDockManager!.itemDataCache[itemId];
+    final itemData = _globalDockManager!.itemDataCache[tabId];
     if (itemData != null) {
       final tabDataJson =
           itemData.values['_tabDataJson'] as Map<String, dynamic>?;
@@ -80,26 +76,22 @@ class LibraryTabManager {
   }
 
   /// 设置存储值
-  static void setValue(String tabId, String itemId, String key, dynamic value) {
-    _updateStoredValue(itemId, key, value);
+  static void setValue(String tabId, String key, dynamic value) {
+    _updateStoredValue(tabId, key, value);
   }
 
   /// 设置排序选项
-  static void setSortOptions(
-    String tabId,
-    String itemId,
-    Map<String, dynamic> sortOptions,
-  ) {
-    _updateStoredValue(itemId, 'sortOptions', sortOptions);
+  static void setSortOptions(String tabId, Map<String, dynamic> sortOptions) {
+    _updateStoredValue(tabId, 'sortOptions', sortOptions);
   }
 
   /// 内部方法：更新存储值
-  static void _updateStoredValue(String itemId, String key, dynamic value) {
+  static void _updateStoredValue(String tabId, String key, dynamic value) {
     if (_globalDockManager == null) {
       return;
     }
 
-    final itemData = _globalDockManager!.itemDataCache[itemId];
+    final itemData = _globalDockManager!.itemDataCache[tabId];
     if (itemData != null) {
       // 更新stored数据
       final storedData = Map<String, dynamic>.from(
@@ -120,7 +112,7 @@ class LibraryTabManager {
       }
 
       // 通过DockManager更新item values
-      _globalDockManager!.updateItemValues(itemId, newValues);
+      _globalDockManager!.updateItemValues(tabId, newValues);
     }
   }
 }

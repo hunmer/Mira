@@ -5,7 +5,6 @@ class LibraryTabData {
   final Library library;
   final bool isRecycleBin;
   final String tabId;
-  final String itemId;
   bool needUpdate;
   String title;
   final DateTime createDate;
@@ -14,7 +13,6 @@ class LibraryTabData {
   LibraryTabData({
     this.title = '',
     required this.tabId,
-    required this.itemId,
     this.needUpdate = false,
     required this.library,
     this.isRecycleBin = false,
@@ -26,7 +24,6 @@ class LibraryTabData {
     return LibraryTabData(
       title: map['title'] as String,
       tabId: map['tabId'] as String,
-      itemId: map['itemId'] as String,
       library: Library.fromMap(map['library']),
       isRecycleBin: map['isRecycleBin'] as bool? ?? false,
       createDate: DateTime.parse(map['create_date'] as String),
@@ -38,7 +35,6 @@ class LibraryTabData {
     return {
       'title': title,
       'tabId': tabId,
-      'itemId': itemId,
       'library': library.toJson(),
       'isRecycleBin': isRecycleBin,
       'create_date': createDate.toIso8601String(),
@@ -48,7 +44,6 @@ class LibraryTabData {
 
   LibraryTabData copyWith({
     String? tabId,
-    String? itemId,
     String? title,
     Library? library,
     bool? needUpdate,
@@ -61,7 +56,6 @@ class LibraryTabData {
     return LibraryTabData(
       title: title ?? this.title,
       tabId: tabId ?? this.tabId,
-      itemId: itemId ?? this.itemId,
       library: library ?? this.library,
       needUpdate: needUpdate ?? this.needUpdate,
       isRecycleBin: isRecycleBin ?? this.isRecycleBin,

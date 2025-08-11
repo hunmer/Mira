@@ -12,7 +12,6 @@ class LibrarySidebarView extends StatefulWidget {
   final LibrariesPlugin plugin;
   final Library library;
   final String tabId;
-  final String itemId;
   final List<LibraryTag> tags;
   final List<String> tagsSelected;
   final List<LibraryFolder> folders;
@@ -22,7 +21,6 @@ class LibrarySidebarView extends StatefulWidget {
     super.key,
     required this.plugin,
     required this.tabId,
-    required this.itemId,
     required this.library,
     required this.tags,
     this.tagsSelected = const [],
@@ -56,7 +54,7 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
             library: widget.library,
             showSelectAll: false,
             onSelectionChanged: (ids) {
-              LibraryTabManager.updateFilter(widget.tabId, widget.itemId, {
+              LibraryTabManager.updateFilter(widget.tabId, {
                 'folder': ids != null && ids.isNotEmpty ? ids.first : '',
               }, overwrite: false);
             },
@@ -76,12 +74,9 @@ class _LibrarySidebarViewState extends State<LibrarySidebarView> {
             selected: Set<String>.from(widget.tagsSelected),
             showSelectAll: false,
             onSelectionChanged:
-                (ids) => LibraryTabManager.updateFilter(
-                  widget.tabId,
-                  widget.itemId,
-                  {'tags': ids},
-                  overwrite: false,
-                ),
+                (ids) => LibraryTabManager.updateFilter(widget.tabId, {
+                  'tags': ids,
+                }, overwrite: false),
             type: 'tags',
           ),
         ),

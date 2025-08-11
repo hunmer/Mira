@@ -38,7 +38,6 @@ class MainContentPanel extends StatefulWidget {
 class _MainContentPanelState extends State<MainContentPanel> {
   @override
   Widget build(BuildContext context) {
-    // 直接构建内容，不使用 ResponsiveBuilder 避免不必要的重建
     return Scaffold(
       body: Column(
         children: [

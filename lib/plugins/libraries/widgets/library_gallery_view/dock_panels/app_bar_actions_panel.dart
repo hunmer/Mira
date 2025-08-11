@@ -14,7 +14,6 @@ class AppBarActionsPanel extends StatelessWidget {
   final LibraryGalleryState state;
   final LibraryGalleryEvents events;
   final String tabId;
-  final String itemId;
   final VoidCallback? onShowDropDialog;
 
   const AppBarActionsPanel({
@@ -24,7 +23,6 @@ class AppBarActionsPanel extends StatelessWidget {
     required this.state,
     required this.events,
     required this.tabId,
-    required this.itemId,
     this.onShowDropDialog,
   }) : super(key: key);
 
@@ -50,7 +48,7 @@ class AppBarActionsPanel extends StatelessWidget {
           if (filterOptions != null &&
               state.filterOptionsNotifier.value != filterOptions) {
             state.filterOptionsNotifier.value = filterOptions;
-            LibraryTabManager.updateFilter(tabId, itemId, filterOptions);
+            LibraryTabManager.updateFilter(tabId, filterOptions);
           }
         },
         onUpload: onShowDropDialog ?? () {},
@@ -58,12 +56,12 @@ class AppBarActionsPanel extends StatelessWidget {
         displayFields: Set<String>.from(state.displayFieldsNotifier.value),
         onDisplayFieldsChanged: (Set<String> fields) {
           state.displayFieldsNotifier.value = fields;
-          LibraryTabManager.setValue(tabId, itemId, 'displayFields', fields);
+          LibraryTabManager.setValue(tabId, 'displayFields', fields);
         },
         imagesPerRow: state.imagesPerRowNotifier.value,
         onImagesPerRowChanged: (count) {
           state.imagesPerRowNotifier.value = count;
-          LibraryTabManager.setValue(tabId, itemId, 'imagesPerRow', count);
+          LibraryTabManager.setValue(tabId, 'imagesPerRow', count);
         },
         onRefresh: events.refresh,
         sortOptions: state.sortOptionsNotifier.value,
@@ -71,19 +69,14 @@ class AppBarActionsPanel extends StatelessWidget {
           if (sortOptions != null &&
               state.sortOptionsNotifier.value != sortOptions) {
             state.sortOptionsNotifier.value = sortOptions;
-            LibraryTabManager.setValue(
-              tabId,
-              itemId,
-              'sortOptions',
-              sortOptions,
-            );
+            LibraryTabManager.setValue(tabId, 'sortOptions', sortOptions);
             events.loadFiles();
           }
         },
         viewType: state.viewTypeNotifier.value,
         onViewTypeChanged: (DragSelectViewType viewType) {
           state.viewTypeNotifier.value = viewType;
-          LibraryTabManager.setValue(tabId, itemId, 'viewType', viewType.index);
+          LibraryTabManager.setValue(tabId, 'viewType', viewType.index);
         },
       ),
     );
@@ -105,7 +98,6 @@ class AppBarActionsPanelRegistrar {
         final state = values['state'] as LibraryGalleryState;
         final events = values['events'] as LibraryGalleryEvents;
         final tabId = values['tabId'] as String;
-        final itemId = values['itemId'] as String;
         final onShowDropDialog = values['onShowDropDialog'] as VoidCallback?;
 
         return AppBarActionsPanel(
@@ -114,7 +106,6 @@ class AppBarActionsPanelRegistrar {
           state: state,
           events: events,
           tabId: tabId,
-          itemId: itemId,
           onShowDropDialog: onShowDropDialog,
         );
       },

@@ -65,7 +65,6 @@ class LibraryGalleryState {
 
   LibraryGalleryState({required this.tabData}) {
     tabId = tabData.tabId;
-    itemId = tabData.itemId;
     // 从tabData中恢复状态
     paginationOptionsNotifier.value = Map<String, dynamic>.from(
       _getStoredValue('paginationOptions', {'page': 1, 'perPage': 1000}),

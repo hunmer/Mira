@@ -38,7 +38,6 @@ class LibraryGalleryEvents {
     required this.library,
   }) {
     tabId = tabData.tabId;
-    itemId = tabData.itemId;
 
     // 初始化防抖 Subject
     _loadFilesSubject = BehaviorSubject<void>();
@@ -289,7 +288,7 @@ class LibraryGalleryEvents {
   void updateSort(String sort, String order) {
     final newSortOptions = {'sort': sort, 'order': order};
     state.sortOptionsNotifier.value = newSortOptions;
-    LibraryTabManager.setValue(tabId, itemId, 'sortOptions', newSortOptions);
+    LibraryTabManager.setValue(tabId, 'sortOptions', newSortOptions);
     loadFiles();
   }
 
@@ -411,7 +410,7 @@ class LibraryGalleryEvents {
       // TODO: 数据保存到本地
       LibraryEventManager.instance.broadcast(
         'tab::doUpdate',
-        MapEventArgs({'tabId': tabData.tabId, 'itemId': tabData.itemId}),
+        MapEventArgs({'tabId': tabData.tabId}),
       );
     }
   }

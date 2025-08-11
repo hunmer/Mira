@@ -131,6 +131,14 @@ class _TabbedViewState extends State<TabbedView> {
       shouldShowTabsArea = provider.controller.tabs.length > 1;
     }
 
+    // 标题都为空，则不显示
+    bool hasNonEmptyTitle = provider.controller.tabs.any(
+      (tab) => tab.text.trim().isNotEmpty,
+    );
+    if (!hasNonEmptyTitle) {
+      shouldShowTabsArea = false;
+    }
+
     List<LayoutId> children = [];
     if (shouldShowTabsArea) {
       Widget tabArea = TabsArea(provider: provider);

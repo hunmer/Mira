@@ -11,7 +11,6 @@ class SidebarPanel extends StatelessWidget {
   final LibrariesPlugin plugin;
   final Library library;
   final String tabId;
-  final String itemId;
   final ValueNotifier<List<LibraryTag>> tags;
   final ValueNotifier<List<LibraryFolder>> folders;
   final ValueNotifier<Map<String, dynamic>> filterOptionsNotifier;
@@ -21,7 +20,6 @@ class SidebarPanel extends StatelessWidget {
     required this.plugin,
     required this.library,
     required this.tabId,
-    required this.itemId,
     required this.tags,
     required this.folders,
     required this.filterOptionsNotifier,
@@ -42,7 +40,6 @@ class SidebarPanel extends StatelessWidget {
             plugin: plugin,
             library: library,
             tabId: tabId,
-            itemId: itemId,
             tags: tagsList,
             tagsSelected: List<String>.from(filterOptions['tags'] ?? []),
             folders: foldersList,
@@ -70,7 +67,6 @@ class SidebarPanelRegistrar {
           values['library'] as Map<String, dynamic>,
         );
         final tabId = values['tabId'] as String;
-        final itemId = values['itemId'] as String;
         final tags = values['tags'] as ValueNotifier<List<LibraryTag>>;
         final folders = values['folders'] as ValueNotifier<List<LibraryFolder>>;
         final filterOptionsNotifier =
@@ -81,7 +77,6 @@ class SidebarPanelRegistrar {
           plugin: plugin,
           library: library,
           tabId: tabId,
-          itemId: itemId,
           tags: tags,
           folders: folders,
           filterOptionsNotifier: filterOptionsNotifier,

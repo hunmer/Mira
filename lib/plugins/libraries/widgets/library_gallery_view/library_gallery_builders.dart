@@ -17,13 +17,13 @@ class LibraryGalleryBuilders {
   final LibrariesPlugin plugin;
   final Library library;
   late final String tabId;
-  late final String itemId;
   final VoidCallback? onShowDropDialog;
   final Function(LibraryFile) onFileOpen;
   final Function(LibraryFile) onFileSelected;
   final Function(LibraryFile) onToggleSelected;
   late BuildContext context;
   final LibraryTabData tabData;
+  // TODO: 一个选项控制name是否显示
   final items = [
     {
       'id': 'quick_actions',
@@ -48,7 +48,7 @@ class LibraryGalleryBuilders {
     },
     {
       'id': 'main_content',
-      'name': '',
+      'name': '内容',
       'type': 'item',
       'closable': true,
       'maximizable': true,
@@ -74,8 +74,7 @@ class LibraryGalleryBuilders {
       'closable': true,
       'maximizable': false,
       'keepAlive': true,
-      'weight': 0.1,
-      'minimalSize': 40.0,
+      'size': 60.0,
       'showAtDevices': [DeviceScreenType.desktop],
     },
   ];
@@ -96,7 +95,6 @@ class LibraryGalleryBuilders {
     required this.onToggleSelected,
   }) {
     tabId = tabData.tabId;
-    itemId = tabData.itemId;
   }
 
   /// 构建响应式布局
@@ -179,10 +177,10 @@ class LibraryGalleryBuilders {
   }
 
   /// 构建项目内容
-  Widget _buildItemContent(String itemId, bool isRecycleBin) {
+  Widget _buildItemContent(String name, bool isRecycleBin) {
     final manager = DockManager.getInstance()!;
     Widget? widget;
-    switch (itemId) {
+    switch (name) {
       case 'quick_actions':
         widget = manager.registry.build('library_quick_actions', {
           'plugin': plugin,
@@ -197,7 +195,6 @@ class LibraryGalleryBuilders {
           'plugin': plugin,
           'library': library.toMap(),
           'tabId': tabId,
-          'itemId': itemId,
           'tags': state.tags,
           'folders': state.folders,
           'filterOptionsNotifier': state.filterOptionsNotifier,
@@ -232,15 +229,14 @@ class LibraryGalleryBuilders {
           'state': state,
           'events': events,
           'tabId': tabId,
-          'itemId': itemId,
           'onShowDropDialog': onShowDropDialog,
         });
         break;
 
       default:
-        return Center(child: Text('Unknown panel: $itemId'));
+        return Center(child: Text('Unknown panel: $name'));
     }
 
-    return widget ?? Center(child: Text('Failed to build panel: $itemId'));
+    return widget ?? Center(child: Text('Failed to build panel: $name'));
   }
 }
