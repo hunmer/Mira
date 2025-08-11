@@ -184,11 +184,11 @@ class DockManager extends ChangeNotifier {
 
     if (insertMode == DockInsertMode.choose && context != null) {
       final result = await showInsertLocationDialog(context, layout);
+      Navigator.of(context).pop();
       if (result == null) {
         // 用户取消了选择
         return;
       }
-
       if (result.targetArea is! DropArea) {
         throw ArgumentError('Selected area is not a valid drop target');
       }

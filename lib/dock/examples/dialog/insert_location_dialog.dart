@@ -204,6 +204,7 @@ class _InsertLocationDialogState extends State<InsertLocationDialog> {
     return _buildClickableArea(
       tabs,
       Container(
+        constraints: const BoxConstraints(minHeight: 80),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.purple.shade300, width: 2),
@@ -240,6 +241,8 @@ class _InsertLocationDialogState extends State<InsertLocationDialog> {
     return _buildClickableArea(
       item,
       Container(
+        width: double.infinity,
+        constraints: const BoxConstraints(minHeight: 80),
         padding: const EdgeInsets.all(8),
         decoration: BoxDecoration(
           border: Border.all(color: Colors.orange.shade300, width: 2),
@@ -272,16 +275,21 @@ class _InsertLocationDialogState extends State<InsertLocationDialog> {
   }
 
   Widget _buildClickableArea(DockingArea area, Widget child) {
-    return GestureDetector(
-      onTap: () {
-        if (area is DropArea) {
-          setState(() {
-            selectedArea = selectedArea == area ? null : area;
-          });
-        }
-      },
-      child: Stack(
-        children: [child, if (selectedArea == area) _buildInsertButtons(area)],
+    return Expanded(
+      child: GestureDetector(
+        onTap: () {
+          if (area is DropArea) {
+            setState(() {
+              selectedArea = selectedArea == area ? null : area;
+            });
+          }
+        },
+        child: Stack(
+          children: [
+            child,
+            if (selectedArea == area) _buildInsertButtons(area),
+          ],
+        ),
       ),
     );
   }
