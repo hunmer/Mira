@@ -63,5 +63,5 @@ class AppRoutes extends NavigatorObserver {
     DockingPersistence: (context) => DockingPersistenceDemo(),
   };
 
-  static String get initialRoute => DockingPersistence;
+  static String get initialRoute => LibraryTabs;
 }

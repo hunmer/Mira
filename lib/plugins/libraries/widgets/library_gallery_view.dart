@@ -190,30 +190,17 @@ class LibraryGalleryViewState extends State<LibraryGalleryView> {
       _state.paginationOptionsNotifier.value['page'] = totalPages;
     }
 
-    return ResponsiveBuilder(
-      breakpoints: const ScreenBreakpoints(
-        desktop: 800,
-        tablet: 600,
-        watch: 200,
+    return Scaffold(
+      bottomSheet: LibraryGalleryBottomSheet(
+        uploadProgress: _state.uploadProgressNotifier.value,
       ),
-      builder: (context, sizingInformation) {
-        return Scaffold(
-          bottomSheet: LibraryGalleryBottomSheet(
-            uploadProgress: _state.uploadProgressNotifier.value,
-          ),
-          body: Container(
-            // 添加一个容器来确保 Docking 布局有适当的边距和样式
-            decoration: BoxDecoration(
-              color: Theme.of(context).scaffoldBackgroundColor,
-            ),
-            child: _builders.buildResponsiveLayout(
-              context,
-              sizingInformation,
-              isRecycleBin,
-            ),
-          ),
-        );
-      },
+      body: Container(
+        // 添加一个容器来确保 Docking 布局有适当的边距和样式
+        decoration: BoxDecoration(
+          color: Theme.of(context).scaffoldBackgroundColor,
+        ),
+        child: _builders.build(context, isRecycleBin),
+      ),
     );
   }
 }

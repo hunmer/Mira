@@ -4,13 +4,21 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:mira/core/plugin_manager.dart';
 import 'package:mira/core/utils/utils.dart';
-import 'package:mira/dock/dock_controller.dart';
-import 'package:mira/dock/dock_events.dart';
+import 'package:mira/dock/dock_theme.dart';
 import 'package:mira/plugins/libraries/libraries_plugin.dart';
 import 'package:mira/plugins/libraries/widgets/app_sidebar_view.dart';
+import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
 import 'package:mira/core/widgets/hotkey_settings_view.dart';
 import 'package:mira/core/widgets/window_controls.dart';
-import 'package:rxdart/rxdart.dart';
+// Added for Docking main interface
+import 'package:mira/dock/examples/dock_manager.dart';
+import 'package:mira/dock/examples/docking_persistence_logic.dart';
+import 'package:mira/dock/examples/widgets/dock_item_registrar.dart';
+import 'package:mira/dock/docking/lib/src/docking.dart';
+import 'package:mira/tabbed/tabbed_view/lib/tabbed_view.dart';
+import 'package:mira/multi_split_view/lib/multi_split_view.dart';
+import 'package:responsive_builder/responsive_builder.dart';
+import 'package:mira/dock/debug_layout_preset_dialog.dart';
 
 class LibraryTabsView extends StatefulWidget {
   const LibraryTabsView({super.key});
@@ -22,56 +30,43 @@ class LibraryTabsView extends StatefulWidget {
 
 class _LibraryTabsViewState extends State<LibraryTabsView> {
   late LibrariesPlugin _plugin;
-  late DockController _dockController;
   final List<StreamSubscription> _subscriptions = [];
   final ValueNotifier<bool> _showSidebar = ValueNotifier(false);
-  final ValueNotifier<int> _dockUpdateNotifier = ValueNotifier<int>(0);
-  late BehaviorSubject<void> _dockChangeSubject;
+
+  // Docking related state
+  late DockManager _dockManager;
+  late DockingPersistenceLogic _dockLogic;
+  bool _loadingDock = true;
 
   @override
   void initState() {
     super.initState();
     _plugin = PluginManager.instance.getPlugin('libraries') as LibrariesPlugin;
-
-    // 初始化防抖 Subject
-    _dockChangeSubject = BehaviorSubject<void>();
-
-    // 设置防抖监听
-    _subscriptions.add(
-      _dockChangeSubject.debounceTime(Duration(milliseconds: 500)).listen((
-        event,
-      ) {
-        _dockUpdateNotifier.value = _dockUpdateNotifier.value + 1;
-      }),
-    );
-
-    // 初始化dock controller
-    _dockController = DockController(dockTabsId: 'main');
-    // 监听 dock controller 的事件流
-    _subscriptions.add(
-      _dockController.eventStream.listen(_onDockControllerChanged),
-    );
-
-    // 异步初始化dock系统
-    _initializeDock();
+    _initDocking();
   }
 
-  Future<void> _initializeDock() async {
-    await _dockController.initializeStorage(_plugin.storage);
-    await _dockController.initializeDockSystem();
-  }
+  Future<void> _initDocking() async {
+    // Create manager with a stable id for persistence
+    _dockManager = DockManager(id: 'libraries_main_layout', autoSave: true);
+    _dockLogic = DockingPersistenceLogic(
+      manager: _dockManager,
+      context: context,
+    );
 
-  void _onDockControllerChanged(DockEvent event) {
-    print('tabs_view changed: ${event.type}');
-    switch (event.type) {
-      case DockEventType.tabClosed:
-      case DockEventType.tabCreated:
-      case DockEventType.layoutLoaded:
-        _dockChangeSubject.add(null);
-        break;
+    // Set global DockManager for LibraryTabManager compatibility
+    LibraryTabManager.setGlobalDockManager(_dockManager);
 
-      default:
-        break;
+    // Register available components
+    DockItemRegistrar.registerAllComponents(_dockManager);
+
+    // Try restore previous layout, otherwise create default
+    final restored = await _dockManager.restoreFromFile();
+    if (!restored) {
+      _dockLogic.createDefaultLayout();
+    }
+
+    if (mounted) {
+      setState(() => _loadingDock = false);
     }
   }
 
@@ -81,16 +76,12 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     for (final subscription in _subscriptions) {
       subscription.cancel();
     }
-    _dockController.dispose();
-    _dockChangeSubject.close();
     _showSidebar.dispose();
-    _dockUpdateNotifier.dispose();
     _plugin.server?.stop();
   }
 
   @override
   Widget build(BuildContext context) {
-    print('libray_tabs_view build');
     return Scaffold(
       appBar: AppBar(
         leading:
@@ -142,38 +133,88 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
               );
             },
           ),
+          IconButton(
+            icon: const Icon(Icons.library_add),
+            tooltip: '打开素材库',
+            onPressed: () {
+              _plugin.libraryUIController.openLibrary(context);
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.storage),
+            tooltip: '布局存储管理器',
+            onPressed: () {
+              showDialog(
+                context: context,
+                builder:
+                    (context) => DebugLayoutPresetDialog(manager: _dockManager),
+              );
+            },
+          ),
+          IconButton(
+            icon: const Icon(Icons.add_box),
+            tooltip: '添加组件',
+            onPressed: () => _dockLogic.showAddComponentTab(),
+          ),
+          IconButton(
+            icon: const Icon(Icons.delete),
+            tooltip: '重置',
+            onPressed: () {
+              _dockLogic.clearLayout();
+              _dockLogic.createDefaultLayout();
+            },
+          ),
           // Windows/Linux 的窗口控制按钮在右侧
           if (isDesktop() && (Platform.isWindows || Platform.isLinux))
             const WindowControls(),
         ],
         backgroundColor: Theme.of(context).colorScheme.surface,
       ),
-      body: Row(
-        children: [
-          ValueListenableBuilder<bool>(
-            valueListenable: _showSidebar,
-            builder: (context, showSidebar, child) {
-              return showSidebar
-                  ? Row(
-                    children: [
-                      AppSidebarView(),
-                      const VerticalDivider(width: 1),
-                    ],
-                  )
-                  : const SizedBox.shrink();
-            },
-          ),
-          Expanded(
-            child: ValueListenableBuilder<int>(
-              valueListenable: _dockUpdateNotifier,
-              builder: (context, value, child) {
-                return _dockController.dockTabs?.buildDockingWidget(context) ??
-                    const Center(child: CircularProgressIndicator());
-              },
-            ),
-          ),
-        ],
-      ),
+      body:
+          _loadingDock
+              ? const Center(child: CircularProgressIndicator())
+              : Row(
+                children: [
+                  ValueListenableBuilder<bool>(
+                    valueListenable: _showSidebar,
+                    builder: (context, showSidebar, child) {
+                      return showSidebar
+                          ? Row(
+                            children: [
+                              AppSidebarView(),
+                              const VerticalDivider(width: 1),
+                            ],
+                          )
+                          : const SizedBox.shrink();
+                    },
+                  ),
+                  // Added: Docking main interface
+                  Expanded(
+                    child: TabbedViewTheme(
+                      data: DockTheme.createCustomThemeData(context),
+                      child: Container(
+                        child: MultiSplitViewTheme(
+                          data: MultiSplitViewThemeData(
+                            dividerPainter: DividerPainters.grooved1(
+                              color: Colors.indigo[100]!,
+                              highlightedColor: Colors.indigo[900]!,
+                            ),
+                          ),
+                          child: Docking(
+                            layout: _dockManager.layout,
+                            draggable: true,
+                            breakpoints: const ScreenBreakpoints(
+                              desktop: 800,
+                              tablet: 600,
+                              watch: 200,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
     );
   }
 }

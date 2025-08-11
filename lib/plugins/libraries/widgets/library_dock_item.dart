@@ -1,120 +1,71 @@
 import 'package:flutter/material.dart';
-import 'package:mira/dock/dock_item.dart';
-import 'package:mira/dock/dock_manager.dart';
+import 'package:mira/dock/examples/dock_manager.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
+import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view/library_gallery_events.dart';
 import 'package:uuid/uuid.dart';
 import '../models/library.dart';
 import 'library_tab_data.dart';
 
-/// LibraryDockItem - 继承自DockItem的库标签页项目
-class LibraryDockItem extends DockItem {
-  final LibraryTabData tabData;
-  static bool _isBuilderRegistered = false;
+/// 使用新的注册方法，将 Library 作为 DockItemRegistrar 的一个组件类型
+class LibraryDockItemRegistrar {
+  static const String type = 'library_tab';
 
-  LibraryDockItem({
-    required this.tabData,
-    Map<String, ValueNotifier<dynamic>>? initialValues,
-  }) : super(
-         type: 'library_tab',
-         id: tabData.itemId,
-         title: tabData.title.isNotEmpty ? tabData.title : tabData.library.name,
-         values: LibraryGalleryEvents.initializeValues(tabData, initialValues),
-         builder: (item) {
-           final libraryItem = item as LibraryDockItem;
-           return DockingItem(
-             id: Uuid().v4(),
-             name: item.title,
-             closable: true,
-             keepAlive: true, // 启用keepAlive
-             widget: LibraryGalleryView(
-               // 移除额外的key，让DockingItem的keepAlive机制处理
-               tabData: tabData,
-               dockValues: item.values, // 传递dock values
-             ),
-           );
-         },
-       ) {
-    // 确保builder已注册
-    _ensureBuilderRegistered();
-
-    // 值变化监听器的设置现在在 LibraryGalleryEvents 中处理
-  }
-
-  /// 确保library_tab类型的builder已经注册
-  static void _ensureBuilderRegistered() {
-    if (!_isBuilderRegistered) {
-      registerLibraryTabBuilder();
-      _isBuilderRegistered = true;
-    }
-  }
-
-  /// 注册library_tab类型的builder
-  static void registerLibraryTabBuilder() {
-    DockManager.registerBuilder('library_tab', (dockItem) {
-      // 从dockItem中获取LibraryDockItem的实例
-      if (dockItem is LibraryDockItem) {
-        return dockItem.buildDockingItem();
-      }
-
-      // 如果不是LibraryDockItem实例，尝试从values中重建
-      try {
-        // 尝试从保存的值中恢复LibraryTabData
-        final tabDataJson =
-            dockItem.getValue('_tabDataJson') as Map<String, dynamic>?;
-
+  /// 注册 library_tab 组件到 DockItemRegistrar
+  static void register(DockManager manager) {
+    manager.registry.register(
+      'library_tab',
+      builder: (values) {
+        // 期望 values 内包含 LibraryTabData 的序列化数据
+        final tabDataJson = values['_tabDataJson'] as Map<String, dynamic>?;
+        LibraryTabData? tabData;
         if (tabDataJson != null) {
-          // 重建LibraryTabData
-          final tabData = LibraryTabData.fromMap(tabDataJson);
+          tabData = LibraryTabData.fromMap(tabDataJson);
+        } else {
+          // 兼容：从更平铺的字段恢复
+          final libMap = values['library'] as Map<String, dynamic>?;
+          if (libMap != null) {
+            tabData = LibraryTabData(
+              tabId: values['tabId'] as String? ?? const Uuid().v4(),
+              itemId: values['itemId'] as String? ?? const Uuid().v4(),
+              library: Library.fromMap(libMap),
+              title: (values['title'] as String?) ?? '',
+              isRecycleBin: values['isRecycleBin'] as bool? ?? false,
+              createDate:
+                  (values['createDate'] as String?) != null
+                      ? DateTime.tryParse(values['createDate']) ??
+                          DateTime.now()
+                      : DateTime.now(),
+              stored: Map<String, dynamic>.from(
+                values['stored'] as Map<String, dynamic>? ?? const {},
+              ),
+            );
+          }
+        }
 
-          // 创建新的LibraryDockItem，传递已有的values
-          final libraryDockItem = LibraryDockItem(
-            tabData: tabData,
-            initialValues: dockItem.values,
-          );
-
-          // 创建DockingItem时也传递values
-          return DockingItem(
-            id: Uuid().v4(),
-            name: dockItem.title,
-            closable: true,
-            keepAlive: true,
-            widget: LibraryGalleryView(
-              tabData: tabData,
-              dockValues: dockItem.values, // 传递dock values
+        if (tabData == null) {
+          return const Center(
+            child: Text(
+              'Library content not available',
+              style: TextStyle(color: Colors.grey),
             ),
           );
         }
-      } catch (e) {
-        print('LibraryDockItem: Error restoring from saved data: $e');
-      }
 
-      // 如果无法重建，显示错误信息
-      return DockingItem(
-        id: 'library_${dockItem.title}',
-        name: dockItem.title,
-        closable: true,
-        keepAlive: true, // 启用keepAlive
-        widget: const Center(
-          child: Text(
-            'Library content not available',
-            style: TextStyle(color: Colors.grey),
-          ),
-        ),
-      );
-    });
-
-    print('LibraryDockItem: Registered library_tab builder');
+        // 初始化 dock values（和旧实现保持一致键名）
+        final initialValues = LibraryGalleryEvents.initializeValues(
+          tabData,
+          null,
+        );
+        return LibraryGalleryView(tabData: tabData, dockValues: initialValues);
+      },
+    );
   }
 
-  /// 静态方法：手动注册builder（供外部调用）
-  static void ensureRegistered() {
-    _ensureBuilderRegistered();
-  }
-
-  /// 静态方法：添加库标签页
+  /// 通过新的 DockManager API 添加一个库标签页
   static bool addTab(
+    DockManager manager,
     Library library, {
     String title = '',
     bool isRecycleBin = false,
@@ -137,14 +88,78 @@ class LibraryDockItem extends DockItem {
       },
     );
 
-    final libraryDockItem = LibraryDockItem(tabData: tabData);
+    // 将 tabData 打包为 values
+    final values = <String, dynamic>{
+      '_tabDataJson': tabData.toJson(),
+      'tabId': tabData.tabId,
+      'itemId': tabData.itemId,
+      'title': tabData.title,
+      'isRecycleBin': tabData.isRecycleBin,
+      'createDate': tabData.createDate.toIso8601String(),
+      'library': library.toMap(),
+      'stored': tabData.stored,
+      'id': tabData.itemId, // 供 registry 默认按钮使用
+    };
 
-    // 通过DockManager添加到dock系统
-    final success = DockManager.addDockItem(
-      dockTabsId,
-      dockTabId,
-      libraryDockItem,
+    // 选择一个可投放区域（优先 Tabs 或 Item，否则 root）
+    DockingArea? targetArea;
+    for (final area in manager.layout.layoutAreas()) {
+      if (area is DockingTabs) {
+        targetArea = area;
+        break;
+      }
+    }
+    targetArea ??=
+        manager.layout.layoutAreas().firstWhere(
+              (a) => a is DockingItem,
+              orElse: () => manager.layout.root!,
+            )
+            as DockingArea?;
+
+    if (targetArea is! DropArea) {
+      return false;
+    }
+
+    // 添加到布局
+    manager.addTypedItem(
+      id: tabData.itemId,
+      type: type,
+      values: values,
+      targetArea: targetArea as DropArea,
+      // 如果是 Tabs，插入到索引 0；否则靠右放置
+      dropIndex: targetArea is DockingTabs ? 0 : null,
+      dropPosition: targetArea is DockingTabs ? null : DropPosition.right,
+      name: tabData.title.isNotEmpty ? tabData.title : tabData.library.name,
+      keepAlive: true,
+      closable: true,
+      maximizable: true,
     );
-    return success;
+
+    return true;
+  }
+}
+
+/// 兼容旧引用：保留类名但提示使用新接口
+class LibraryDockItem {
+  static void ensureRegistered(DockManager manager) {
+    LibraryDockItemRegistrar.register(manager);
+  }
+
+  static bool addTab(
+    Library library, {
+    String title = '',
+    bool isRecycleBin = false,
+    String dockTabsId = 'main',
+    required String dockTabId,
+  }) {
+    LibraryDockItemRegistrar.addTab(
+      DockManager.getInstance()!,
+      library,
+      title: title,
+      isRecycleBin: isRecycleBin,
+      dockTabsId: dockTabsId,
+      dockTabId: dockTabId,
+    );
+    return false;
   }
 }

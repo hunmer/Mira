@@ -50,128 +50,59 @@ class LibraryGalleryBuilders {
   }
 
   /// 构建响应式布局
-  Widget buildResponsiveLayout(
-    BuildContext context,
-    SizingInformation sizingInformation,
-    bool isRecycleBin,
-  ) {
+  Widget build(BuildContext context, bool isRecycleBin) {
     this.context = context;
-    // 为不同设备类型创建不同的 Docking 布局
-    final layoutData = _createLayoutDataForDevice(
-      sizingInformation.deviceScreenType,
-    );
-
-    return _buildDockingLayout(
-      context,
-      layoutData,
-      isRecycleBin,
-      sizingInformation.screenSize.width,
-    );
-  }
-
-  /// 为不同设备创建布局数据
-  Map<String, dynamic> _createLayoutDataForDevice(DeviceScreenType deviceType) {
-    switch (deviceType) {
-      case DeviceScreenType.mobile:
-        return {
+    return _buildDockingLayout(context, {
+      'type': 'row',
+      'items': [
+        {
+          'id': 'quick_actions',
+          'name': 'Quick Actions',
           'type': 'item',
-          'id': 'main_content',
-          'name': 'Gallery',
           'closable': true,
           'maximizable': false,
           'keepAlive': true,
-        };
-
-      case DeviceScreenType.tablet:
-        return {
-          'type': 'row',
-          'items': [
-            {
-              'id': 'sidebar',
-              'name': 'Sidebar',
-              'type': 'item',
-              'closable': true,
-              'maximizable': false,
-              'keepAlive': true,
-              'weight': 0.15,
-              'minimalSize': 250.0,
-            },
-            {
-              'id': 'main_content',
-              'name': 'Library Content',
-              'type': 'item',
-              'closable': true,
-              'maximizable': true,
-              'keepAlive': true,
-              'weight': 0.85,
-            },
-          ],
-        };
-
-      case DeviceScreenType.desktop:
-        return {
-          'type': 'row',
-          'items': [
-            {
-              'id': 'quick_actions',
-              'name': 'Quick Actions',
-              'type': 'item',
-              'closable': true,
-              'maximizable': false,
-              'keepAlive': true,
-              'size': 60.0,
-            },
-            {
-              'id': 'sidebar',
-              'name': 'Sidebar',
-              'type': 'item',
-              'closable': true,
-              'maximizable': false,
-              'keepAlive': true,
-              'weight': 0.15,
-              'minimalSize': 150.0,
-            },
-            {
-              'id': 'main_content',
-              'name': 'Library Content',
-              'type': 'item',
-              'closable': true,
-              'maximizable': true,
-              'keepAlive': true,
-              'weight': 0.6,
-            },
-            {
-              'id': 'details',
-              'name': 'Details',
-              'type': 'item',
-              'closable': true,
-              'maximizable': false,
-              'keepAlive': true,
-              'weight': 0.2,
-            },
-            {
-              'id': 'app_bar_actions',
-              'name': 'Actions',
-              'type': 'item',
-              'closable': true,
-              'maximizable': false,
-              'keepAlive': true,
-              'size': 60.0,
-            },
-          ],
-        };
-
-      case DeviceScreenType.watch:
-      default:
-        return {
+          'size': 60.0,
+        },
+        {
+          'id': 'sidebar',
+          'name': 'Sidebar',
           'type': 'item',
+          'closable': true,
+          'maximizable': false,
+          'keepAlive': true,
+          'weight': 0.15,
+          'minimalSize': 150.0,
+        },
+        {
           'id': 'main_content',
           'name': 'Library Content',
+          'type': 'item',
+          'closable': true,
+          'maximizable': true,
+          'keepAlive': true,
+          'weight': 0.6,
+        },
+        {
+          'id': 'details',
+          'name': 'Details',
+          'type': 'item',
           'closable': true,
           'maximizable': false,
           'keepAlive': true,
-        };
-    }
+          'weight': 0.2,
+        },
+        {
+          'id': 'app_bar_actions',
+          'name': 'Actions',
+          'type': 'item',
+          'closable': true,
+          'maximizable': false,
+          'keepAlive': true,
+          'size': 60.0,
+        },
+      ],
+    }, isRecycleBin);
   }
 
   /// 构建 Docking 布局
@@ -179,10 +110,9 @@ class LibraryGalleryBuilders {
     BuildContext context,
     Map<String, dynamic> layoutData,
     bool isRecycleBin,
-    double screenWidth,
   ) {
     final dockingLayout = DockingLayout(
-      root: _buildAreaFromData(layoutData, isRecycleBin, screenWidth),
+      root: _buildAreaFromData(layoutData, isRecycleBin),
     );
 
     return Docking(
@@ -199,11 +129,7 @@ class LibraryGalleryBuilders {
   }
 
   /// 从数据构建 Docking 区域
-  DockingArea _buildAreaFromData(
-    Map<String, dynamic> data,
-    bool isRecycleBin,
-    double screenWidth,
-  ) {
+  DockingArea _buildAreaFromData(Map<String, dynamic> data, bool isRecycleBin) {
     final type = data['type'] as String;
 
     if (type == 'row') {
@@ -214,7 +140,6 @@ class LibraryGalleryBuilders {
                 (item) => _buildAreaFromData(
                   item as Map<String, dynamic>,
                   isRecycleBin,
-                  screenWidth,
                 ),
               )
               .toList();
@@ -227,7 +152,6 @@ class LibraryGalleryBuilders {
                 (item) => _buildAreaFromData(
                   item as Map<String, dynamic>,
                   isRecycleBin,
-                  screenWidth,
                 ),
               )
               .toList();
@@ -240,7 +164,6 @@ class LibraryGalleryBuilders {
                 (item) => _buildAreaFromData(
                   item as Map<String, dynamic>,
                   isRecycleBin,
-                  screenWidth,
                 ),
               )
               .whereType<DockingItem>()
@@ -248,16 +171,12 @@ class LibraryGalleryBuilders {
       return DockingTabs(dockingItems);
     } else {
       // type == 'item'
-      return _buildDockingItem(data, isRecycleBin, screenWidth);
+      return _buildDockingItem(data, isRecycleBin);
     }
   }
 
   /// 构建单个 DockingItem
-  DockingItem _buildDockingItem(
-    Map<String, dynamic> data,
-    bool isRecycleBin,
-    double screenWidth,
-  ) {
+  DockingItem _buildDockingItem(Map<String, dynamic> data, bool isRecycleBin) {
     final id = data['id'] as String;
     final name = data['name'] as String;
     final closable = data['closable'] as bool? ?? true;
@@ -276,25 +195,21 @@ class LibraryGalleryBuilders {
       weight: weight,
       size: size,
       minimalSize: minimalSize,
-      widget: _buildItemContent(id, isRecycleBin, screenWidth),
+      widget: _buildItemContent(id, isRecycleBin),
     );
   }
 
   /// 构建项目内容
-  Widget _buildItemContent(
-    String itemId,
-    bool isRecycleBin,
-    double screenWidth,
-  ) {
+  Widget _buildItemContent(String itemId, bool isRecycleBin) {
     switch (itemId) {
       case 'quick_actions':
         return buildQuickActionsPanel();
 
       case 'sidebar':
-        return buildSidebarSection(screenWidth);
+        return buildSidebarSection();
 
       case 'main_content':
-        return buildMainContent(isRecycleBin, screenWidth);
+        return buildMainContent(isRecycleBin);
 
       case 'details':
         return buildMoreDetailsPage();
@@ -350,16 +265,7 @@ class LibraryGalleryBuilders {
           ),
           Tooltip(
             message: '回收站',
-            child: IconButton(
-              icon: Icon(Icons.delete),
-              onPressed: () {
-                LibraryTabManager.addTab(
-                  library,
-                  isRecycleBin: true,
-                  title: '回收站',
-                );
-              },
-            ),
+            child: IconButton(icon: Icon(Icons.delete), onPressed: () {}),
           ),
         ],
       ),
@@ -428,7 +334,7 @@ class LibraryGalleryBuilders {
   }
 
   /// 构建侧边栏部分
-  Widget buildSidebarSection(double screenWidth) {
+  Widget buildSidebarSection() {
     return MultiValueListenableBuilder(
       valueListenables: [
         state.tags,
@@ -461,7 +367,7 @@ class LibraryGalleryBuilders {
   }
 
   /// 构建主内容区域
-  Widget buildMainContent(bool isRecycleBin, double screenWidth) {
+  Widget buildMainContent(bool isRecycleBin) {
     return ResponsiveBuilder(
       builder: (context, sizingInformation) {
         return Scaffold(

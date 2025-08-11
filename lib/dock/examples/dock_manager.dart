@@ -11,6 +11,8 @@ import 'package:mira/tabbed/tabbed_view/lib/src/tabbed_view_menu_builder.dart';
 
 /// 增强版 DockManager，支持持久化
 class DockManager extends ChangeNotifier {
+  static final Map<String, DockManager> _instances = {};
+
   final String id;
   final DockingLayout layout;
   final DockItemRegistry registry = DockItemRegistry();
@@ -21,6 +23,7 @@ class DockManager extends ChangeNotifier {
   DockManager({required this.id, DockingArea? root, bool autoSave = true})
     : layout = DockingLayout(root: root),
       _autoSave = autoSave {
+    _instances[id] = this; // 注册实例
     layout.addListener(_onLayoutChanged);
   }
 
@@ -33,6 +36,7 @@ class DockManager extends ChangeNotifier {
 
   @override
   void dispose() {
+    _instances.remove(id); // 移除实例注册
     layout.removeListener(_onLayoutChanged);
     super.dispose();
   }
@@ -239,11 +243,74 @@ class DockManager extends ChangeNotifier {
     }
   }
 
+  // ========= 实例管理方法 =========
+
+  /// 根据ID获取DockManager实例
+  ///
+  /// [id] 实例的唯一标识符
+  /// [defaultValue] 当找不到实例时返回的默认值
+  ///
+  /// 返回找到的DockManager实例，如果不存在则返回defaultValue
+  static DockManager? getInstance({String? id = 'libraries_main_layout'}) {
+    return _instances[id];
+  }
+
+  /// 获取所有已注册的实例ID列表
+  static List<String> getAllInstanceIds() {
+    return _instances.keys.toList();
+  }
+
+  /// 检查指定ID的实例是否存在
+  static bool hasInstance(String id) {
+    return _instances.containsKey(id);
+  }
+
+  // ========= Library Tab 兼容方法 =========
+
+  /// 获取Library Tab的值
+  static T? getLibraryTabValue<T>(
+    String tabId,
+    String itemId,
+    String key, {
+    T? defaultValue,
+  }) {
+    // 这里需要实现从当前DockManager实例获取值的逻辑
+    // 暂时返回默认值，实际应该从item的values中获取
+    return defaultValue;
+  }
+
+  /// 更新Library Tab的值
+  static void updateLibraryTabValue(
+    String tabId,
+    String itemId,
+    String key,
+    dynamic value, {
+    bool overwrite = true,
+  }) {
+    // 这里需要实现更新值的逻辑
+    // 暂时空实现，实际应该更新item的values
+    print('updateLibraryTabValue: $tabId.$itemId.$key = $value');
+  }
+
+  /// 根据ID获取DockItem
+  static DockItemData? getDockItemById(
+    String dockTabsId,
+    String tabId,
+    String itemId,
+  ) {
+    // 这里需要实现根据ID查找DockItem的逻辑
+    // 暂时返回null，实际应该从全局的DockManager实例中查找
+    return null;
+  }
+
   // ========= 基础功能（保持原有） =========
 
   void setRoot(DockingArea? root) {
     layout.root = root;
   }
+
+  /// 获取item数据缓存（用于兼容性访问）
+  Map<String, DockItemData> get itemDataCache => _itemDataCache;
 
   void removeAllItems() {
     // 清空缓存

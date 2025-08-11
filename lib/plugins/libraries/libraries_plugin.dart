@@ -2,15 +2,12 @@ import 'package:flutter/foundation.dart';
 import 'package:mira/core/config_manager.dart';
 import 'package:mira/core/plugin_base.dart';
 import 'package:mira/core/plugin_manager.dart';
-import 'package:mira/dock/homepage_dock_item.dart';
-import 'package:mira/plugins/docking/widgets/docking_dock_item.dart';
 import 'package:mira/plugins/libraries/controllers/folders_tags_cache.dart';
 import 'package:mira/plugins/libraries/controllers/libraray_local_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_data_controller.dart';
 import 'package:mira/plugins/libraries/controllers/library_ui_controller.dart';
 import 'package:mira/plugins/libraries/widgets/library_sidebar_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_tab_manager_dock.dart';
-import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
 import 'package:mira/plugins/libraries/services/library_event_manager.dart';
 import 'package:background_downloader/background_downloader.dart';
 import 'services/websocket_server.dart';
@@ -51,11 +48,6 @@ class LibrariesPlugin extends PluginBase {
 
   @override
   Future<void> initialize() async {
-    // 注册LibraryDockItem的builder
-    LibraryDockItem.ensureRegistered();
-    HomePageDockItem.ensureRegistered();
-    DockingDockItem.ensureRegistered();
-
     // 初始化事件管理器
     eventManager = LibraryEventManager.instance;
     await eventManager.initialize();

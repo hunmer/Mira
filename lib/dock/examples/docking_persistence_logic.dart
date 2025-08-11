@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/docking.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
 import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
+import 'package:mira/dock/examples/registerdWidgets/dynamic_widget.dart';
 import 'package:responsive_builder/responsive_builder.dart';
 import 'dock_manager.dart';
 import 'dialog/add_component_dialog.dart';
@@ -132,44 +133,59 @@ class DockingPersistenceLogic {
 
   /// 创建默认布局
   void createDefaultLayout() {
-    // final widget = DynamicWidget(
-    //   jsonData: {
-    //     "type": "scaffold",
-    //     "args": {
-    //       "appBar": {
-    //         "type": "app_bar",
-    //         "args": {
-    //           "title": {
-    //             "type": "text",
-    //             "args": {"text": "Rich Text"},
-    //           },
-    //         },
-    //       },
-    //       "body": {
-    //         "type": "center",
-    //         "args": {
-    //           "child": {
-    //             "type": "rich_text",
-    //             "args": {
-    //               "text": {
-    //                 "children": [
-    //                   {"text": "Hello "},
-    //                   {
-    //                     "style": {"fontSize": 20.0, "fontWeight": "bold"},
-    //                     "text": "RICH TEXT",
-    //                   },
-    //                   {"text": " World!"},
-    //                 ],
-    //                 "style": {"color": "#000000", "fontSize": 12.0},
-    //               },
-    //             },
-    //           },
-    //         },
-    //       },
-    //     },
-    //   },
-    // );
+    final widget = DynamicWidget(
+      jsonData: {
+        "type": "scaffold",
+        "args": {
+          "appBar": {
+            "type": "app_bar",
+            "args": {
+              "title": {
+                "type": "text",
+                "args": {"text": "Rich Text"},
+              },
+            },
+          },
+          "body": {
+            "type": "center",
+            "args": {
+              "child": {
+                "type": "rich_text",
+                "args": {
+                  "text": {
+                    "children": [
+                      {"text": "Hello "},
+                      {
+                        "style": {"fontSize": 20.0, "fontWeight": "bold"},
+                        "text": "RICH TEXT",
+                      },
+                      {"text": " World!"},
+                    ],
+                    "style": {"color": "#000000", "fontSize": 12.0},
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
+    );
 
+    manager.setRoot(
+      DockingTabs([
+        DockingItem(
+          id: 'default_item',
+          name: 'Default Item',
+          widget: widget,
+          closable: true,
+          maximizable: false,
+          keepAlive: false,
+        ),
+      ]),
+    );
+  }
+
+  void createTest() {
     final widget1 = DockingLayout(
       root: DockingRow([
         DockingItem(
@@ -200,7 +216,7 @@ class DockingPersistenceLogic {
           visibilityMode: DeviceVisibilityMode.specifiedAndLarger,
           widget: Container(color: Colors.green),
         ),
-      ], id: 'nested1'),
+      ], id: 'root'),
     );
 
     final widget2 = DockingLayout(
@@ -264,7 +280,6 @@ class DockingPersistenceLogic {
         ),
       ),
     ], id: 'root');
-
     manager.setRoot(rootRow);
   }
 }
