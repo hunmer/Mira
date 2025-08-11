@@ -80,7 +80,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
     return Scaffold(
       appBar: AppBar(
         leading:
-            Platform.isMacOS && isDesktop()
+            isDesktop() && Platform.isMacOS
                 ? Row(
                   children: [
                     const WindowControls(),
@@ -95,7 +95,7 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                   icon: const Icon(Icons.menu),
                   onPressed: () => _showSidebar.value = !_showSidebar.value,
                 ),
-        leadingWidth: Platform.isMacOS && isDesktop() ? 140 : null,
+        leadingWidth: isDesktop() && Platform.isMacOS ? 140 : null,
         title:
             isDesktop()
                 ? DragToMoveArea(

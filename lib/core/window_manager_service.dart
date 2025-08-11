@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart';
 import 'package:window_manager/window_manager.dart';
 import 'config_manager.dart';
 
@@ -13,17 +14,20 @@ class WindowManagerService with WindowListener {
   Future<void> initialize() async {
     if (_isInitialized) return;
 
-    await windowManager.ensureInitialized();
-    windowManager.addListener(this);
+    // 仅在非Web平台初始化window_manager
+    if (!kIsWeb) {
+      await windowManager.ensureInitialized();
+      windowManager.addListener(this);
 
-    // 恢复窗口状态
-    await _restoreWindowState();
+      // 恢复窗口状态
+      await _restoreWindowState();
+    }
     _isInitialized = true;
   }
 
   /// 销毁窗口管理器
   void dispose() {
-    if (_isInitialized) {
+    if (_isInitialized && !kIsWeb) {
       windowManager.removeListener(this);
       _isInitialized = false;
     }
@@ -79,43 +83,57 @@ class WindowManagerService with WindowListener {
   @override
   void onWindowClose() {
     // 窗口关闭前保存当前状态
-    _saveCurrentWindowState();
+    if (!kIsWeb) {
+      _saveCurrentWindowState();
+    }
   }
 
   @override
   void onWindowResize() {
     // 窗口大小改变时保存
-    _saveWindowSize();
+    if (!kIsWeb) {
+      _saveWindowSize();
+    }
   }
 
   @override
   void onWindowMove() {
     // 窗口位置改变时保存
-    _saveWindowPosition();
+    if (!kIsWeb) {
+      _saveWindowPosition();
+    }
   }
 
   @override
   void onWindowMaximize() {
     // 窗口最大化时保存状态
-    _configManager.updateWindowMaximized(true);
+    if (!kIsWeb) {
+      _configManager.updateWindowMaximized(true);
+    }
   }
 
   @override
   void onWindowUnmaximize() {
     // 窗口取消最大化时保存状态和当前大小位置
-    _configManager.updateWindowMaximized(false);
-    _saveCurrentWindowState();
+    if (!kIsWeb) {
+      _configManager.updateWindowMaximized(false);
+      _saveCurrentWindowState();
+    }
   }
 
   @override
   void onWindowRestore() {
     // 窗口恢复时保存状态
-    _configManager.updateWindowMaximized(false);
-    _saveCurrentWindowState();
+    if (!kIsWeb) {
+      _configManager.updateWindowMaximized(false);
+      _saveCurrentWindowState();
+    }
   }
 
   /// 保存当前窗口状态（大小和位置）
   Future<void> _saveCurrentWindowState() async {
+    if (kIsWeb) return; // Web平台不支持window_manager
+
     try {
       final size = await windowManager.getSize();
       final position = await windowManager.getPosition();
@@ -136,6 +154,8 @@ class WindowManagerService with WindowListener {
 
   /// 保存窗口大小
   Future<void> _saveWindowSize() async {
+    if (kIsWeb) return; // Web平台不支持window_manager
+
     try {
       final size = await windowManager.getSize();
       await _configManager.updateWindowSize(size.width, size.height);
@@ -146,6 +166,8 @@ class WindowManagerService with WindowListener {
 
   /// 保存窗口位置
   Future<void> _saveWindowPosition() async {
+    if (kIsWeb) return; // Web平台不支持window_manager
+
     try {
       final position = await windowManager.getPosition();
       await _configManager.updateWindowPosition(position.dx, position.dy);

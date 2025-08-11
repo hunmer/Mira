@@ -30,7 +30,7 @@ import 'screens/settings_screen/controllers/auto_update_controller.dart'; // 自
 
 // Conditional import for Windows video player
 import 'package:video_player_win/video_player_win.dart'
-    if (dart.library.html) 'dart:html';
+    if (dart.library.html) 'stubs/video_player_web_stub.dart';
 
 // 全局导航键
 final GlobalKey<NavigatorState> navigatorKey = GlobalKey<NavigatorState>();
@@ -73,9 +73,11 @@ void main() async {
     globalConfigManager = ConfigManager(globalStorage);
     await globalConfigManager.initialize();
 
-    // 初始化窗口管理器
+    // 初始化窗口管理器 (仅在非Web平台)
     globalWindowManager = WindowManagerService(globalConfigManager);
-    await globalWindowManager.initialize();
+    if (!kIsWeb) {
+      await globalWindowManager.initialize();
+    }
 
     // 获取插件管理器单例实例并初始化
     globalPluginManager = PluginManager();
