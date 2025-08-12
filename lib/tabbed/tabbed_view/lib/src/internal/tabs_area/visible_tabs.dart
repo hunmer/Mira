@@ -9,7 +9,7 @@ class VisibleTabs {
 
   final TabsAreaThemeData tabsAreaTheme;
 
-  List<RenderBox> _tabs = [];
+  final List<RenderBox> _tabs = [];
 
   void add(RenderBox tab) {
     _tabs.add(tab);
@@ -101,7 +101,7 @@ class VisibleTabs {
 
   /// Removes the first tab.
   void removeFirst() {
-    if (_tabs.length > 0) {
+    if (_tabs.isNotEmpty) {
       _tabs.removeAt(0);
     }
   }

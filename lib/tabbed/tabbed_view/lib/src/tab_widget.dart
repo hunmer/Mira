@@ -45,9 +45,9 @@ class TabWidget extends StatelessWidget {
 
     Widget textAndButtonsContainer = ClipRect(
       child: FlowLayout(
-        children: textAndButtons,
         firstChildFlex: true,
         verticalAlignment: tabTheme.verticalAlignment,
+        children: textAndButtons,
       ),
     );
 
@@ -66,9 +66,7 @@ class TabWidget extends StatelessWidget {
       padding =
           statusTheme.paddingWithoutButton ?? tabTheme.paddingWithoutButton;
     }
-    if (padding == null) {
-      padding = statusTheme.padding ?? tabTheme.padding;
-    }
+    padding ??= statusTheme.padding ?? tabTheme.padding;
 
     EdgeInsetsGeometry? margin = tabTheme.margin;
     if (statusTheme.margin != null) {
@@ -76,15 +74,15 @@ class TabWidget extends StatelessWidget {
     }
 
     Widget tabWidget = Container(
+      decoration: decoration,
+      margin: margin,
       child: Container(
-        child: textAndButtonsContainer,
         padding: padding,
         decoration: BoxDecoration(
           border: Border(top: innerTopBorder, bottom: innerBottomBorder),
         ),
+        child: textAndButtonsContainer,
       ),
-      decoration: decoration,
-      margin: margin,
     );
 
     MouseCursor cursor = MouseCursor.defer;
@@ -97,20 +95,21 @@ class TabWidget extends StatelessWidget {
       cursor: cursor,
       onEnter: (event) => updateHighlightedIndex(index),
       onExit: (event) => updateHighlightedIndex(null),
-      child: provider.draggingTabIndex == null
-          ? GestureDetector(
-              onTap: () => _onSelect(context, index),
-              onSecondaryTapDown: (details) {
-                if (tab.menuBuilder != null) {
-                  final items = tab.menuBuilder!(context);
-                  if (items.isNotEmpty) {
-                    provider.menuItemsUpdater(items);
+      child:
+          provider.draggingTabIndex == null
+              ? GestureDetector(
+                onTap: () => _onSelect(context, index),
+                onSecondaryTapDown: (details) {
+                  if (tab.menuBuilder != null) {
+                    final items = tab.menuBuilder!(context);
+                    if (items.isNotEmpty) {
+                      provider.menuItemsUpdater(items);
+                    }
                   }
-                }
-              },
-              child: tabWidget,
-            )
-          : tabWidget,
+                },
+                child: tabWidget,
+              )
+              : tabWidget,
     );
 
     if (tab.draggable) {
@@ -130,7 +129,6 @@ class TabWidget extends StatelessWidget {
                 : TabDragFeedbackWidget(tab: tab, tabTheme: tabTheme);
 
         tabWidget = Draggable<DraggableData>(
-          child: tabWidget,
           feedback: Material(child: feedback),
           data: DraggableData(provider.controller, tab),
           feedbackOffset: draggableConfig.feedbackOffset,
@@ -163,11 +161,13 @@ class TabWidget extends StatelessWidget {
               draggableConfig.onDragCompleted!();
             }
           },
+          child: tabWidget,
         );
 
         tabWidget = Opacity(
+          opacity:
+              provider.draggingTabIndex != index ? 1 : tabTheme.draggingOpacity,
           child: tabWidget,
-          opacity: provider.draggingTabIndex != index ? 1 : tabTheme.draggingOpacity,
         );
       }
     }
@@ -204,17 +204,12 @@ class TabWidget extends StatelessWidget {
             : tabTheme.disabledButtonColor;
 
     BoxDecoration? normalBackground =
-        statusTheme.normalButtonBackground != null
-            ? statusTheme.normalButtonBackground
-            : tabTheme.normalButtonBackground;
+        statusTheme.normalButtonBackground ?? tabTheme.normalButtonBackground;
     BoxDecoration? hoverBackground =
-        statusTheme.hoverButtonBackground != null
-            ? statusTheme.hoverButtonBackground
-            : tabTheme.hoverButtonBackground;
+        statusTheme.hoverButtonBackground ?? tabTheme.hoverButtonBackground;
     BoxDecoration? disabledBackground =
-        statusTheme.disabledButtonBackground != null
-            ? statusTheme.disabledButtonBackground
-            : tabTheme.disabledButtonBackground;
+        statusTheme.disabledButtonBackground ??
+        tabTheme.disabledButtonBackground;
 
     TextStyle? textStyle = tabTheme.textStyle;
     if (statusTheme.fontColor != null) {
@@ -229,7 +224,7 @@ class TabWidget extends StatelessWidget {
         provider.draggingTabIndex == null &&
         (provider.selectToEnableButtons == false ||
             (provider.selectToEnableButtons && status == TabStatus.selected));
-    bool hasButtons = tab.buttons != null && tab.buttons!.length > 0;
+    bool hasButtons = tab.buttons != null && tab.buttons!.isNotEmpty;
     EdgeInsets? padding;
     if (tab.closable || hasButtons && tabTheme.buttonsOffset > 0) {
       padding = EdgeInsets.only(right: tabTheme.buttonsOffset);
@@ -244,12 +239,12 @@ class TabWidget extends StatelessWidget {
 
     textAndButtons.add(
       Container(
+        padding: padding,
         child: Text(
           tab.text,
           style: textStyle,
           overflow: TextOverflow.ellipsis,
         ),
-        padding: padding,
       ),
     );
 
@@ -262,6 +257,7 @@ class TabWidget extends StatelessWidget {
         TabButton button = tab.buttons![i];
         textAndButtons.add(
           Container(
+            padding: padding,
             child: TabButtonWidget(
               provider: provider,
               button: button,
@@ -272,10 +268,12 @@ class TabWidget extends StatelessWidget {
               normalBackground: normalBackground,
               hoverBackground: hoverBackground,
               disabledBackground: disabledBackground,
-              iconSize: button.iconSize != null ? button.iconSize! : tabTheme.buttonIconSize,
+              iconSize:
+                  button.iconSize != null
+                      ? button.iconSize!
+                      : tabTheme.buttonIconSize,
               themePadding: tabTheme.buttonPadding,
             ),
-            padding: padding,
           ),
         );
       }
@@ -293,6 +291,7 @@ class TabWidget extends StatelessWidget {
 
       textAndButtons.add(
         Container(
+          padding: padding,
           child: TabButtonWidget(
             provider: provider,
             button: closeButton,
@@ -306,7 +305,6 @@ class TabWidget extends StatelessWidget {
             iconSize: tabTheme.buttonIconSize,
             themePadding: tabTheme.buttonPadding,
           ),
-          padding: padding,
         ),
       );
     }

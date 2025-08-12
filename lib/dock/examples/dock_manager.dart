@@ -1,5 +1,6 @@
+// ignore_for_file: deprecated_member_use_from_same_package, unrelated_type_equality_checks
+
 import 'package:collection/collection.dart';
-import 'package:flutter/widgets.dart';
 import 'package:flutter/material.dart';
 import 'package:mira/dock/docking/lib/src/layout/area_builder.dart';
 import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
@@ -22,6 +23,7 @@ class DockManager extends ChangeNotifier {
   final DockingLayout layout;
   final DockItemRegistry registry = DockItemRegistry();
 
+  // ignore: prefer_final_fields
   bool _autoSave = false;
   Map<String, DockItemData> _itemDataCache = {};
 
@@ -495,12 +497,10 @@ class DockManager extends ChangeNotifier {
       DockingItem(
         id: '_placeholder_item',
         name: 'Empty',
-        widget: Container(
-          child: Center(
-            child: Text(
-              'No items in layout',
-              style: TextStyle(color: Colors.grey),
-            ),
+        widget: Center(
+          child: Text(
+            'No items in layout',
+            style: TextStyle(color: Colors.grey),
           ),
         ),
         closable: false,
@@ -576,6 +576,7 @@ class _Builder with AreaBuilderMixin {
   final DockManager manager;
   _Builder(this.manager);
 
+  @override
   DockingItem buildDockingItem({
     required dynamic id,
     required double? weight,
@@ -604,7 +605,7 @@ class _Builder with AreaBuilderMixin {
     return DockingItem(
       id: id,
       name: 'Unknown',
-      widget: Container(child: Center(child: Text('Item not found: $id'))),
+      widget: Center(child: Text('Item not found: $id')),
       weight: weight,
       maximized: maximized,
     );

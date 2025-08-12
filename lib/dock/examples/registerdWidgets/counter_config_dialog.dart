@@ -5,8 +5,7 @@ import 'package:flutter/services.dart';
 class CounterConfigDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onConfirm;
 
-  const CounterConfigDialog({Key? key, required this.onConfirm})
-    : super(key: key);
+  const CounterConfigDialog({super.key, required this.onConfirm});
 
   @override
   State<CounterConfigDialog> createState() => _CounterConfigDialogState();

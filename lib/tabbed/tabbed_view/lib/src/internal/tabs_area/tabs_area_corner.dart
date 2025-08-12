@@ -23,11 +23,11 @@ class TabsAreaCorner extends StatelessWidget {
     Widget corner = Container(
       padding: EdgeInsets.only(left: DropTabWidget.dropWidth),
       child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           TabsAreaButtonsWidget(provider: provider, hiddenTabs: hiddenTabs),
         ],
-        mainAxisAlignment: MainAxisAlignment.end,
-        crossAxisAlignment: CrossAxisAlignment.end,
       ),
     );
     if (provider.controller.reorderEnable) {

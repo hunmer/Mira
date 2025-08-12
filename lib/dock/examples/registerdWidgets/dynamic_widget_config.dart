@@ -4,8 +4,7 @@ import '../widgets/dock_item_config_base.dart';
 
 /// Dynamic Widget 配置对话框
 class DynamicWidgetConfig extends DockItemConfig {
-  const DynamicWidgetConfig({Key? key, required super.onConfirm})
-    : super(key: key);
+  const DynamicWidgetConfig({super.key, required super.onConfirm});
 
   @override
   State<DynamicWidgetConfig> createState() => _DynamicWidgetConfigState();
@@ -95,25 +94,23 @@ class _DynamicWidgetConfigState extends State<DynamicWidgetConfig> {
                   ),
                   const SizedBox(height: 12),
 
-                  ..._presets.entries
-                      .map(
-                        (entry) => Padding(
-                          padding: const EdgeInsets.only(bottom: 8),
-                          child: RadioListTile<String>(
-                            value: entry.key,
-                            groupValue: _selectedPreset,
-                            onChanged: (value) {
-                              setState(() => _selectedPreset = value!);
-                            },
-                            title: Text(entry.value),
-                            subtitle: Text(_getPresetDescription(entry.key)),
-                            contentPadding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                            ),
-                          ),
+                  ..._presets.entries.map(
+                    (entry) => Padding(
+                      padding: const EdgeInsets.only(bottom: 8),
+                      child: RadioListTile<String>(
+                        value: entry.key,
+                        groupValue: _selectedPreset,
+                        onChanged: (value) {
+                          setState(() => _selectedPreset = value!);
+                        },
+                        title: Text(entry.value),
+                        subtitle: Text(_getPresetDescription(entry.key)),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 8,
                         ),
-                      )
-                      .toList(),
+                      ),
+                    ),
+                  ),
                 ],
               ),
               const SizedBox(height: 20),

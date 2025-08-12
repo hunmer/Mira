@@ -8,7 +8,7 @@ import '../widgets/tabs_info_panel.dart';
 class DebugDialog extends StatefulWidget {
   final DockManager manager;
 
-  const DebugDialog({Key? key, required this.manager}) : super(key: key);
+  const DebugDialog({super.key, required this.manager});
 
   @override
   State<DebugDialog> createState() => _DebugDialogState();
@@ -49,7 +49,7 @@ class _DebugDialogState extends State<DebugDialog> {
 class DebugDialogContent extends StatefulWidget {
   final DockManager manager;
 
-  const DebugDialogContent({Key? key, required this.manager}) : super(key: key);
+  const DebugDialogContent({super.key, required this.manager});
 
   @override
   State<DebugDialogContent> createState() => _DebugDialogContentState();
@@ -316,7 +316,7 @@ class _DebugDialogContentState extends State<DebugDialogContent> {
       builder:
           (context) => AlertDialog(
             title: const Text('布局层次结构'),
-            content: Container(
+            content: SizedBox(
               width: 400,
               height: 300,
               child: SingleChildScrollView(

@@ -4,7 +4,7 @@ import '../widgets/dock_item_config_base.dart';
 
 /// 计数器组件配置对话框
 class CounterConfig extends DockItemConfig {
-  const CounterConfig({Key? key, required super.onConfirm}) : super(key: key);
+  const CounterConfig({super.key, required super.onConfirm});
 
   @override
   State<CounterConfig> createState() => _CounterConfigState();

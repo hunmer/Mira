@@ -10,11 +10,11 @@ class MultiTabDialog extends StatefulWidget {
   final int initialTabIndex;
 
   const MultiTabDialog({
-    Key? key,
+    super.key,
     required this.manager,
     required this.onShowSnackBar,
     this.initialTabIndex = 0,
-  }) : super(key: key);
+  });
 
   @override
   State<MultiTabDialog> createState() => _MultiTabDialogState();
@@ -43,7 +43,7 @@ class _MultiTabDialogState extends State<MultiTabDialog>
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      child: Container(
+      child: SizedBox(
         width: 800,
         height: 700,
         child: Column(

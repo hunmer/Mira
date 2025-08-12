@@ -13,7 +13,11 @@ import 'package:mira/tabbed/tabbed_view/lib/src/theme/theme_widget.dart';
 
 /// Container widget for the tab content and menu.
 class ContentArea extends StatelessWidget {
-  ContentArea({required this.tabsAreaVisible, required this.provider});
+  const ContentArea({
+    super.key,
+    required this.tabsAreaVisible,
+    required this.provider,
+  });
 
   final bool tabsAreaVisible;
   final TabbedViewProvider provider;
@@ -49,8 +53,8 @@ class ContentArea extends StatelessWidget {
               Positioned.fill(
                 key: tab.key,
                 child: Container(
-                  child: child,
                   padding: contentAreaTheme.padding,
+                  child: child,
                 ),
               ),
             );
@@ -65,13 +69,13 @@ class ContentArea extends StatelessWidget {
           );
           children.add(
             Positioned(
+              right: 0,
+              top: 0,
+              bottom: 0,
               child: LimitedBox(
                 maxWidth: math.min(theme.menu.maxWidth, constraints.maxWidth),
                 child: TabbedViewMenuWidget(provider: provider),
               ),
-              right: 0,
-              top: 0,
-              bottom: 0,
             ),
           );
           onSizeNotification = (n) {
@@ -82,15 +86,15 @@ class ContentArea extends StatelessWidget {
           };
         }
         Widget listener = NotificationListener<SizeChangedLayoutNotification>(
-          child: SizeChangedLayoutNotifier(child: Stack(children: children)),
           onNotification: onSizeNotification,
+          child: SizeChangedLayoutNotifier(child: Stack(children: children)),
         );
         return Container(
-          child: listener,
           decoration:
               tabsAreaVisible
                   ? contentAreaTheme.decoration
                   : contentAreaTheme.decorationNoTabsArea,
+          child: listener,
         );
       },
     );
@@ -102,7 +106,7 @@ class ContentArea extends StatelessWidget {
 }
 
 class _Glass extends StatelessWidget {
-  _Glass(this.blur, this.provider);
+  const _Glass(this.blur, this.provider);
 
   final bool blur;
   final TabbedViewProvider provider;

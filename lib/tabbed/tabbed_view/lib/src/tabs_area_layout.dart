@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'dart:math' as math;
 
 import 'package:flutter/rendering.dart';
@@ -13,13 +15,13 @@ import 'package:mira/tabbed/tabbed_view/lib/src/theme/tabs_area_theme_data.dart'
 /// Displays the popup menu button for tabs hidden due to lack of space.
 /// The selected [TabWidget] will always be visible.
 class TabsAreaLayout extends MultiChildRenderObjectWidget {
-  TabsAreaLayout({
-    Key? key,
-    required List<Widget> children,
+  const TabsAreaLayout({
+    super.key,
+    required super.children,
     required this.theme,
     required this.hiddenTabs,
     required this.selectedTabIndex,
-  }) : super(key: key, children: children);
+  });
 
   final TabbedViewThemeData theme;
   final HiddenTabs hiddenTabs;
@@ -40,9 +42,9 @@ class TabsAreaLayout extends MultiChildRenderObjectWidget {
     BuildContext context,
     _TabsAreaLayoutRenderBox renderObject,
   ) {
-    renderObject..tabsAreaTheme = theme.tabsArea;
-    renderObject..hiddenTabs = hiddenTabs;
-    renderObject..selectedTabIndex = selectedTabIndex;
+    renderObject.tabsAreaTheme = theme.tabsArea;
+    renderObject.hiddenTabs = hiddenTabs;
+    renderObject.selectedTabIndex = selectedTabIndex;
 
     //renderObject.markNeedsLayoutForSizedByParentChange()
   }
@@ -50,11 +52,11 @@ class TabsAreaLayout extends MultiChildRenderObjectWidget {
 
 /// The [TabsAreaLayout] element.
 class _TabsAreaLayoutElement extends MultiChildRenderObjectElement {
-  _TabsAreaLayoutElement(TabsAreaLayout widget) : super(widget);
+  _TabsAreaLayoutElement(TabsAreaLayout super.widget);
 
   @override
   void debugVisitOnstageChildren(ElementVisitor visitor) {
-    children.forEach((child) {
+    for (var child in children) {
       if (child.renderObject != null) {
         TabsAreaLayoutParentData parentData =
             child.renderObject!.parentData as TabsAreaLayoutParentData;
@@ -62,7 +64,7 @@ class _TabsAreaLayoutElement extends MultiChildRenderObjectElement {
           visitor(child);
         }
       }
-    });
+    }
   }
 }
 
@@ -75,9 +77,9 @@ class _TabsAreaLayoutRenderBox extends RenderBox
     TabbedViewThemeData theme,
     HiddenTabs hiddenTabs,
     int? selectedTabIndex,
-  ) : this._tabsAreaTheme = theme.tabsArea,
-      this._hiddenTabs = hiddenTabs,
-      this._selectedTabIndex = selectedTabIndex;
+  ) : _tabsAreaTheme = theme.tabsArea,
+      _hiddenTabs = hiddenTabs,
+      _selectedTabIndex = selectedTabIndex;
 
   int? _selectedTabIndex;
 
@@ -381,7 +383,7 @@ class _TabsAreaLayoutRenderBox extends RenderBox
     // fill last gap
     if (gapBorderPaint != null) {
       double lastX;
-      if (visibleTabs.length > 0) {
+      if (visibleTabs.isNotEmpty) {
         RenderBox lastTab = visibleTabs.last;
         TabsAreaLayoutParentData tabParentData =
             lastTab.tabsAreaLayoutParentData();
@@ -423,7 +425,7 @@ class _TabsAreaLayoutRenderBox extends RenderBox
     });
 
     bool hitTest = false;
-    visibleTabs.forEach((child) {
+    for (var child in visibleTabs) {
       if (!hitTest) {
         final TabsAreaLayoutParentData childParentData =
             child.tabsAreaLayoutParentData();
@@ -436,7 +438,7 @@ class _TabsAreaLayoutRenderBox extends RenderBox
           },
         );
       }
-    });
+    }
 
     return hitTest;
   }
@@ -445,6 +447,6 @@ class _TabsAreaLayoutRenderBox extends RenderBox
 /// Utility extension to facilitate obtaining parent data.
 extension _TabsAreaLayoutParentDataGetter on RenderObject {
   TabsAreaLayoutParentData tabsAreaLayoutParentData() {
-    return this.parentData as TabsAreaLayoutParentData;
+    return parentData as TabsAreaLayoutParentData;
   }
 }

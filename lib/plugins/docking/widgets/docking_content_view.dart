@@ -9,7 +9,7 @@ import '../models/docking_tab_data.dart';
 class DockingContentView extends StatefulWidget {
   final DockingTabData tabData;
 
-  const DockingContentView({Key? key, required this.tabData}) : super(key: key);
+  const DockingContentView({super.key, required this.tabData});
 
   @override
   State<DockingContentView> createState() => _DockingContentViewState();

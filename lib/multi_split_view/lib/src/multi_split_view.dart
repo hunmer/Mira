@@ -24,7 +24,7 @@ class MultiSplitView extends StatefulWidget {
   /// The [initialWeights] parameter will be ignored if the [controller]
   /// has been provided.
   MultiSplitView({
-    Key? key,
+    super.key,
     this.axis = MultiSplitView.defaultAxis,
     required this.children,
     this.controller,
@@ -35,9 +35,7 @@ class MultiSplitView extends StatefulWidget {
     this.resizable = true,
     this.antiAliasingWorkaround = true,
     List<Area>? initialAreas,
-  }) : this.initialAreas =
-           initialAreas != null ? List.from(initialAreas) : null,
-       super(key: key);
+  }) : initialAreas = initialAreas != null ? List.from(initialAreas) : null;
 
   final Axis axis;
   final List<Widget> children;
@@ -147,7 +145,7 @@ class _MultiSplitViewState extends State<MultiSplitView> {
       _draggingDividerIndex = null;
       _lastAreasUpdateHash = _controller.areasUpdateHash;
     }
-    if (widget.children.length > 0) {
+    if (widget.children.isNotEmpty) {
       MultiSplitViewThemeData themeData = MultiSplitViewTheme.of(context);
 
       return LayoutBuilder(

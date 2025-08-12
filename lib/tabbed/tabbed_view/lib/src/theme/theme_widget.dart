@@ -10,8 +10,7 @@ class TabbedViewTheme extends StatelessWidget {
   /// Applies the given theme [data] to [child].
   ///
   /// The [data] and [child] arguments must not be null.
-  const TabbedViewTheme({Key? key, required this.child, required this.data})
-    : super(key: key);
+  const TabbedViewTheme({super.key, required this.child, required this.data});
 
   /// Specifies the theme for descendant widgets.
   final TabbedViewThemeData data;
@@ -39,8 +38,7 @@ class TabbedViewTheme extends StatelessWidget {
 }
 
 class _InheritedTheme extends InheritedWidget {
-  const _InheritedTheme({Key? key, required this.theme, required Widget child})
-    : super(key: key, child: child);
+  const _InheritedTheme({required this.theme, required super.child});
 
   final TabbedViewTheme theme;
 

@@ -197,29 +197,27 @@ class _LibraryTabsViewState extends State<LibraryTabsView> {
                   Expanded(
                     child: TabbedViewTheme(
                       data: DockTheme.createCustomThemeData(context),
-                      child: Container(
-                        child: MultiSplitViewTheme(
-                          data: MultiSplitViewThemeData(
-                            dividerPainter: DividerPainters.grooved1(
-                              color: Colors.indigo[100]!,
-                              highlightedColor: Colors.indigo[900]!,
-                            ),
+                      child: MultiSplitViewTheme(
+                        data: MultiSplitViewThemeData(
+                          dividerPainter: DividerPainters.grooved1(
+                            color: Colors.indigo[100]!,
+                            highlightedColor: Colors.indigo[900]!,
                           ),
-                          child: Docking(
-                            layout: _dockManager.layout,
-                            draggable: true,
-                            autoBreakpoints: true,
-                            breakpoints: const ScreenBreakpoints(
-                              desktop: 800,
-                              tablet: 600,
-                              watch: 200,
-                            ),
-                            defaultLayout: () {
-                              return DockingLayout(
-                                root: _dockLogic.getDefaultLayout(),
-                              );
-                            },
+                        ),
+                        child: Docking(
+                          layout: _dockManager.layout,
+                          draggable: true,
+                          autoBreakpoints: true,
+                          breakpoints: const ScreenBreakpoints(
+                            desktop: 800,
+                            tablet: 600,
+                            watch: 200,
                           ),
+                          defaultLayout: () {
+                            return DockingLayout(
+                              root: _dockLogic.getDefaultLayout(),
+                            );
+                          },
                         ),
                       ),
                     ),

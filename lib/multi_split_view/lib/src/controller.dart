@@ -3,6 +3,7 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/widgets.dart';
+// ignore: depend_on_referenced_packages
 import 'package:meta/meta.dart';
 import 'package:mira/multi_split_view/lib/src/area.dart';
 
@@ -47,9 +48,9 @@ class MultiSplitViewController extends ChangeNotifier {
   /// Sum of all weights.
   double _weightSum() {
     double sum = 0;
-    _areas.forEach((area) {
+    for (var area in _areas) {
       sum += area.weight ?? 0;
-    });
+    }
     return sum;
   }
 

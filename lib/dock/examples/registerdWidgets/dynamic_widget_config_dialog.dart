@@ -6,8 +6,7 @@ import 'dynamic_widget.dart';
 class DynamicWidgetConfigDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onConfirm;
 
-  const DynamicWidgetConfigDialog({Key? key, required this.onConfirm})
-    : super(key: key);
+  const DynamicWidgetConfigDialog({super.key, required this.onConfirm});
 
   @override
   State<DynamicWidgetConfigDialog> createState() =>
@@ -131,7 +130,7 @@ class _DynamicWidgetConfigDialogState extends State<DynamicWidgetConfigDialog> {
                       });
                     },
                   );
-                }).toList(),
+                }),
               ],
             ),
             const SizedBox(height: 16),

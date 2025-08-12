@@ -17,14 +17,14 @@ class AppBarActionsPanel extends StatelessWidget {
   final VoidCallback? onShowDropDialog;
 
   const AppBarActionsPanel({
-    Key? key,
+    super.key,
     required this.plugin,
     required this.library,
     required this.state,
     required this.events,
     required this.tabId,
     this.onShowDropDialog,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

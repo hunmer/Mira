@@ -1,8 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:mira/dock/examples/dock_manager.dart';
 import 'package:mira/dock/examples/dock_insert_mode.dart';
-import 'package:mira/dock/docking/lib/src/layout/docking_layout.dart';
-import 'package:mira/dock/docking/lib/src/layout/drop_position.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view/library_gallery_events.dart';
 import 'package:uuid/uuid.dart';

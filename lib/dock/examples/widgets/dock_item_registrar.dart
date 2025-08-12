@@ -4,7 +4,6 @@ import 'package:mira/plugins/docking/widgets/docking_dock_item.dart';
 import 'package:mira/plugins/libraries/widgets/library_dock_item.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/app_bar_actions_panel.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/details_panel.dart';
-import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/library_gallery_panel_registrar.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/main_content_panel.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/quick_actions_panel.dart';
 import 'package:mira/plugins/libraries/widgets/library_gallery_view/dock_panels/sidebar_panel.dart'
@@ -140,6 +139,7 @@ class DockItemRegistrar {
           'text': 'Sample Text',
           'fontSize': 16.0,
           'fontWeight': FontWeight.normal.index,
+          // ignore: deprecated_member_use
           'textColor': Colors.black.value,
           'textAlign': TextAlign.center.index,
           'maxLines': null,

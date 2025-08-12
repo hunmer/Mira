@@ -11,12 +11,12 @@ class QuickActionsPanel extends StatelessWidget {
   final BuildContext parentContext;
 
   const QuickActionsPanel({
-    Key? key,
+    super.key,
     required this.plugin,
     required this.library,
     required this.events,
     required this.parentContext,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

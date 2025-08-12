@@ -17,11 +17,10 @@ class TabbedViewThemeData {
     TabThemeData? tab,
     ContentAreaThemeData? contentArea,
     TabbedViewMenuThemeData? menu,
-  }) : this.tab = tab != null ? tab : TabThemeData(),
-       this.tabsArea = tabsArea != null ? tabsArea : TabsAreaThemeData(),
-       this.contentArea =
-           contentArea != null ? contentArea : ContentAreaThemeData(),
-       this.menu = menu != null ? menu : TabbedViewMenuThemeData();
+  }) : tab = tab ?? TabThemeData(),
+       tabsArea = tabsArea ?? TabsAreaThemeData(),
+       contentArea = contentArea ?? ContentAreaThemeData(),
+       menu = menu ?? TabbedViewMenuThemeData();
 
   TabsAreaThemeData tabsArea;
   TabThemeData tab;
@@ -30,8 +29,8 @@ class TabbedViewThemeData {
 
   /// Sets the Material Design icons.
   void materialDesignIcons() {
-    this.tabsArea.menuIcon = IconProvider.data(Icons.arrow_drop_down);
-    this.tab.closeIcon = IconProvider.data(Icons.close);
+    tabsArea.menuIcon = IconProvider.data(Icons.arrow_drop_down);
+    tab.closeIcon = IconProvider.data(Icons.close);
   }
 
   /// Builds the predefined dark theme.

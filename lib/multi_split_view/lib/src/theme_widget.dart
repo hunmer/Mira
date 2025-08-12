@@ -9,8 +9,11 @@ class MultiSplitViewTheme extends StatelessWidget {
   /// Applies the given theme [data] to [child].
   ///
   /// The [data] and [child] arguments must not be null.
-  const MultiSplitViewTheme({Key? key, required this.child, required this.data})
-    : super(key: key);
+  const MultiSplitViewTheme({
+    super.key,
+    required this.child,
+    required this.data,
+  });
 
   /// Specifies the theme for descendant widgets.
   final MultiSplitViewThemeData data;
@@ -38,8 +41,7 @@ class MultiSplitViewTheme extends StatelessWidget {
 }
 
 class _InheritedTheme extends InheritedWidget {
-  const _InheritedTheme({Key? key, required this.theme, required Widget child})
-    : super(key: key, child: child);
+  const _InheritedTheme({required this.theme, required super.child});
 
   final MultiSplitViewTheme theme;
 

@@ -10,11 +10,11 @@ class ItemInfoPanel extends StatelessWidget {
   final VoidCallback onRefresh;
 
   const ItemInfoPanel({
-    Key? key,
+    super.key,
     required this.item,
     required this.manager,
     required this.onRefresh,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

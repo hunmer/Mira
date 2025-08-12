@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 abstract class DockItemConfig extends StatefulWidget {
   final Function(Map<String, dynamic>) onConfirm;
 
-  const DockItemConfig({Key? key, required this.onConfirm}) : super(key: key);
+  const DockItemConfig({super.key, required this.onConfirm});
 }
 
 /// 组件信息

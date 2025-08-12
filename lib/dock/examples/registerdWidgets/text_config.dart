@@ -4,7 +4,7 @@ import '../widgets/dock_item_config_base.dart';
 
 /// 文本组件配置对话框
 class TextConfig extends DockItemConfig {
-  const TextConfig({Key? key, required super.onConfirm}) : super(key: key);
+  const TextConfig({super.key, required super.onConfirm});
 
   @override
   State<TextConfig> createState() => _TextConfigState();
@@ -426,6 +426,7 @@ class _TextConfigState extends State<TextConfig> {
       'text': _textController.text.trim(),
       'fontSize': fontSize,
       'fontWeight': _fontWeight.index,
+      // ignore: deprecated_member_use
       'textColor': _textColor.value,
       'textAlign': _textAlign.index,
       'maxLines': _maxLines == 0 ? null : _maxLines,

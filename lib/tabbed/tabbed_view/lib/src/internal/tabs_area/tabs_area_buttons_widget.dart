@@ -52,6 +52,7 @@ class TabsAreaButtonsWidget extends StatelessWidget {
       final TabButton tabButton = buttons[i];
       children.add(
         Container(
+          padding: padding,
           child: TabButtonWidget(
             provider: provider,
             button: tabButton,
@@ -68,7 +69,6 @@ class TabsAreaButtonsWidget extends StatelessWidget {
                     : tabsAreaTheme.buttonIconSize,
             themePadding: tabsAreaTheme.buttonPadding,
           ),
-          padding: padding,
         ),
       );
     }
@@ -85,10 +85,10 @@ class TabsAreaButtonsWidget extends StatelessWidget {
             tabsAreaTheme.buttonsAreaPadding != null ||
             margin != null)) {
       buttonsArea = Container(
-        child: buttonsArea,
         decoration: tabsAreaTheme.buttonsAreaDecoration,
         padding: tabsAreaTheme.buttonsAreaPadding,
         margin: margin,
+        child: buttonsArea,
       );
     }
     return buttonsArea;

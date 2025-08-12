@@ -17,7 +17,7 @@ class DebugDialogUtils {
       builder:
           (context) => AlertDialog(
             title: const Text('布局层次结构'),
-            content: Container(
+            content: SizedBox(
               width: 400,
               height: 300,
               child: SingleChildScrollView(
@@ -76,10 +76,10 @@ class RenameDialog extends StatefulWidget {
   final ValueChanged<String> onRenamed;
 
   const RenameDialog({
-    Key? key,
+    super.key,
     required this.initialName,
     required this.onRenamed,
-  }) : super(key: key);
+  });
 
   @override
   State<RenameDialog> createState() => _RenameDialogState();

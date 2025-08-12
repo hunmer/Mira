@@ -39,7 +39,8 @@ typedef OnTabSelection = Function(int? newTabIndex);
 ///   selected. The default value is [TRUE].
 /// * [closeButtonTooltip]: optional tooltip for the close button.
 class TabbedView extends StatefulWidget {
-  TabbedView({
+  const TabbedView({
+    super.key,
     required this.controller,
     this.contentBuilder,
     this.onTabClose,
@@ -150,8 +151,8 @@ class _TabbedViewState extends State<TabbedView> {
     );
     children.add(LayoutId(id: 2, child: contentArea));
     return CustomMultiChildLayout(
-      children: children,
       delegate: _TabbedViewLayout(),
+      children: children,
     );
   }
 

@@ -12,7 +12,7 @@ import 'package:mira/tabbed/tabbed_view/lib/src/theme/theme_widget.dart';
 
 /// Widget for the tabs and buttons.
 class TabsArea extends StatefulWidget {
-  const TabsArea({required this.provider});
+  const TabsArea({super.key, required this.provider});
 
   final TabbedViewProvider provider;
 
@@ -51,10 +51,10 @@ class _TabsAreaState extends State<TabsArea> {
     );
 
     Widget tabsAreaLayout = TabsAreaLayout(
-      children: children,
       theme: theme,
       hiddenTabs: _hiddenTabs,
       selectedTabIndex: controller.selectedIndex,
+      children: children,
     );
     tabsAreaLayout = ClipRect(child: tabsAreaLayout);
 
@@ -65,7 +65,7 @@ class _TabsAreaState extends State<TabsArea> {
         border: tabsAreaTheme.border,
       );
     }
-    return Container(child: tabsAreaLayout, decoration: decoration);
+    return Container(decoration: decoration, child: tabsAreaLayout);
   }
 
   /// Gets the status of the tab for a given index.

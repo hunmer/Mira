@@ -1,33 +1,5 @@
 import 'package:flutter/foundation.dart';
-
-/// 事件参数基类
-class EventArgs {
-  /// 事件名称
-  String eventName;
-
-  /// 事件发生时间
-  final DateTime whenOccurred;
-
-  /// 创建一个事件参数实例
-  EventArgs([this.eventName = '']) : whenOccurred = DateTime.now();
-}
-
-/// 事件订阅句柄，用于标识和管理订阅
-class EventSubscription {
-  final String _id;
-  final String eventName;
-  final Function(EventArgs) handler;
-  bool _isActive = true;
-
-  EventSubscription(this._id, this.eventName, this.handler);
-
-  String get id => _id;
-  bool get isActive => _isActive;
-
-  void cancel() {
-    _isActive = false;
-  }
-}
+import 'package:mira/core/event/event_args.dart';
 
 /// 事件管理器单例类
 class EventManager {

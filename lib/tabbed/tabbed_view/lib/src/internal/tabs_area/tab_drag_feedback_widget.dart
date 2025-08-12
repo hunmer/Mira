@@ -6,7 +6,11 @@ import 'package:mira/tabbed/tabbed_view/lib/src/theme/vertical_alignment.dart';
 
 /// The tab drag feedback widget.
 class TabDragFeedbackWidget extends StatelessWidget {
-  const TabDragFeedbackWidget({required this.tab, required this.tabTheme});
+  const TabDragFeedbackWidget({
+    super.key,
+    required this.tab,
+    required this.tabTheme,
+  });
 
   final TabData tab;
   final TabThemeData tabTheme;
@@ -30,9 +34,9 @@ class TabDragFeedbackWidget extends StatelessWidget {
     }
 
     return Container(
-      child: Row(children: children, crossAxisAlignment: crossAxisAlignment),
       padding: EdgeInsets.all(4),
       decoration: tabTheme.draggingDecoration,
+      child: Row(crossAxisAlignment: crossAxisAlignment, children: children),
     );
   }
 }

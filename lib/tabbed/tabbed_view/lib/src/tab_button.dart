@@ -18,7 +18,7 @@ class TabButton {
     this.toolTip,
     this.padding,
     double? iconSize,
-  }) : this.iconSize =
+  }) : iconSize =
            iconSize == null
                ? iconSize
                : TabbedViewThemeConstants.normalize(iconSize);

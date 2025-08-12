@@ -10,11 +10,11 @@ class TabsInfoPanel extends StatelessWidget {
   final VoidCallback onRefresh;
 
   const TabsInfoPanel({
-    Key? key,
+    super.key,
     required this.tabs,
     required this.manager,
     required this.onRefresh,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

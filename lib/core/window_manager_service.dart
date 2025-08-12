@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
+import 'package:mira/core/utils/utils.dart';
 import 'package:window_manager/window_manager.dart';
 import 'config_manager.dart';
 
@@ -15,7 +16,7 @@ class WindowManagerService with WindowListener {
     if (_isInitialized) return;
 
     // 仅在非Web平台初始化window_manager
-    if (!kIsWeb) {
+    if (isDesktop()) {
       await windowManager.ensureInitialized();
       windowManager.addListener(this);
 

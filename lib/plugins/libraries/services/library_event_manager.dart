@@ -1,10 +1,11 @@
 import 'dart:async';
 
+import 'package:mira/core/event/event_args.dart';
 import 'package:mira/core/event/event_debounce.dart';
 import 'package:mira/core/event/event_manager.dart';
 
 // 导出相关类型供外部使用
-export 'package:mira/core/event/event_manager.dart' show EventArgs;
+export 'package:mira/core/event/event_manager.dart';
 export 'package:mira/core/event/event_args.dart' show MapEventArgs;
 
 /// 回调信息类

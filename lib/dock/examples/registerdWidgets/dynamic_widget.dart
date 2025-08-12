@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:json_dynamic_widget/json_dynamic_widget.dart';
 
 /// Dynamic Widget 组件，能够通过 JSON 动态构建 Widget
@@ -8,11 +7,11 @@ class DynamicWidget extends StatefulWidget {
   final VoidCallback? onDataChanged;
 
   const DynamicWidget({
-    Key? key,
+    super.key,
     required this.jsonData,
     this.registry,
     this.onDataChanged,
-  }) : super(key: key);
+  });
 
   @override
   State<DynamicWidget> createState() => _DynamicWidgetState();

@@ -58,13 +58,17 @@ class Area {
 
   static List<Area> sizes(List<double> sizes) {
     List<Area> list = [];
-    sizes.forEach((size) => list.add(Area(size: size)));
+    for (var size in sizes) {
+      list.add(Area(size: size));
+    }
     return list;
   }
 
   static List<Area> weights(List<double> weights) {
     List<Area> list = [];
-    weights.forEach((weight) => list.add(Area(weight: weight)));
+    for (var weight in weights) {
+      list.add(Area(weight: weight));
+    }
     return list;
   }
 }

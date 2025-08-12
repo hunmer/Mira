@@ -108,9 +108,7 @@ class _DockingState extends State<Docking> {
     }
 
     // 如果currentLayout为null，使用一个默认的空布局
-    if (currentLayout == null) {
-      currentLayout = DockingLayout(); // 这会触发DockingLayout的默认创建
-    }
+    currentLayout ??= DockingLayout();
 
     // Compute a single device type for the whole Docking instance
     return LayoutBuilder(

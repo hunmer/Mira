@@ -16,14 +16,14 @@ class SidebarPanel extends StatelessWidget {
   final ValueNotifier<Map<String, dynamic>> filterOptionsNotifier;
 
   const SidebarPanel({
-    Key? key,
+    super.key,
     required this.plugin,
     required this.library,
     required this.tabId,
     required this.tags,
     required this.folders,
     required this.filterOptionsNotifier,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

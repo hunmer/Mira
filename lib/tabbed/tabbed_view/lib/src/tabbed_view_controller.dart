@@ -19,8 +19,8 @@ class TabbedViewController extends ChangeNotifier {
     this.onReorder,
     this.data,
     bool reorderEnable = true,
-  }) : this._reorderEnable = reorderEnable {
-    if (_tabs.length > 0) {
+  }) : _reorderEnable = reorderEnable {
+    if (_tabs.isNotEmpty) {
       _selectedIndex = 0;
     }
     for (TabData tab in _tabs) {

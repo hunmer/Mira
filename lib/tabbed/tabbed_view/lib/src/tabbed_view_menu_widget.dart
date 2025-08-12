@@ -6,7 +6,7 @@ import 'package:mira/tabbed/tabbed_view/lib/src/theme/theme_widget.dart';
 
 /// Widget for menu.
 class TabbedViewMenuWidget extends StatefulWidget {
-  const TabbedViewMenuWidget({required this.provider});
+  const TabbedViewMenuWidget({super.key, required this.provider});
 
   final TabbedViewProvider provider;
 
@@ -41,14 +41,6 @@ class _TabbedViewMenuWidgetState extends State<TabbedViewMenuWidget> {
           }
         }
         return InkWell(
-          child: Container(
-            padding: menuTheme.menuItemPadding,
-            child: Text(
-              widget.provider.menuItems[itemIndex].text,
-              overflow:
-                  menuTheme.ellipsisOverflowText ? TextOverflow.ellipsis : null,
-            ),
-          ),
           hoverColor: menuTheme.hoverColor,
           onTap: () {
             widget.provider.menuItemsUpdater([]);
@@ -58,6 +50,14 @@ class _TabbedViewMenuWidgetState extends State<TabbedViewMenuWidget> {
               onSelection();
             }
           },
+          child: Container(
+            padding: menuTheme.menuItemPadding,
+            child: Text(
+              widget.provider.menuItems[itemIndex].text,
+              overflow:
+                  menuTheme.ellipsisOverflowText ? TextOverflow.ellipsis : null,
+            ),
+          ),
         );
       },
     );
@@ -65,14 +65,14 @@ class _TabbedViewMenuWidgetState extends State<TabbedViewMenuWidget> {
     return Container(
       margin: menuTheme.margin,
       padding: menuTheme.padding,
-      child: Material(
-        child: list,
-        textStyle: menuTheme.textStyle,
-        color: Colors.transparent,
-      ),
       decoration: BoxDecoration(
         color: menuTheme.color,
         border: menuTheme.border,
+      ),
+      child: Material(
+        textStyle: menuTheme.textStyle,
+        color: Colors.transparent,
+        child: list,
       ),
     );
   }

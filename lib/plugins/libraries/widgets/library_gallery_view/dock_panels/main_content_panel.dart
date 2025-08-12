@@ -20,7 +20,7 @@ class MainContentPanel extends StatefulWidget {
   final Function(LibraryFile) onToggleSelected;
 
   const MainContentPanel({
-    Key? key,
+    super.key,
     required this.plugin,
     required this.library,
     required this.state,
@@ -29,7 +29,7 @@ class MainContentPanel extends StatefulWidget {
     required this.onFileOpen,
     required this.onFileSelected,
     required this.onToggleSelected,
-  }) : super(key: key);
+  });
 
   @override
   State<MainContentPanel> createState() => _MainContentPanelState();

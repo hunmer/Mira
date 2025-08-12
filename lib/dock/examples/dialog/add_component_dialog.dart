@@ -9,10 +9,10 @@ class AddComponentDialog extends StatefulWidget {
   final Function(String message) onShowSnackBar;
 
   const AddComponentDialog({
-    Key? key,
+    super.key,
     required this.manager,
     required this.onShowSnackBar,
-  }) : super(key: key);
+  });
 
   @override
   State<AddComponentDialog> createState() => _AddComponentDialogState();
@@ -60,10 +60,10 @@ class AddComponentDialogContent extends StatefulWidget {
   final Function(String message) onShowSnackBar;
 
   const AddComponentDialogContent({
-    Key? key,
+    super.key,
     required this.manager,
     required this.onShowSnackBar,
-  }) : super(key: key);
+  });
 
   @override
   State<AddComponentDialogContent> createState() =>
@@ -89,7 +89,7 @@ class _AddComponentDialogContentState extends State<AddComponentDialogContent> {
   @override
   Widget build(BuildContext context) {
     final allAreas = widget.manager.layout.layoutAreas();
-    final dropAreas = allAreas.where((area) => area is DropArea).toList();
+    final dropAreas = allAreas.whereType<DropArea>().toList();
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -155,12 +155,19 @@ class _AddComponentDialogContentState extends State<AddComponentDialogContent> {
                             itemCount: dropAreas.length,
                             itemBuilder: (context, index) {
                               final area = dropAreas[index];
+                              // ignore: unrelated_type_equality_checks
                               final isSelected = _selectedArea == area;
                               return ListTile(
                                 selected: isSelected,
-                                leading: Icon(_getAreaIcon(area)),
-                                title: Text(_getAreaDisplayName(area)),
-                                subtitle: Text(_getAreaDescription(area)),
+                                leading: Icon(
+                                  _getAreaIcon(area as DockingArea),
+                                ),
+                                title: Text(
+                                  _getAreaDisplayName(area as DockingArea),
+                                ),
+                                subtitle: Text(
+                                  _getAreaDescription(area as DockingArea),
+                                ),
                                 trailing:
                                     (area is DockingItem && area.maximized) ||
                                             (area is DockingTabs &&
@@ -169,7 +176,7 @@ class _AddComponentDialogContentState extends State<AddComponentDialogContent> {
                                         : null,
                                 onTap: () {
                                   setState(() {
-                                    _selectedArea = area;
+                                    _selectedArea = area as DockingArea?;
                                     _selectedPosition = null;
                                     _selectedDropIndex = null;
                                   });

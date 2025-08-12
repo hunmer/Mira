@@ -4,7 +4,7 @@ import 'package:flutter/material.dart';
 class TextConfigDialog extends StatefulWidget {
   final Function(Map<String, dynamic>) onConfirm;
 
-  const TextConfigDialog({Key? key, required this.onConfirm}) : super(key: key);
+  const TextConfigDialog({super.key, required this.onConfirm});
 
   @override
   State<TextConfigDialog> createState() => _TextConfigDialogState();
@@ -57,6 +57,7 @@ class _TextConfigDialogState extends State<TextConfigDialog> {
   }
 
   String _colorToHex(Color color) {
+    // ignore: deprecated_member_use
     return '#${color.value.toRadixString(16).padLeft(8, '0').substring(2)}';
   }
 

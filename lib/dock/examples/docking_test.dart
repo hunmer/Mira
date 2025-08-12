@@ -69,6 +69,8 @@ class _LazyCounterPanelState extends State<LazyCounterPanel>
 }
 
 class DockingExample extends StatefulWidget {
+  const DockingExample({super.key});
+
   @override
   State<DockingExample> createState() => _MyDockingPageState();
 }
@@ -109,6 +111,7 @@ class _MyDockingPageState extends State<DockingExample> {
                 size: 16,
                 color: Theme.of(
                   context,
+                  // ignore: deprecated_member_use
                 ).textTheme.titleMedium?.color?.withOpacity(0.6),
               ),
               const SizedBox(width: 8),

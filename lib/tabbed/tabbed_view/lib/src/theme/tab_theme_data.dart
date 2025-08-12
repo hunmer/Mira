@@ -33,17 +33,12 @@ class TabThemeData {
     TabStatusThemeData? selectedStatus,
     TabStatusThemeData? highlightedStatus,
     TabStatusThemeData? disabledStatus,
-  }) : this._buttonsOffset = buttonsOffset >= 0 ? buttonsOffset : 0,
-       this._buttonsGap = buttonsGap >= 0 ? buttonsGap : 0,
-       this.buttonIconSize = TabbedViewThemeConstants.normalize(buttonIconSize),
-       this.closeIcon =
-           closeIcon == null
-               ? IconProvider.path(TabbedViewIcons.close)
-               : closeIcon,
-       this.selectedStatus =
-           selectedStatus != null ? selectedStatus : TabStatusThemeData(),
-       this.highlightedStatus =
-           highlightedStatus != null ? highlightedStatus : TabStatusThemeData();
+  }) : _buttonsOffset = buttonsOffset >= 0 ? buttonsOffset : 0,
+       _buttonsGap = buttonsGap >= 0 ? buttonsGap : 0,
+       buttonIconSize = TabbedViewThemeConstants.normalize(buttonIconSize),
+       closeIcon = closeIcon ?? IconProvider.path(TabbedViewIcons.close),
+       selectedStatus = selectedStatus ?? TabStatusThemeData(),
+       highlightedStatus = highlightedStatus ?? TabStatusThemeData();
 
   /// Empty space to inscribe inside the [decoration]. The tab child, if any, is
   /// placed inside this padding.

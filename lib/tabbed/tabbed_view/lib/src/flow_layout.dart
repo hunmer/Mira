@@ -1,3 +1,5 @@
+// ignore_for_file: library_private_types_in_public_api
+
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
@@ -6,12 +8,12 @@ import 'package:mira/tabbed/tabbed_view/lib/src/theme/vertical_alignment.dart';
 
 /// Flow layout.
 class FlowLayout extends MultiChildRenderObjectWidget {
-  FlowLayout({
-    Key? key,
-    required List<Widget> children,
+  const FlowLayout({
+    super.key,
+    required super.children,
     required this.firstChildFlex,
     this.verticalAlignment = VerticalAlignment.center,
-  }) : super(key: key, children: children);
+  });
 
   final bool firstChildFlex;
   final VerticalAlignment verticalAlignment;
@@ -31,22 +33,22 @@ class FlowLayout extends MultiChildRenderObjectWidget {
     BuildContext context,
     _FlowLayoutRenderBox renderObject,
   ) {
-    renderObject..firstChildFlex = firstChildFlex;
-    renderObject..verticalAlignment = verticalAlignment;
+    renderObject.firstChildFlex = firstChildFlex;
+    renderObject.verticalAlignment = verticalAlignment;
   }
 }
 
 /// The [FlowLayout] element.
 class _FlowLayoutElement extends MultiChildRenderObjectElement {
-  _FlowLayoutElement(FlowLayout widget) : super(widget);
+  _FlowLayoutElement(FlowLayout super.widget);
 
   @override
   void debugVisitOnstageChildren(ElementVisitor visitor) {
-    children.forEach((child) {
+    for (var child in children) {
       if (child.renderObject != null) {
         visitor(child);
       }
-    });
+    }
   }
 }
 
@@ -144,10 +146,10 @@ class _FlowLayoutRenderBox extends RenderBox
         );
       }
       double x = 0;
-      children.forEach((child) {
+      for (var child in children) {
         child.flowLayoutParentData().offset = Offset(x, _y(child.size.height));
         x += child.size.width;
-      });
+      }
       width = x;
     }
 
@@ -199,6 +201,6 @@ class _FlowLayoutRenderBox extends RenderBox
 /// Utility extension to facilitate obtaining parent data.
 extension _FlowLayoutParentDataDataGetter on RenderObject {
   _FlowLayoutParentData flowLayoutParentData() {
-    return this.parentData as _FlowLayoutParentData;
+    return parentData as _FlowLayoutParentData;
   }
 }

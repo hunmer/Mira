@@ -13,11 +13,11 @@ class DetailsPanel extends StatelessWidget {
   final LibraryGalleryState state;
 
   const DetailsPanel({
-    Key? key,
+    super.key,
     required this.plugin,
     required this.library,
     required this.state,
-  }) : super(key: key);
+  });
 
   @override
   Widget build(BuildContext context) {

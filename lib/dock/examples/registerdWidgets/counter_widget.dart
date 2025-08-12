@@ -5,8 +5,7 @@ class CounterWidget extends StatefulWidget {
   final int initialValue;
   final ValueChanged<int>? onChanged;
 
-  const CounterWidget({Key? key, this.initialValue = 0, this.onChanged})
-    : super(key: key);
+  const CounterWidget({super.key, this.initialValue = 0, this.onChanged});
 
   @override
   State<CounterWidget> createState() => CounterWidgetState();
